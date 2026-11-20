@@ -1,6 +1,6 @@
 import { APP_NAME } from "@/lib/constants";
 
-/** Icône symbole de Bon Waz à Dealer (Monogramme B Conversationnel). */
+/** Icône symbole de Bon Waz à Dealer : Le « Deal » (Poignée de main géométrique). */
 export function LogoIcon({ className = "size-7 sm:size-8" }: { className?: string }) {
   return (
     <svg
@@ -11,13 +11,22 @@ export function LogoIcon({ className = "size-7 sm:size-8" }: { className?: strin
       aria-hidden
     >
       <rect width="256" height="256" rx="64" fill="#0F766E" />
-      {/* B moderne formé de 2 bulles de discussion connectées */}
-      <path d="M72 64H136C158.1 64 176 81.9 176 104C176 126.1 158.1 144 136 144H72V64Z" fill="#F0FDFA" />
-      <path d="M72 128H148C172.3 128 192 147.7 192 172C192 196.3 172.3 216 148 216H72V128Z" fill="#CCFBF1" />
-      {/* Accent deal terracotta */}
-      <circle cx="140" cy="172" r="14" fill="#E2683C" />
-      {/* Queue de bulle conversationnelle discrète */}
-      <path d="M72 216L54 226V210L72 216Z" fill="#CCFBF1" />
+      {/* Poignée de main géométrique moderne (symbole du Deal / conclusion de vente) */}
+      <path
+        d="M56 128L96 88C104 80 116 80 124 88L140 104L116 128L80 128L56 128Z"
+        fill="#FFFFFF"
+        fillOpacity="0.95"
+      />
+      <path
+        d="M200 128L160 88C152 80 140 80 132 88L116 104L140 128L176 128L200 128Z"
+        fill="#FDE68A"
+      />
+      <path
+        d="M88 128L120 160C128 168 140 168 148 160L168 140L144 116L128 132L112 116L88 128Z"
+        fill="#FFFFFF"
+      />
+      {/* Point d'accentuation terracotta (énergie du deal) */}
+      <circle cx="128" cy="190" r="12" fill="#E2683C" />
     </svg>
   );
 }
