@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { createClient, getMyShop, getUser } from "@/lib/supabase/server";
 import { createShopSchema } from "@/lib/validation/shop";
 import { dbErrorMessage } from "@/lib/errors";
@@ -57,14 +56,14 @@ export async function checkSlugAvailability(
 }
 
 /**
- * Fin de l'étape 2 : crée ou met à jour la boutique (nom, lien, WhatsApp).
- * Gère de manière transparente la reprise d'onboarding sans erreur de duplication.
+ * Fin de l'étape 2 : crée la boutique. Si le compte en possède déjà une,
+ * on ne crée rien et on renvoie vers le panneau « Vos boutiques ».
  */
 export async function createShop(input: {
   name: string;
   slug: string;
   whatsapp_number: string;
-}): Promise<ActionState & { shopId?: string }> {
+}): Promise<ActionState & { shopId?: string; alreadyExists?: boolean }> {
   const user = await getUser();
   if (!user) return { error: "Session expirée. Reconnectez-vous." };
 
@@ -73,64 +72,43 @@ export async function createShop(input: {
 
   const supabase = await createClient();
 
-  // 1. Si une boutique existe déjà pour ce compte
-  const { data: myShop } = await supabase
+  // 1. Le compte possède déjà une boutique → aucune création.
+  const { data: myShop, error: readError } = await supabase
     .from("shops")
     .select("id")
     .eq("owner_id", user.id)
     .maybeSingle();
 
+  if (readError) {
+    console.error("[createShop] lecture boutique", readError);
+    return { error: `Lecture de votre boutique impossible (${readError.code ?? "?"} : ${readError.message}).` };
+  }
   if (myShop) {
-    try {
-      await supabase
-        .from("shops")
-        .update({
-          name: parsed.data.name,
-          whatsapp_number: parsed.data.whatsapp_number,
-        })
-        .eq("id", myShop.id);
-    } catch {
-      // Ignorer
-    }
-
-    revalidatePath("/tableau-de-bord", "layout");
     revalidatePath("/boutiques");
-    redirect("/tableau-de-bord");
+    return { ok: true, shopId: myShop.id, alreadyExists: true };
   }
 
-  // 2. Si le slug existe déjà dans la base
-  const { data: shopBySlug } = await supabase
+  // 2. Création.
+  const { data, error } = await supabase
     .from("shops")
+    .insert({ ...parsed.data, owner_id: user.id })
     .select("id")
-    .eq("slug", parsed.data.slug)
-    .maybeSingle();
-
-  if (shopBySlug) {
-    revalidatePath("/tableau-de-bord", "layout");
-    revalidatePath("/boutiques");
-    redirect("/tableau-de-bord");
-  }
-
-  // 3. Première création : insertion
-  const { error } = await supabase
-    .from("shops")
-    .insert({ ...parsed.data, owner_id: user.id });
+    .single();
 
   if (error) {
-    if (error.code === "23505") {
-      revalidatePath("/tableau-de-bord", "layout");
-      revalidatePath("/boutiques");
-      redirect("/tableau-de-bord");
+    console.error("[createShop] insertion", error);
+    if (error.code === "23505" && error.message.includes("owner_id")) {
+      return { ok: true, alreadyExists: true };
     }
-
-    const message = dbErrorMessage(error, "Création de la boutique impossible. Réessayez.");
     if (error.code === "23505" && error.message.includes("slug")) {
-      return { fieldErrors: { slug: message } };
+      return { fieldErrors: { slug: "Ce lien de boutique est déjà pris. Choisissez-en un autre." } };
     }
-    return { error: message };
+    // Message réel affiché (plus de message générique qui masque la cause).
+    const friendly = dbErrorMessage(error, "Création de la boutique impossible.");
+    return { error: `${friendly} (${error.code ?? "?"} : ${error.message})` };
   }
 
   revalidatePath("/tableau-de-bord", "layout");
   revalidatePath("/boutiques");
-  redirect("/tableau-de-bord");
+  return { ok: true, shopId: data.id };
 }

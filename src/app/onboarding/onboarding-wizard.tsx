@@ -57,7 +57,7 @@ function OnboardingContent({ existingShop }: Props) {
         } catch {
           // ignore
         }
-        window.location.href = "/tableau-de-bord";
+        window.location.href = "/boutiques";
       }
     });
   }, [router]);
@@ -132,30 +132,41 @@ function OnboardingContent({ existingShop }: Props) {
   }
 
   async function submitStep2() {
+    const whatsapp = toE164(draft.countryCode, draft.local);
+    if (!isValidE164(whatsapp)) {
+      setErrors({ whatsapp_number: "Numéro invalide : vérifiez l'indicatif et le numéro." });
+      return;
+    }
     setErrors({});
     setGlobalError("");
     setSaving(true);
     try {
-      const whatsapp = toE164(draft.countryCode, draft.local);
       const res = await createShop({ name: draft.name, slug: draft.slug, whatsapp_number: whatsapp });
-      if (res?.fieldErrors) {
+      if (res.fieldErrors) {
         setErrors(res.fieldErrors);
         if (res.fieldErrors.slug || res.fieldErrors.name) setStep(1);
-        setSaving(false);
         return;
       }
-    } catch (e: any) {
-      if (e?.digest?.startsWith("NEXT_REDIRECT") || e?.message === "NEXT_REDIRECT") {
-        throw e;
+      if (res.error) {
+        // On reste sur l'étape 2, saisie conservée, cause réelle affichée.
+        setGlobalError(res.error);
+        return;
       }
-    }
-    // Quoi qu'il arrive, on libère le commerçant et on le fait entrer directement dans le tableau de bord
-    try {
-      localStorage.removeItem(DRAFT_KEY);
+      try {
+        localStorage.removeItem(DRAFT_KEY);
+      } catch {
+        /* ignore */
+      }
+      if (res.alreadyExists) {
+        window.location.href = "/boutiques";
+        return;
+      }
+      setStep(3); // logo facultatif, puis tableau de bord
     } catch {
-      // ignore
+      setGlobalError("Connexion impossible. Vérifiez votre réseau puis réessayez.");
+    } finally {
+      setSaving(false);
     }
-    window.location.href = "/tableau-de-bord";
   }
 
   function finish() {

@@ -47,11 +47,7 @@ export const getMyShop = cache(async (): Promise<Shop | null> => {
   if (!user) return null;
   const supabase = await createClient();
   const { data } = await supabase.from("shops").select("*").eq("owner_id", user.id).maybeSingle();
-  if (data) return data;
-
-  // Secours de résilience : si la boutique existe déjà dans le projet, on la retourne
-  const { data: fallback } = await supabase.from("shops").select("*").order("created_at", { ascending: false }).limit(1).maybeSingle();
-  return fallback ?? null;
+  return data ?? null;
 });
 
 /** Toutes les boutiques du commerçant connecté (tableau pour le sélecteur / multi-boutiques). */
@@ -64,11 +60,7 @@ export const getMyShops = cache(async (): Promise<Shop[]> => {
     .select("*")
     .eq("owner_id", user.id)
     .order("created_at", { ascending: false });
-  if (data && data.length > 0) return data as Shop[];
-
-  // Secours de résilience
-  const { data: all } = await supabase.from("shops").select("*").order("created_at", { ascending: false }).limit(10);
-  return (all as Shop[]) ?? [];
+  return (data as Shop[]) ?? [];
 });
 
 /**
