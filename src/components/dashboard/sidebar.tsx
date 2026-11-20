@@ -26,7 +26,16 @@ export function Sidebar({ shop }: { shop: Shop }) {
       </div>
 
       <div className="mb-6 rounded-2xl bg-sand/60 p-3.5">
-        <p className="text-xs font-semibold uppercase tracking-wider text-muted">Votre boutique</p>
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted">Votre boutique</p>
+          <Link
+            href="/boutiques"
+            className="text-[11px] font-bold text-brand-700 hover:text-brand-800 underline"
+            title="Afficher la liste de vos boutiques"
+          >
+            Changer
+          </Link>
+        </div>
         <p className="mt-1 truncate font-bold text-ink">{shop.name}</p>
         <a
           href={shopUrl(shop.slug)}

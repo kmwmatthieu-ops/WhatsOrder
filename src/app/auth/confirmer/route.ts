@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 
-const ALLOWED_NEXT = ["/onboarding", "/nouveau-mot-de-passe", "/tableau-de-bord"];
+const ALLOWED_NEXT = ["/onboarding", "/nouveau-mot-de-passe", "/tableau-de-bord", "/boutiques"];
 
 /**
  * Cible des liens e-mail (confirmation d'inscription, mot de passe oublié).

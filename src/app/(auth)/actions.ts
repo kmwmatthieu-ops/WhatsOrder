@@ -22,11 +22,21 @@ export async function signIn(_prev: ActionState, formData: FormData): Promise<Ac
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword(parsed.data);
+  const { data: authData, error } = await supabase.auth.signInWithPassword(parsed.data);
   if (error) return { error: authErrorMessage(error) };
 
-  // Le layout du tableau de bord redirige vers l'onboarding si aucune boutique.
-  redirect("/tableau-de-bord");
+  // Redirection immédiate : vers le panneau des boutiques si au moins 1 boutique existe, sinon onboarding.
+  const { data: shops } = await supabase
+    .from("shops")
+    .select("id")
+    .eq("owner_id", authData.user.id)
+    .limit(1);
+
+  if (shops && shops.length > 0) {
+    redirect("/boutiques");
+  } else {
+    redirect("/onboarding");
+  }
 }
 
 export async function signUp(_prev: ActionState, formData: FormData): Promise<ActionState> {

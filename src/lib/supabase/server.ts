@@ -50,6 +50,19 @@ export const getMyShop = cache(async (): Promise<Shop | null> => {
   return data;
 });
 
+/** Toutes les boutiques du commerçant connecté (tableau pour le sélecteur / multi-boutiques). */
+export const getMyShops = cache(async (): Promise<Shop[]> => {
+  const user = await getUser();
+  if (!user) return [];
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("shops")
+    .select("*")
+    .eq("owner_id", user.id)
+    .order("created_at", { ascending: false });
+  return (data as Shop[]) ?? [];
+});
+
 /**
  * Contexte obligatoire pour les pages/actions du tableau de bord :
  * redirige vers la connexion ou l'onboarding si nécessaire.

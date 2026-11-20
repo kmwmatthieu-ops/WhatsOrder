@@ -6,7 +6,10 @@ import type { Shop } from "@/types/database";
 export function DashboardHeader({ shop }: { shop: Shop }) {
   return (
     <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-line bg-white/95 px-4 backdrop-blur-md md:hidden">
-      <span className="truncate font-bold text-ink max-w-[65%]">{shop.name}</span>
+      <Link href="/boutiques" className="flex items-center gap-1.5 min-w-0 max-w-[65%] hover:opacity-85 transition-opacity">
+        <span className="truncate font-bold text-ink">{shop.name}</span>
+        <span className="shrink-0 rounded-md bg-sand px-1.5 py-0.5 text-[10px] font-semibold text-muted">Boutiques</span>
+      </Link>
       <Link
         href={shopUrl(shop.slug)}
         target="_blank"
