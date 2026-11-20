@@ -1,0 +1,24 @@
+# dépendances
+node_modules/
+
+# Next.js
+.next/
+out/
+next-env.d.ts
+*.tsbuildinfo
+
+# secrets — ne JAMAIS committer
+.env
+.env.local
+.env.*.local
+.env.test
+
+# Supabase CLI
+supabase/.temp/
+supabase/.branches/
+
+# divers
+.DS_Store
+.vercel
+npm-debug.log*
+coverage/

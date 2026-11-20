@@ -1,0 +1,53 @@
+@import "tailwindcss";
+
+/*
+ * Direction artistique A — « Marché chaleureux »
+ * Fond crème, vert profond (univers proche de WhatsApp sans le copier),
+ * accent terracotta, grandes zones tactiles, coins arrondis généreux.
+ */
+@theme {
+  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+  --color-cream: #faf7f2;
+  --color-sand: #f1ebe1;
+  --color-line: #e7dfd2;
+  --color-ink: #1f2421;
+  --color-muted: #6b6f6a;
+
+  --color-brand-50: #ecf8f5;
+  --color-brand-100: #d1efe8;
+  --color-brand-500: #14907f;
+  --color-brand-600: #0f766e;
+  --color-brand-700: #0b5e58;
+  --color-brand-800: #0a4a45;
+
+  --color-accent-100: #fbe4d9;
+  --color-accent-500: #e2683c;
+  --color-accent-600: #c9552c;
+
+  --color-danger-50: #fdeeee;
+  --color-danger-600: #c0392b;
+  --color-success-50: #eaf7ee;
+  --color-success-600: #1e8449;
+}
+
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  background: var(--color-cream);
+  color: var(--color-ink);
+}
+
+/* Évite le zoom automatique d'iOS sur les champs (police ≥ 16 px). */
+input,
+select,
+textarea {
+  font-size: 16px;
+}
+
+/* Barre de navigation basse : respecte la zone de geste des iPhone. */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
