@@ -1,9 +1,11 @@
 "use server";
 
+import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { checkoutSchema } from "@/lib/validation/checkout";
 import { toFieldErrors, type ActionState } from "@/lib/action-state";
 import { dbErrorMessage } from "@/lib/errors";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export type OrderPlacementResult = ActionState & {
   publicCode?: string;
@@ -18,6 +20,14 @@ export async function submitOrder(
   if (honeypot.length > 0) {
     // Spam bot détecté
     return { error: "Activité suspecte détectée." };
+  }
+
+  // Rate Limiting par adresse IP (max 5 commandes / 10 min)
+  const headerList = await headers();
+  const ip = headerList.get("x-forwarded-for")?.split(",")[0]?.trim() || headerList.get("x-real-ip") || "127.0.0.1";
+  const ipRateLimit = checkRateLimit(`ip:${ip}`, 5, 10 * 60 * 1000);
+  if (!ipRateLimit.success) {
+    return { error: "Trop de commandes envoyées récemment. Veuillez patienter quelques minutes avant de renouveler." };
   }
 
   const itemsRaw = formData.get("items_json");

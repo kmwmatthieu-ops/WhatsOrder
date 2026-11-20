@@ -11,6 +11,7 @@ import {
 describe("RLS — Commandes et Données Clients (confidentialité absolue)", () => {
   let ctx: TestContext;
   let orderAId: string;
+  let orderACode: string;
 
   beforeAll(async () => {
     if (!isConfigured) return;
@@ -21,7 +22,7 @@ describe("RLS — Commandes et Données Clients (confidentialité absolue)", () 
     ctx = { admin, userA, userB, anon };
 
     // Créer un client et une commande dans la boutique A via admin (simule place_order)
-    const { data: customerA } = await admin
+    const { data: customerA, error: custErr } = await admin
       .from("customers")
       .insert({
         shop_id: userA.shopId,
@@ -30,21 +31,26 @@ describe("RLS — Commandes et Données Clients (confidentialité absolue)", () 
       })
       .select("id")
       .single();
+    if (custErr) throw custErr;
 
-    const { data: orderA } = await admin
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    const testCode = "CMD-" + Array.from({ length: 4 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+    const { data: orderA, error: ordErr } = await admin
       .from("orders")
       .insert({
         shop_id: userA.shopId,
         customer_id: customerA!.id,
-        public_code: "CMD-TEST1",
+        public_code: testCode,
         fulfillment: "pickup",
         subtotal: 5000,
         total: 5000,
       })
-      .select("id")
+      .select("id, public_code")
       .single();
+    if (ordErr) throw ordErr;
 
     orderAId = orderA!.id;
+    orderACode = orderA!.public_code;
   });
 
   afterAll(async () => {
@@ -88,7 +94,7 @@ describe("RLS — Commandes et Données Clients (confidentialité absolue)", () 
       .single();
 
     expect(error).toBeNull();
-    expect(data?.public_code).toBe("CMD-TEST1");
+    expect(data?.public_code).toBe(orderACode);
   });
 
   it("empêche le commerçant A de modifier le montant total de sa commande", async () => {

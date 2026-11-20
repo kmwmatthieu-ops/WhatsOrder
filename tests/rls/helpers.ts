@@ -67,8 +67,9 @@ export async function createTestUserWithShop(
   });
   if (signInError) throw signInError;
 
-  // Créer sa boutique
-  const slug = `shop-${prefix}-${Date.now().toString(36)}`;
+  // Créer sa boutique (slug strictement alphanumérique + tirets, sans underscore)
+  const cleanPrefix = prefix.toLowerCase().replace(/[^a-z0-9]/g, "");
+  const slug = `shop-${cleanPrefix}-${Date.now().toString(36)}`.slice(0, 38);
   const { data: shop, error: shopError } = await userClient
     .from("shops")
     .insert({
