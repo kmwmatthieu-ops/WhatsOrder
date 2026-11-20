@@ -17,9 +17,11 @@ create table if not exists public.delivery_zones (
   shop_id    uuid not null references public.shops (id) on delete cascade,
   name       text not null check (char_length(btrim(name)) between 1 and 60),
   fee        integer not null default 0 check (fee >= 0),
-  created_at timestamptz not null default now(),
-  constraint delivery_zones_shop_name_uidx unique (shop_id, lower(btrim(name)))
+  created_at timestamptz not null default now()
 );
+
+create unique index if not exists delivery_zones_shop_name_uidx 
+  on public.delivery_zones (shop_id, lower(btrim(name)));
 
 alter table public.delivery_zones enable row level security;
 
