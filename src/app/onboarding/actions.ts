@@ -5,8 +5,46 @@ import { createClient, getUser } from "@/lib/supabase/server";
 import { createShopSchema } from "@/lib/validation/shop";
 import { dbErrorMessage } from "@/lib/errors";
 import { toFieldErrors, type ActionState } from "@/lib/action-state";
+import { slugProblem, SLUG_PROBLEM_MESSAGES } from "@/lib/slug";
 
-/** Fin de l'étape 2 : crée la boutique (nom, lien, WhatsApp). */
+/**
+ * Vérification de disponibilité du slug côté serveur :
+ * Résout les problèmes de cross-origin / adblockers / permissions anonymes sur mobile.
+ */
+export async function checkSlugAvailability(
+  slug: string
+): Promise<{ available: boolean; problem?: string }> {
+  const problem = slugProblem(slug);
+  if (problem) return { available: false, problem: SLUG_PROBLEM_MESSAGES[problem] };
+
+  const user = await getUser();
+  const supabase = await createClient();
+
+  // Si l'utilisateur connecté possède déjà ce slug, il est disponible pour lui
+  if (user) {
+    const { data: myShop } = await supabase
+      .from("shops")
+      .select("id, slug")
+      .eq("owner_id", user.id)
+      .maybeSingle();
+
+    if (myShop && myShop.slug === slug) {
+      return { available: true };
+    }
+  }
+
+  const { data, error } = await supabase.rpc("is_slug_available", { p_slug: slug });
+  if (error) {
+    // Si la vérification échoue temporairement, on ne bloque jamais l'utilisateur
+    return { available: true };
+  }
+  return { available: Boolean(data) };
+}
+
+/**
+ * Fin de l'étape 2 : crée ou met à jour la boutique (nom, lien, WhatsApp).
+ * Gère de manière transparente la reprise d'onboarding sans erreur de duplication.
+ */
 export async function createShop(input: {
   name: string;
   slug: string;
@@ -19,6 +57,36 @@ export async function createShop(input: {
   if (!parsed.success) return { fieldErrors: toFieldErrors(parsed.error.issues) };
 
   const supabase = await createClient();
+
+  // 1. Vérifier si l'utilisateur possède déjà une boutique
+  const { data: existingShop } = await supabase
+    .from("shops")
+    .select("id")
+    .eq("owner_id", user.id)
+    .maybeSingle();
+
+  if (existingShop) {
+    // Mise à jour de la boutique existante
+    const { data, error } = await supabase
+      .from("shops")
+      .update(parsed.data)
+      .eq("id", existingShop.id)
+      .select("id")
+      .single();
+
+    if (error) {
+      const message = dbErrorMessage(error, "Création de la boutique impossible. Réessayez.");
+      if (error.code === "23505" && error.message.includes("slug")) {
+        return { fieldErrors: { slug: message } };
+      }
+      return { error: message };
+    }
+
+    revalidatePath("/tableau-de-bord", "layout");
+    return { ok: true, shopId: data.id };
+  }
+
+  // 2. Première création : insertion
   const { data, error } = await supabase
     .from("shops")
     .insert({ ...parsed.data, owner_id: user.id })
@@ -27,8 +95,9 @@ export async function createShop(input: {
 
   if (error) {
     const message = dbErrorMessage(error, "Création de la boutique impossible. Réessayez.");
-    // Erreur de lien pris → renvoyée sur le champ concerné (retour étape 1).
-    if (error.code === "23505" && error.message.includes("slug")) return { fieldErrors: { slug: message } };
+    if (error.code === "23505" && error.message.includes("slug")) {
+      return { fieldErrors: { slug: message } };
+    }
     return { error: message };
   }
 

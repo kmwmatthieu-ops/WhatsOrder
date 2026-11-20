@@ -2,12 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Check, Loader2, X, Globe } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
 import { SLUG_PROBLEM_MESSAGES, sanitizeSlugInput, slugProblem } from "@/lib/slug";
 import { siteUrl } from "@/lib/constants";
 import { controlClass } from "@/components/ui/field";
+import { checkSlugAvailability } from "@/app/onboarding/actions";
 
-export type SlugStatus = "idle" | "checking" | "available" | "taken" | "invalid" | "error";
+export type SlugStatus = "idle" | "checking" | "available" | "taken" | "invalid";
 
 type Props = {
   value: string;
@@ -20,7 +20,7 @@ type Props = {
  * Champ "lien de la boutique" optimisé pour mobile et PWA :
  * - Touch target généreux avec préfixe "/" épuré
  * - Aperçu complet du lien public affiché clairement sous le champ
- * - Validation en direct sans bloquer la saisie
+ * - Vérification serveur sans blocage réseau
  */
 export function SlugField({ value, onChange, onStatusChange, error }: Props) {
   const [status, setStatus] = useState<SlugStatus>("idle");
@@ -42,18 +42,28 @@ export function SlugField({ value, onChange, onStatusChange, error }: Props) {
     update("checking");
     const id = ++requestId.current;
     const timer = setTimeout(async () => {
-      const { data, error: rpcError } = await createClient().rpc("is_slug_available", { p_slug: value });
-      if (id !== requestId.current) return; // une saisie plus récente a pris le relais
-      if (rpcError) update("error", "Vérification impossible. Vérifiez votre connexion.");
-      else if (data) update("available", "Ce lien est disponible.");
-      else update("taken", "Ce lien est déjà pris. Essayez une variante.");
-    }, 350);
+      try {
+        const res = await checkSlugAvailability(value);
+        if (id !== requestId.current) return;
+        if (res.problem) {
+          update("invalid", res.problem);
+        } else if (res.available) {
+          update("available", "Ce lien est disponible.");
+        } else {
+          update("taken", "Ce lien est déjà pris. Essayez une variante.");
+        }
+      } catch {
+        if (id !== requestId.current) return;
+        update("idle");
+      }
+    }, 300);
+
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value]);
 
   const host = siteUrl().replace(/^https?:\/\//, "");
-  const shownError = error ?? (status === "invalid" || status === "taken" || status === "error" ? message : "");
+  const shownError = error ?? (status === "invalid" || status === "taken" ? message : "");
 
   return (
     <div className="flex flex-col gap-1.5 w-full">
@@ -99,24 +109,16 @@ export function SlugField({ value, onChange, onStatusChange, error }: Props) {
             {host}/{value || "nom-de-votre-boutique"}
           </span>
         </p>
-        <p
-          id="slug-status"
-          aria-live="polite"
-          className={`font-medium ${
-            shownError
-              ? "text-danger-600"
-              : status === "available"
-                ? "text-success-600"
-                : "text-muted"
-          }`}
-        >
-          {shownError ||
-            (status === "available"
-              ? message
-              : status === "checking"
-                ? "Vérification de la disponibilité..."
-                : "Lettres minuscules, chiffres et tirets.")}
-        </p>
+
+        {shownError ? (
+          <p id="slug-status" role="alert" className="text-danger-600 font-medium">
+            {shownError}
+          </p>
+        ) : status === "available" ? (
+          <p id="slug-status" className="text-success-700 font-medium">
+            {message}
+          </p>
+        ) : null}
       </div>
     </div>
   );

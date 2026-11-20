@@ -11,7 +11,11 @@ type Props = {
   hint?: string;
 };
 
-/** Saisie d'un numéro WhatsApp : indicatif pays + numéro local. */
+/**
+ * Saisie d'un numéro WhatsApp optimisée :
+ * - Sélecteur compact affichant uniquement le drapeau et l'indicatif (ex: 🇬🇦 +241)
+ * - Largeur réduite pour maximiser l'espace du champ numéro
+ */
 export function PhoneInput({ countryCode, local, onChange, error, label = "Numéro WhatsApp", hint }: Props) {
   return (
     <div className="flex flex-col gap-1.5 w-full">
@@ -20,14 +24,14 @@ export function PhoneInput({ countryCode, local, onChange, error, label = "Numé
       </label>
       <div className="flex items-center gap-2 w-full">
         <select
-          aria-label="Indicatif et pays"
+          aria-label="Indicatif du pays"
           value={countryCode}
           onChange={(e) => onChange({ countryCode: e.target.value, local })}
-          className="h-12 w-[150px] sm:w-48 shrink-0 rounded-2xl border border-line bg-white px-2.5 sm:px-3 text-xs sm:text-sm font-medium text-ink outline-none transition-colors focus:border-brand-600 focus:ring-4 focus:ring-brand-100 cursor-pointer truncate"
+          className="h-12 w-[100px] sm:w-[110px] shrink-0 rounded-2xl border border-line bg-white px-2.5 text-xs sm:text-sm font-bold text-ink outline-none transition-colors focus:border-brand-600 focus:ring-4 focus:ring-brand-100 cursor-pointer text-center"
         >
           {COUNTRIES.map((c) => (
             <option key={c.code} value={c.code}>
-              {c.flag} {c.name} (+{c.code})
+              {c.flag} +{c.code}
             </option>
           ))}
         </select>

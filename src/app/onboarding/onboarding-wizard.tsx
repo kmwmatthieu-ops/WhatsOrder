@@ -4,9 +4,8 @@ import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, PartyPopper } from "lucide-react";
-import { createShop } from "./actions";
+import { createShop, checkSlugAvailability } from "./actions";
 import { slugify, slugProblem, SLUG_PROBLEM_MESSAGES } from "@/lib/slug";
-import { createClient } from "@/lib/supabase/client";
 import { DEFAULT_COUNTRY_CODE, isValidE164, toE164 } from "@/lib/phone";
 import { Input } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
@@ -101,16 +100,11 @@ function OnboardingContent({ existingShop }: Props) {
       return;
     }
 
-    // Vérification directe à la volée pour ne jamais bloquer l'utilisateur
+    // Vérification directe via server action pour ne jamais bloquer l'utilisateur
     setSaving(true);
     try {
-      const { data: isAvailable, error } = await createClient().rpc("is_slug_available", { p_slug: effectiveSlug });
-      if (error) {
-        // En cas de micro-coupure réseau sur mobile, on avance (la création en DB vérifiera)
-        setStep(2);
-        return;
-      }
-      if (isAvailable) {
+      const res = await checkSlugAvailability(effectiveSlug);
+      if (res.available) {
         setSlugStatus("available");
         setStep(2);
       } else {
