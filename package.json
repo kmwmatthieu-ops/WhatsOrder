@@ -7,6 +7,7 @@
     "build": "next build --webpack",
     "start": "next start",
     "typecheck": "tsc --noEmit",
+    "backup": "node scripts/backup.mjs",
     "test": "vitest run",
     "test:rls": "vitest run tests/rls",
     "db:push": "supabase db push",
