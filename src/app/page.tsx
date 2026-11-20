@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import {
   Smartphone,
   MessageCircle,
@@ -9,8 +10,15 @@ import {
 } from "lucide-react";
 import { APP_NAME } from "@/lib/constants";
 import { Logo } from "@/components/ui/logo";
+import { getUser, getMyShop } from "@/lib/supabase/server";
 
-export default function HomePage() {
+export default async function HomePage() {
+  const user = await getUser();
+  if (user) {
+    const shop = await getMyShop();
+    if (shop) redirect("/boutiques");
+  }
+
   return (
     <div className="min-h-dvh bg-cream text-ink flex flex-col">
       {/* Navigation publique */}

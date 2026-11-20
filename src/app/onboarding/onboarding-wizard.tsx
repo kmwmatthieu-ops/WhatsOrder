@@ -136,7 +136,9 @@ function OnboardingContent({ existingShop }: Props) {
       }
       if (res.error) return setGlobalError(res.error);
       localStorage.removeItem(DRAFT_KEY);
-      setStep(3);
+      // Redirection directe vers le panneau des boutiques ou le tableau de bord
+      router.replace("/boutiques");
+      router.refresh();
     } catch {
       setGlobalError("Connexion impossible. Vérifiez votre réseau puis réessayez.");
     } finally {
