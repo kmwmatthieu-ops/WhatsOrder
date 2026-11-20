@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Check, Loader2, X } from "lucide-react";
+import { Check, Loader2, X, Globe } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { SLUG_PROBLEM_MESSAGES, sanitizeSlugInput, slugProblem } from "@/lib/slug";
 import { siteUrl } from "@/lib/constants";
@@ -17,12 +17,15 @@ type Props = {
 };
 
 /**
- * Champ "lien de la boutique" avec vérification de disponibilité en direct
- * (validation locale immédiate, puis appel RPC après 400 ms sans frappe).
+ * Champ "lien de la boutique" optimisé pour mobile et PWA :
+ * - Touch target généreux avec préfixe "/" épuré
+ * - Aperçu complet du lien public affiché clairement sous le champ
+ * - Validation en direct sans bloquer la saisie
  */
 export function SlugField({ value, onChange, onStatusChange, error }: Props) {
   const [status, setStatus] = useState<SlugStatus>("idle");
   const [message, setMessage] = useState<string>("");
+  const inputRef = useRef<HTMLInputElement>(null);
   const requestId = useRef(0);
 
   useEffect(() => {
@@ -44,9 +47,8 @@ export function SlugField({ value, onChange, onStatusChange, error }: Props) {
       if (rpcError) update("error", "Vérification impossible. Vérifiez votre connexion.");
       else if (data) update("available", "Ce lien est disponible.");
       else update("taken", "Ce lien est déjà pris. Essayez une variante.");
-    }, 400);
+    }, 350);
     return () => clearTimeout(timer);
-    // onStatusChange volontairement exclu : fourni par le parent, stable fonctionnellement.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value]);
 
@@ -54,20 +56,25 @@ export function SlugField({ value, onChange, onStatusChange, error }: Props) {
   const shownError = error ?? (status === "invalid" || status === "taken" || status === "error" ? message : "");
 
   return (
-    <div className="flex flex-col gap-1.5">
-      <label htmlFor="slug" className="text-sm font-semibold">
+    <div className="flex flex-col gap-1.5 w-full">
+      <label htmlFor="slug" className="text-sm font-semibold text-ink">
         Lien de votre boutique
       </label>
+
+      {/* Conteneur de saisie réactif tactile sur mobile */}
       <div
-        className={`${controlClass} flex h-12 items-center gap-0 px-0 focus-within:border-brand-600 focus-within:ring-4 focus-within:ring-brand-100 ${
-          shownError ? "border-danger-600" : "border-line"
+        onClick={() => inputRef.current?.focus()}
+        className={`${controlClass} flex h-12 items-center gap-1.5 px-3 focus-within:border-brand-600 focus-within:ring-4 focus-within:ring-brand-100 cursor-text transition-all ${
+          shownError ? "border-danger-600 ring-2 ring-danger-100" : "border-line"
         }`}
       >
-        <span className="shrink-0 truncate pl-4 text-[15px] text-muted max-w-[45%]">{host}/</span>
+        <span className="shrink-0 select-none text-base font-bold text-muted/60 pl-1">/</span>
         <input
+          ref={inputRef}
           id="slug"
           value={value}
           onChange={(e) => onChange(sanitizeSlugInput(e.target.value))}
+          placeholder="nom-de-votre-boutique"
           autoCapitalize="none"
           autoCorrect="off"
           spellCheck={false}
@@ -75,21 +82,42 @@ export function SlugField({ value, onChange, onStatusChange, error }: Props) {
           maxLength={40}
           aria-invalid={!!shownError || undefined}
           aria-describedby="slug-status"
-          className="h-full min-w-0 flex-1 bg-transparent pr-2 outline-none"
+          className="h-full min-w-0 flex-1 bg-transparent text-[15px] sm:text-base font-medium text-ink placeholder:text-muted/50 outline-none"
         />
-        <span className="grid w-10 shrink-0 place-items-center" aria-hidden>
-          {status === "checking" && <Loader2 className="size-5 animate-spin text-muted" />}
-          {status === "available" && <Check className="size-5 text-success-600" />}
-          {(status === "taken" || status === "invalid") && <X className="size-5 text-danger-600" />}
+        <span className="grid size-8 shrink-0 place-items-center" aria-hidden>
+          {status === "checking" && <Loader2 className="size-4.5 animate-spin text-muted" />}
+          {status === "available" && <Check className="size-4.5 text-success-600" />}
+          {(status === "taken" || status === "invalid") && <X className="size-4.5 text-danger-600" />}
         </span>
       </div>
-      <p
-        id="slug-status"
-        aria-live="polite"
-        className={`text-sm ${shownError ? "text-danger-600" : status === "available" ? "text-success-600" : "text-muted"}`}
-      >
-        {shownError || (status === "available" ? message : status === "checking" ? "Vérification…" : "Lettres minuscules, chiffres et tirets.")}
-      </p>
+
+      {/* Aperçu du lien réel & statut */}
+      <div className="flex flex-col gap-0.5 text-xs">
+        <p className="flex items-center gap-1 truncate text-muted">
+          <Globe className="size-3.5 shrink-0 text-brand-600/70" aria-hidden />
+          <span className="truncate font-mono">
+            {host}/{value || "nom-de-votre-boutique"}
+          </span>
+        </p>
+        <p
+          id="slug-status"
+          aria-live="polite"
+          className={`font-medium ${
+            shownError
+              ? "text-danger-600"
+              : status === "available"
+                ? "text-success-600"
+                : "text-muted"
+          }`}
+        >
+          {shownError ||
+            (status === "available"
+              ? message
+              : status === "checking"
+                ? "Vérification de la disponibilité..."
+                : "Lettres minuscules, chiffres et tirets.")}
+        </p>
+      </div>
     </div>
   );
 }

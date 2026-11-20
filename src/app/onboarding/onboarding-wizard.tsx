@@ -5,7 +5,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, PartyPopper } from "lucide-react";
 import { createShop } from "./actions";
-import { slugify } from "@/lib/slug";
+import { slugify, slugProblem, SLUG_PROBLEM_MESSAGES } from "@/lib/slug";
+import { createClient } from "@/lib/supabase/client";
 import { DEFAULT_COUNTRY_CODE, isValidE164, toE164 } from "@/lib/phone";
 import { Input } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
@@ -29,7 +30,17 @@ function OnboardingContent({ existingShop }: Props) {
     // Reprise du brouillon si l'utilisateur a quitté en cours de route.
     try {
       const saved = localStorage.getItem(DRAFT_KEY);
-      return saved ? { ...EMPTY, ...JSON.parse(saved) } : EMPTY;
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // Si le slug est vide ou correspond déjà au nom, on reconnecte la synchronisation
+        const shouldSync = !parsed.slug || parsed.slug === slugify(parsed.name || "");
+        return {
+          ...EMPTY,
+          ...parsed,
+          slugTouched: shouldSync ? false : Boolean(parsed.slugTouched),
+        };
+      }
+      return EMPTY;
     } catch {
       return EMPTY;
     }
@@ -50,17 +61,67 @@ function OnboardingContent({ existingShop }: Props) {
   const update = (patch: Partial<Draft>) => setDraft((d) => ({ ...d, ...patch }));
 
   function onNameChange(name: string) {
-    // Tant que l'utilisateur n'a pas modifié le lien lui-même, on le propose depuis le nom.
-    update(draft.slugTouched ? { name } : { name, slug: slugify(name) });
-    setErrors((e) => ({ ...e, name: "" }));
+    const autoSlug = slugify(name);
+    // Le lien suit automatiquement le nom de la boutique si :
+    // - l'utilisateur n'a pas tapé de slug personnalisé distinct
+    // - OU si le slug actuel est vide
+    // - OU si le slug actuel correspondait déjà à l'ancien nom
+    const shouldSyncSlug = !draft.slugTouched || !draft.slug || draft.slug === slugify(draft.name);
+
+    update({
+      name,
+      slug: shouldSyncSlug ? autoSlug : draft.slug,
+      slugTouched: shouldSyncSlug ? false : draft.slugTouched,
+    });
+    setErrors((e) => ({ ...e, name: "", slug: "" }));
   }
 
-  function nextFromStep1() {
-    const errs: Record<string, string> = {};
-    if (draft.name.trim().length < 2) errs.name = "Au moins 2 caractères.";
-    if (slugStatus !== "available") errs.slug = slugStatus === "checking" ? "Patientez, vérification du lien…" : "Choisissez un lien disponible.";
-    setErrors(errs);
-    if (Object.keys(errs).length === 0) setStep(2);
+  async function nextFromStep1() {
+    const cleanName = draft.name.trim();
+    if (cleanName.length < 2) {
+      setErrors({ name: "Le nom doit comporter au moins 2 caractères." });
+      return;
+    }
+
+    const effectiveSlug = (draft.slug || slugify(cleanName)).trim();
+    const problem = slugProblem(effectiveSlug);
+    if (problem) {
+      setErrors({ slug: SLUG_PROBLEM_MESSAGES[problem] });
+      return;
+    }
+
+    if (effectiveSlug !== draft.slug) {
+      update({ slug: effectiveSlug });
+    }
+
+    // Si déjà validé comme disponible
+    if (slugStatus === "available" && draft.slug === effectiveSlug) {
+      setErrors({});
+      setStep(2);
+      return;
+    }
+
+    // Vérification directe à la volée pour ne jamais bloquer l'utilisateur
+    setSaving(true);
+    try {
+      const { data: isAvailable, error } = await createClient().rpc("is_slug_available", { p_slug: effectiveSlug });
+      if (error) {
+        // En cas de micro-coupure réseau sur mobile, on avance (la création en DB vérifiera)
+        setStep(2);
+        return;
+      }
+      if (isAvailable) {
+        setSlugStatus("available");
+        setStep(2);
+      } else {
+        setSlugStatus("taken");
+        setErrors({ slug: "Ce lien est déjà pris. Essayez une variante (ex. " + effectiveSlug + "-1)." });
+      }
+    } catch {
+      setStep(2);
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function submitStep2() {
@@ -144,7 +205,8 @@ function OnboardingContent({ existingShop }: Props) {
           <SlugField
             value={draft.slug}
             onChange={(slug) => {
-              update({ slug, slugTouched: true });
+              const isBlank = slug.trim().length === 0;
+              update({ slug, slugTouched: !isBlank });
               setErrors((e) => ({ ...e, slug: "" }));
             }}
             onStatusChange={setSlugStatus}
