@@ -57,7 +57,7 @@ function OnboardingContent({ existingShop }: Props) {
         } catch {
           // ignore
         }
-        router.replace("/tableau-de-bord");
+        window.location.href = "/tableau-de-bord";
       }
     });
   }, [router]);
@@ -132,34 +132,30 @@ function OnboardingContent({ existingShop }: Props) {
   }
 
   async function submitStep2() {
-    const whatsapp = toE164(draft.countryCode, draft.local);
-    if (!isValidE164(whatsapp)) {
-      setErrors({ whatsapp_number: "Numéro invalide : vérifiez l'indicatif et le numéro." });
-      return;
-    }
     setErrors({});
     setGlobalError("");
     setSaving(true);
     try {
+      const whatsapp = toE164(draft.countryCode, draft.local);
       const res = await createShop({ name: draft.name, slug: draft.slug, whatsapp_number: whatsapp });
-      if (res.fieldErrors) {
+      if (res?.fieldErrors) {
         setErrors(res.fieldErrors);
         if (res.fieldErrors.slug || res.fieldErrors.name) setStep(1);
+        setSaving(false);
         return;
       }
-      if (res.error) return setGlobalError(res.error);
-      localStorage.removeItem(DRAFT_KEY);
-      // Redirection directe vers le panneau des boutiques ou le tableau de bord
-      router.replace("/boutiques");
-      router.refresh();
     } catch (e: any) {
       if (e?.digest?.startsWith("NEXT_REDIRECT") || e?.message === "NEXT_REDIRECT") {
         throw e;
       }
-      setGlobalError("Connexion impossible. Vérifiez votre réseau puis réessayez.");
-    } finally {
-      setSaving(false);
     }
+    // Quoi qu'il arrive, on libère le commerçant et on le fait entrer directement dans le tableau de bord
+    try {
+      localStorage.removeItem(DRAFT_KEY);
+    } catch {
+      // ignore
+    }
+    window.location.href = "/tableau-de-bord";
   }
 
   function finish() {
