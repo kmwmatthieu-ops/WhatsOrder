@@ -107,6 +107,16 @@ alter table public.order_status_history enable row level security;
 alter table public.order_rate_limits    enable row level security;
 -- admins, order_rate_limits : AUCUNE politique → inaccessibles via l'API.
 
+-- Droits de base sur le schéma et les tables (la sécurité et l'isolation sont assurées par les RLS ci-dessous)
+grant usage on schema public to anon, authenticated, service_role;
+grant all on all tables in schema public to anon, authenticated, service_role;
+grant all on all sequences in schema public to anon, authenticated, service_role;
+grant all on all routines in schema public to anon, authenticated, service_role;
+
+alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
+alter default privileges in schema public grant all on sequences to anon, authenticated, service_role;
+alter default privileges in schema public grant all on routines to anon, authenticated, service_role;
+
 -- ---------------------------------------------------------------------
 -- shops
 -- ---------------------------------------------------------------------
