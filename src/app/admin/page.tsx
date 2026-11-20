@@ -25,7 +25,7 @@ export default async function AdminPage() {
         </div>
         <h1 className="text-xl font-extrabold text-ink">Accès restreint</h1>
         <p className="mt-2 text-sm text-muted">
-          Cet espace est strictement réservé aux administrateurs de WhatsOrder.
+          Cet espace est strictement réservé aux administrateurs de Bon Waz à Dealer.
         </p>
         <Link
           href="/tableau-de-bord"

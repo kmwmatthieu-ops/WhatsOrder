@@ -1,7 +1,6 @@
 "use client";
 
 import { COUNTRIES } from "@/lib/phone";
-import { controlClass } from "@/components/ui/field";
 
 type Props = {
   countryCode: string;
@@ -15,16 +14,16 @@ type Props = {
 /** Saisie d'un numéro WhatsApp : indicatif pays + numéro local. */
 export function PhoneInput({ countryCode, local, onChange, error, label = "Numéro WhatsApp", hint }: Props) {
   return (
-    <div className="flex flex-col gap-1.5">
-      <label htmlFor="whatsapp-local" className="text-sm font-semibold">
+    <div className="flex flex-col gap-1.5 w-full">
+      <label htmlFor="whatsapp-local" className="text-sm font-semibold text-ink">
         {label}
       </label>
-      <div className="flex gap-2">
+      <div className="flex items-center gap-2 w-full">
         <select
           aria-label="Indicatif du pays"
           value={countryCode}
           onChange={(e) => onChange({ countryCode: e.target.value, local })}
-          className={`${controlClass} h-12 w-[7.5rem] shrink-0 border-line px-3`}
+          className="h-12 w-28 sm:w-32 shrink-0 rounded-2xl border border-line bg-white px-2.5 text-[15px] font-medium text-ink outline-none transition-colors focus:border-brand-600 focus:ring-4 focus:ring-brand-100 cursor-pointer"
         >
           {COUNTRIES.map((c) => (
             <option key={c.code} value={c.code}>
@@ -41,11 +40,13 @@ export function PhoneInput({ countryCode, local, onChange, error, label = "Numé
           value={local}
           onChange={(e) => onChange({ countryCode, local: e.target.value })}
           aria-invalid={!!error || undefined}
-          className={`${controlClass} h-12 min-w-0 flex-1 ${error ? "border-danger-600" : "border-line"}`}
+          className={`h-12 min-w-0 flex-1 rounded-2xl border bg-white px-4 text-[16px] text-ink placeholder:text-muted/70 outline-none transition-colors focus:border-brand-600 focus:ring-4 focus:ring-brand-100 ${
+            error ? "border-danger-600 ring-2 ring-danger-100" : "border-line"
+          }`}
         />
       </div>
       {error ? (
-        <p role="alert" className="text-sm text-danger-600">
+        <p role="alert" className="text-sm font-medium text-danger-600">
           {error}
         </p>
       ) : (

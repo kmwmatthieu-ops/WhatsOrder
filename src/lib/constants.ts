@@ -1,5 +1,5 @@
 /** Nom du produit, affiché partout dans l'interface. */
-export const APP_NAME = "WhatsOrder";
+export const APP_NAME = "Bon Waz à Dealer";
 
 /** Limite de produits du plan gratuit (doit rester alignée avec shop_product_limit() en SQL). */
 export const PRODUCT_LIMIT = 20;
