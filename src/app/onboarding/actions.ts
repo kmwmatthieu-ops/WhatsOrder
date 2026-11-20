@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient, getMyShop, getUser } from "@/lib/supabase/server";
+import { createClient, getMyShop, getMyShops, getUser } from "@/lib/supabase/server";
 import { createShopSchema } from "@/lib/validation/shop";
 import { dbErrorMessage } from "@/lib/errors";
 import { toFieldErrors, type ActionState } from "@/lib/action-state";
@@ -14,6 +14,8 @@ export async function checkUserShop(): Promise<{ hasShop: boolean }> {
   try {
     const user = await getUser();
     if (!user) return { hasShop: false };
+    const shops = await getMyShops();
+    if (shops.length > 0) return { hasShop: true };
     const shop = await getMyShop();
     return { hasShop: Boolean(shop) };
   } catch {

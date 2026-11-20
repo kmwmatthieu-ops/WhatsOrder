@@ -134,7 +134,18 @@ export default async function BoutiquesPage() {
                 {/* Métadonnées : Téléphone & Horaires */}
                 <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-line/60 pt-3 text-xs">
                   <span className="inline-flex items-center gap-1.5 rounded-lg bg-sand/60 px-2.5 py-1 font-medium text-ink">
-                    <span>{flag}</span>
+                    {country?.iso ? (
+                      <img
+                        src={`https://flagcdn.com/w40/${country.iso}.png`}
+                        srcSet={`https://flagcdn.com/w80/${country.iso}.png 2x`}
+                        alt=""
+                        width={18}
+                        height={13}
+                        className="h-3 w-4 shrink-0 rounded-[2px] object-cover shadow-2xs"
+                      />
+                    ) : (
+                      <span>📱</span>
+                    )}
                     <span>{formatPhone(shop.whatsapp_number)}</span>
                   </span>
 

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { getMyShop, getUser } from "@/lib/supabase/server";
+import { getMyShop, getMyShops, getUser } from "@/lib/supabase/server";
 import { Logo } from "@/components/ui/logo";
 import OnboardingWizard from "./onboarding-wizard";
 
@@ -13,6 +13,8 @@ export const metadata: Metadata = { title: "Créer ma boutique" };
 export default async function OnboardingPage() {
   const user = await getUser();
   if (!user) redirect("/connexion");
+  const shops = await getMyShops();
+  if (shops.length > 0) redirect("/boutiques");
   const shop = await getMyShop();
   if (shop) redirect("/boutiques");
 
