@@ -6,6 +6,7 @@ import { requireShop } from "@/lib/supabase/server";
 import { formatFCFA } from "@/lib/format";
 import { formatPhone } from "@/lib/phone";
 import { OrderRow } from "@/components/orders/order-row";
+import { CustomerNotesCard } from "@/components/customers/customer-notes-card";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -92,6 +93,9 @@ export default async function CustomerDetailPage({ params }: Props) {
           <p className="text-base sm:text-xl font-black text-ink mt-1">{formatFCFA(averageCart)}</p>
         </div>
       </div>
+
+      {/* Notes internes privées */}
+      <CustomerNotesCard customerId={customer.id} initialNotes={customer.notes} />
 
       {/* Historique des commandes du client */}
       <section className="flex flex-col gap-3">

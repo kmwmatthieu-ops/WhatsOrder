@@ -21,6 +21,11 @@ export const checkoutSchema = z
       .max(300, { message: "300 caractères maximum." })
       .optional()
       .nullable(),
+    delivery_zone_id: z
+      .string()
+      .uuid({ message: "Zone de livraison invalide." })
+      .optional()
+      .nullable(),
     customer_note: z
       .string()
       .trim()

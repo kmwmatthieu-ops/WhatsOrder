@@ -20,11 +20,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const { data: shop } = await supabase
     .from("shops")
-    .select("name, description, logo_url")
+    .select("name, description, logo_url, banner_url")
     .eq("slug", slug)
     .maybeSingle();
 
   if (!shop) return { title: "Boutique introuvable" };
+
+  const ogImages: { url: string }[] = [];
+  if (shop.banner_url) ogImages.push({ url: shop.banner_url });
+  else if (shop.logo_url) ogImages.push({ url: shop.logo_url });
 
   return {
     title: `${shop.name} · Boutique en ligne`,
@@ -32,7 +36,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: {
       title: `${shop.name} · Boutique en ligne`,
       description: shop.description || `Commandez directement sur WhatsApp chez ${shop.name}.`,
-      images: shop.logo_url ? [{ url: shop.logo_url }] : [],
+      images: ogImages,
     },
   };
 }

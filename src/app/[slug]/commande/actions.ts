@@ -38,11 +38,15 @@ export async function submitOrder(
     return { error: "Panier invalide." };
   }
 
+  const deliveryZoneIdRaw = formData.get("delivery_zone_id");
+  const delivery_zone_id = deliveryZoneIdRaw ? String(deliveryZoneIdRaw) : null;
+
   const rawData = {
     customer_name: formData.get("customer_name"),
     customer_phone: formData.get("customer_phone"),
     fulfillment: formData.get("fulfillment"),
     delivery_address: formData.get("delivery_address"),
+    delivery_zone_id,
     customer_note: formData.get("customer_note"),
     items,
   };
@@ -67,6 +71,7 @@ export async function submitOrder(
       quantity: i.quantity,
       selected_options: i.selected_options ?? null,
     })),
+    p_delivery_zone_id: parsed.data.delivery_zone_id ?? null,
   });
 
   if (error) {
@@ -76,6 +81,12 @@ export async function submitOrder(
     }
     if (msg.includes("PRODUCT_UNAVAILABLE")) {
       return { error: "Un article de votre panier n'est plus disponible." };
+    }
+    if (msg.includes("DELIVERY_ZONE_REQUIRED")) {
+      return { error: "Veuillez sélectionner votre zone de livraison." };
+    }
+    if (msg.includes("INVALID_DELIVERY_ZONE")) {
+      return { error: "La zone de livraison sélectionnée n'est plus valide." };
     }
     return { error: dbErrorMessage(error, "Impossible de valider votre commande. Veuillez réessayer.") };
   }

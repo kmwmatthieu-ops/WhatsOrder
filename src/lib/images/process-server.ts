@@ -7,12 +7,22 @@ export const MAX_INPUT_BYTES = 8 * 1024 * 1024;
 
 /**
  * Normalise une image en WebP : orientation corrigée, métadonnées supprimées,
- * redimensionnée dans un carré `maxSize` sans agrandissement, qualité 80.
+ * redimensionnée sans agrandissement, qualité 80.
  */
-export async function toWebp(input: Buffer, maxSize: number): Promise<Buffer> {
+export async function toWebp(
+  input: Buffer,
+  maxWidth: number,
+  maxHeight?: number,
+  fit: "inside" | "cover" | "contain" | "fill" | "outside" = "inside"
+): Promise<Buffer> {
   return sharp(input, { failOn: "error", limitInputPixels: 50_000_000 })
     .rotate()
-    .resize({ width: maxSize, height: maxSize, fit: "inside", withoutEnlargement: true })
+    .resize({
+      width: maxWidth,
+      height: maxHeight ?? maxWidth,
+      fit,
+      withoutEnlargement: true,
+    })
     .webp({ quality: 80, effort: 4 })
     .toBuffer();
 }

@@ -4,7 +4,15 @@ import { revalidatePath } from "next/cache";
 import { requireShop } from "@/lib/supabase/server";
 import { dbErrorMessage } from "@/lib/errors";
 
-const VALID_STATUSES = ["new", "confirmed", "ready", "delivered", "cancelled"] as const;
+const VALID_STATUSES = [
+  "new",
+  "confirmed",
+  "preparing",
+  "ready",
+  "delivering",
+  "delivered",
+  "cancelled",
+] as const;
 type OrderStatus = (typeof VALID_STATUSES)[number];
 
 const VALID_PAYMENT_STATUSES = ["unpaid", "partial", "paid"] as const;

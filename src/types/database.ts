@@ -1,15 +1,25 @@
 /**
  * Types de la base Supabase.
- * Écrits à la main d'après supabase/migrations ; à régénérer dès que le projet est lié :
- *   npm run db:types
+ * Écrits à la main d'après supabase/migrations (V2-B inclus).
  */
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
-type ShopStatus = "active" | "suspended";
-type OrderStatus = "new" | "confirmed" | "ready" | "delivered" | "cancelled";
-type FulfillmentType = "delivery" | "pickup";
-type PaymentStatus = "unpaid" | "partial" | "paid";
-type PaymentMethod = "cash" | "cash_on_delivery" | "mobile_money";
+export type ShopStatus = "active" | "suspended";
+export type OrderStatus = "new" | "confirmed" | "preparing" | "ready" | "delivering" | "delivered" | "cancelled";
+export type FulfillmentType = "delivery" | "pickup";
+export type PaymentStatus = "unpaid" | "partial" | "paid";
+export type PaymentMethod = "cash" | "cash_on_delivery" | "mobile_money";
+
+export type DaySchedule = { open: boolean; start: string; end: string };
+export type OpeningHours = {
+  monday: DaySchedule;
+  tuesday: DaySchedule;
+  wednesday: DaySchedule;
+  thursday: DaySchedule;
+  friday: DaySchedule;
+  saturday: DaySchedule;
+  sunday: DaySchedule;
+};
 
 export type Database = {
   public: {
@@ -27,6 +37,7 @@ export type Database = {
           name: string;
           slug: string;
           logo_url: string | null;
+          banner_url: string | null;
           description: string | null;
           whatsapp_number: string;
           primary_color: string;
@@ -35,6 +46,7 @@ export type Database = {
           delivery_enabled: boolean;
           address: string | null;
           status: ShopStatus;
+          opening_hours: OpeningHours;
           created_at: string;
           updated_at: string;
         };
@@ -44,6 +56,7 @@ export type Database = {
           name: string;
           slug: string;
           logo_url?: string | null;
+          banner_url?: string | null;
           description?: string | null;
           whatsapp_number: string;
           primary_color?: string;
@@ -52,11 +65,38 @@ export type Database = {
           delivery_enabled?: boolean;
           address?: string | null;
           status?: ShopStatus;
+          opening_hours?: OpeningHours;
           created_at?: string;
           updated_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["shops"]["Insert"]>;
         Relationships: [];
+      };
+      delivery_zones: {
+        Row: {
+          id: string;
+          shop_id: string;
+          name: string;
+          fee: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          shop_id: string;
+          name: string;
+          fee?: number;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["delivery_zones"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "delivery_zones_shop_id_fkey";
+            columns: ["shop_id"];
+            isOneToOne: false;
+            referencedRelation: "shops";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       categories: {
         Row: { id: string; shop_id: string; name: string; created_at: string };
@@ -126,6 +166,7 @@ export type Database = {
           name: string;
           phone: string;
           address: string | null;
+          notes: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -135,6 +176,7 @@ export type Database = {
           name: string;
           phone: string;
           address?: string | null;
+          notes?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -151,6 +193,8 @@ export type Database = {
           fulfillment: FulfillmentType;
           delivery_address: string | null;
           delivery_fee: number;
+          delivery_zone_id: string | null;
+          delivery_zone_name: string | null;
           subtotal: number;
           total: number;
           payment_status: PaymentStatus;
@@ -169,6 +213,8 @@ export type Database = {
           fulfillment: FulfillmentType;
           delivery_address?: string | null;
           delivery_fee?: number;
+          delivery_zone_id?: string | null;
+          delivery_zone_name?: string | null;
           subtotal: number;
           total: number;
           payment_status?: PaymentStatus;
@@ -201,12 +247,30 @@ export type Database = {
           selected_options?: string | null;
         };
         Update: Partial<Database["public"]["Tables"]["order_items"]["Insert"]>;
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "order_items_order_id_fkey";
+            columns: ["order_id"];
+            isOneToOne: false;
+            referencedRelation: "orders";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       order_status_history: {
-        Row: { id: string; order_id: string; status: OrderStatus; changed_at: string };
-        Insert: { id?: string; order_id: string; status: OrderStatus; changed_at?: string };
-        Update: { id?: string; order_id?: string; status?: OrderStatus; changed_at?: string };
+        Row: {
+          id: string;
+          order_id: string;
+          status: OrderStatus;
+          changed_at: string;
+        };
+        Insert: {
+          id?: string;
+          order_id: string;
+          status: OrderStatus;
+          changed_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["order_status_history"]["Insert"]>;
         Relationships: [];
       };
       order_rate_limits: {
@@ -221,8 +285,6 @@ export type Database = {
       is_admin: { Args: Record<PropertyKey, never>; Returns: boolean };
       owns_shop: { Args: { p_shop_id: string }; Returns: boolean };
       is_slug_available: { Args: { p_slug: string }; Returns: boolean };
-      is_reserved_slug: { Args: { p_slug: string }; Returns: boolean };
-      shop_product_limit: { Args: { p_shop_id: string }; Returns: number };
       place_order: {
         Args: {
           p_shop_slug: string;
@@ -236,6 +298,7 @@ export type Database = {
             quantity: number;
             selected_options: string | null;
           }>;
+          p_delivery_zone_id?: string | null;
         };
         Returns: Json;
       };
@@ -270,3 +333,7 @@ export type Tables<T extends keyof Database["public"]["Tables"]> =
 export type Shop = Tables<"shops">;
 export type Category = Tables<"categories">;
 export type Product = Tables<"products">;
+export type Customer = Tables<"customers">;
+export type Order = Tables<"orders">;
+export type OrderItem = Tables<"order_items">;
+export type DeliveryZone = Tables<"delivery_zones">;

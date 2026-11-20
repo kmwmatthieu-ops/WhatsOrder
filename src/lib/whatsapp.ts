@@ -9,6 +9,7 @@ export type OrderSummaryForWhatsApp = {
   customerPhone: string;
   fulfillment: "delivery" | "pickup";
   deliveryAddress?: string | null;
+  deliveryZoneName?: string | null;
   customerNote?: string | null;
   subtotal: number;
   deliveryFee: number;
@@ -52,7 +53,8 @@ export function buildWhatsAppOrderMessage(order: OrderSummaryForWhatsApp): strin
   // Tarification
   lines.push(`💰 *Sous-total :* ${formatFCFA(order.subtotal)}`);
   if (isDelivery && order.deliveryFee > 0) {
-    lines.push(`🛵 *Frais de livraison :* ${formatFCFA(order.deliveryFee)}`);
+    const zoneStr = order.deliveryZoneName ? ` (${order.deliveryZoneName})` : "";
+    lines.push(`🛵 *Frais de livraison :* ${formatFCFA(order.deliveryFee)}${zoneStr}`);
   }
   lines.push(`👉 *Total à payer :* ${formatFCFA(order.total)}`);
   lines.push("");

@@ -42,6 +42,7 @@ export default async function OrderDetailPage({ params }: Props) {
         fulfillment,
         delivery_address,
         delivery_fee,
+        delivery_zone_name,
         subtotal,
         total,
         payment_status,
@@ -167,6 +168,15 @@ export default async function OrderDetailPage({ params }: Props) {
                 </>
               )}
             </div>
+
+            {order.fulfillment === "delivery" && order.delivery_zone_name && (
+              <div className="flex items-center gap-2 text-xs">
+                <span className="font-bold text-muted">Zone :</span>
+                <span className="font-extrabold text-brand-700 bg-brand-50 px-2 py-0.5 rounded-md">
+                  {order.delivery_zone_name}
+                </span>
+              </div>
+            )}
 
             {order.fulfillment === "delivery" && order.delivery_address && (
               <div className="flex items-start gap-2 text-muted">

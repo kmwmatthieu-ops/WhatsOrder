@@ -46,6 +46,18 @@ describe("Générateur de message WhatsApp (cœur du produit)", () => {
     expect(msg).toContain("📝 *Note :* Appeler à l'arrivée svp.");
   });
 
+  it("affiche le nom de la zone de livraison lorsque configurée", () => {
+    const zonedOrder: OrderSummaryForWhatsApp = {
+      ...sampleOrder,
+      deliveryZoneName: "Zone Cocody",
+      deliveryFee: 2000,
+      total: 42000,
+    };
+
+    const msg = buildWhatsAppOrderMessage(zonedOrder);
+    expect(msg).toContain("🛵 *Frais de livraison :* 2\u00A0000\u00A0FCFA (Zone Cocody)");
+  });
+
   it("s'adapte au mode retrait en magasin sans afficher de frais ni d'adresse", () => {
     const pickupOrder: OrderSummaryForWhatsApp = {
       ...sampleOrder,

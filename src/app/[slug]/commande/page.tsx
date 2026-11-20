@@ -5,6 +5,7 @@ import { ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { CartProvider } from "@/lib/cart/cart-context";
 import { CheckoutForm } from "./checkout-form";
+import type { DeliveryZone } from "@/types/database";
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -28,6 +29,12 @@ export default async function CheckoutPage({ params }: Props) {
 
   if (!shop) notFound();
 
+  const { data: zones } = await supabase
+    .from("delivery_zones")
+    .select("*")
+    .eq("shop_id", shop.id)
+    .order("name");
+
   return (
     <CartProvider shopId={shop.id}>
       <main className="mx-auto min-h-dvh max-w-lg px-4 py-6">
@@ -45,7 +52,7 @@ export default async function CheckoutPage({ params }: Props) {
           </div>
         </div>
 
-        <CheckoutForm shop={shop} />
+        <CheckoutForm shop={shop} zones={(zones as DeliveryZone[]) ?? []} />
       </main>
     </CartProvider>
   );

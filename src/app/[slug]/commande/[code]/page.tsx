@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { CheckCircle2, MessageCircle, Store, Copy } from "lucide-react";
+import { CheckCircle2, Store, Clock } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { formatFCFA } from "@/lib/format";
 import { buildWhatsAppOrderMessage, getWhatsAppOrderUrl } from "@/lib/whatsapp";
 import { WhatsAppSendCard } from "./whatsapp-send-card";
+import { OrderStatusBadge } from "@/components/orders/order-status-badge";
 
 type Props = {
   params: Promise<{ slug: string; code: string }>;
@@ -28,6 +29,7 @@ export default async function OrderConfirmationPage({ params }: Props) {
       fulfillment,
       delivery_address,
       delivery_fee,
+      delivery_zone_name,
       subtotal,
       total,
       customer_note,
@@ -64,6 +66,7 @@ export default async function OrderConfirmationPage({ params }: Props) {
     customerPhone: customer.phone,
     fulfillment: order.fulfillment,
     deliveryAddress: order.delivery_address,
+    deliveryZoneName: order.delivery_zone_name,
     customerNote: order.customer_note,
     subtotal: order.subtotal,
     deliveryFee: order.delivery_fee,
@@ -81,7 +84,7 @@ export default async function OrderConfirmationPage({ params }: Props) {
 
   return (
     <main className="mx-auto min-h-dvh max-w-lg px-4 py-8 flex flex-col gap-6">
-      {/* Badge succès */}
+      {/* Badge succès & statut */}
       <div className="flex flex-col items-center text-center">
         <span className="grid size-16 place-items-center rounded-3xl bg-success-50 text-success-600 mb-3 shadow-xs">
           <CheckCircle2 className="size-9" />
@@ -90,6 +93,9 @@ export default async function OrderConfirmationPage({ params }: Props) {
         <p className="mt-1 text-xs text-muted">
           Code de suivi : <span className="font-mono font-bold text-ink">{order.public_code}</span>
         </p>
+        <div className="mt-2.5">
+          <OrderStatusBadge status={order.status} />
+        </div>
       </div>
 
       {/* Carte d'envoi WhatsApp (cœur du produit) */}
@@ -131,7 +137,10 @@ export default async function OrderConfirmationPage({ params }: Props) {
           </div>
           {order.fulfillment === "delivery" && order.delivery_fee > 0 && (
             <div className="flex justify-between text-muted">
-              <span>Frais de livraison</span>
+              <span>
+                Frais de livraison
+                {order.delivery_zone_name ? ` (${order.delivery_zone_name})` : ""}
+              </span>
               <span>{formatFCFA(order.delivery_fee)}</span>
             </div>
           )}

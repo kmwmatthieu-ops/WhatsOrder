@@ -3,8 +3,7 @@
 import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
-import { ArrowLeft, Truck, Store as StoreIcon, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Truck, Store as StoreIcon, ShieldCheck, MapPin } from "lucide-react";
 import { submitOrder, type OrderPlacementResult } from "./actions";
 import { initialActionState } from "@/lib/action-state";
 import { useCart } from "@/lib/cart/cart-context";
@@ -14,9 +13,14 @@ import { Input, Textarea } from "@/components/ui/field";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { Alert } from "@/components/ui/alert";
 import { PhoneInput } from "@/components/shop/phone-input";
-import type { Shop } from "@/types/database";
+import type { Shop, DeliveryZone } from "@/types/database";
 
-export function CheckoutForm({ shop }: { shop: Shop }) {
+type Props = {
+  shop: Shop;
+  zones?: DeliveryZone[];
+};
+
+export function CheckoutForm({ shop, zones = [] }: Props) {
   const router = useRouter();
   const { items, subtotal, clearCart } = useCart();
 
@@ -32,8 +36,17 @@ export function CheckoutForm({ shop }: { shop: Shop }) {
   );
   const [phoneError, setPhoneError] = useState("");
 
+  const [selectedZoneId, setSelectedZoneId] = useState<string>(
+    zones.length > 0 ? zones[0].id : ""
+  );
+
   const isDelivery = fulfillment === "delivery";
-  const deliveryFee = isDelivery ? shop.delivery_fee : 0;
+  const activeZone = zones.find((z) => z.id === selectedZoneId) || zones[0];
+  const deliveryFee = isDelivery
+    ? zones.length > 0 && activeZone
+      ? activeZone.fee
+      : shop.delivery_fee
+    : 0;
   const grandTotal = subtotal + deliveryFee;
   const fullWhatsapp = toE164(phone.countryCode, phone.local);
 
@@ -135,7 +148,9 @@ export function CheckoutForm({ shop }: { shop: Shop }) {
             >
               <Truck className="size-5" />
               <span className="text-xs">Livraison à domicile</span>
-              {shop.delivery_fee > 0 ? (
+              {zones.length > 0 ? (
+                <span className="text-[11px] text-muted font-normal">Selon quartier</span>
+              ) : shop.delivery_fee > 0 ? (
                 <span className="text-[11px] text-muted font-normal">{formatFCFA(shop.delivery_fee)}</span>
               ) : (
                 <span className="text-[11px] text-success-600 font-bold">Gratuite</span>
@@ -161,7 +176,33 @@ export function CheckoutForm({ shop }: { shop: Shop }) {
         </div>
 
         {isDelivery && (
-          <div className="pt-2">
+          <div className="flex flex-col gap-4 pt-2">
+            {zones.length > 0 && (
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="delivery_zone_select" className="text-xs font-bold uppercase tracking-wider text-muted">
+                  Quartier / Zone de livraison <span className="text-brand-600">*</span>
+                </label>
+                <div className="relative">
+                  <select
+                    id="delivery_zone_select"
+                    value={selectedZoneId}
+                    onChange={(e) => setSelectedZoneId(e.target.value)}
+                    className="h-11 w-full rounded-2xl border border-line bg-white px-3.5 text-sm font-bold text-ink outline-none focus:border-brand-600 focus:ring-4 focus:ring-brand-100"
+                  >
+                    {zones.map((z) => (
+                      <option key={z.id} value={z.id}>
+                        {z.name} — {formatFCFA(z.fee)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <input type="hidden" name="delivery_zone_id" value={selectedZoneId} />
+                {state.fieldErrors?.delivery_zone_id && (
+                  <p className="text-xs text-danger-600">{state.fieldErrors.delivery_zone_id}</p>
+                )}
+              </div>
+            )}
+
             <Input
               label="Adresse complète de livraison"
               name="delivery_address"
@@ -210,7 +251,13 @@ export function CheckoutForm({ shop }: { shop: Shop }) {
 
           <div className="flex justify-between text-muted">
             <span>Frais de livraison</span>
-            <span>{isDelivery ? formatFCFA(deliveryFee) : "Gratuit"}</span>
+            <span>
+              {isDelivery
+                ? `${formatFCFA(deliveryFee)}${
+                    zones.length > 0 && activeZone ? ` (${activeZone.name})` : ""
+                  }`
+                : "Gratuit"}
+            </span>
           </div>
 
           <div className="flex justify-between text-base font-extrabold text-ink pt-2 border-t border-line">

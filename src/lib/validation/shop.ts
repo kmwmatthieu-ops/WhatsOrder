@@ -36,6 +36,22 @@ export const createShopSchema = z.object({
   whatsapp_number: whatsappSchema,
 });
 
+const dayScheduleSchema = z.object({
+  open: z.boolean(),
+  start: z.string().regex(/^\d{2}:\d{2}$/, { message: "Format d'heure invalide (HH:MM)." }),
+  end: z.string().regex(/^\d{2}:\d{2}$/, { message: "Format d'heure invalide (HH:MM)." }),
+});
+
+export const openingHoursSchema = z.object({
+  monday: dayScheduleSchema,
+  tuesday: dayScheduleSchema,
+  wednesday: dayScheduleSchema,
+  thursday: dayScheduleSchema,
+  friday: dayScheduleSchema,
+  saturday: dayScheduleSchema,
+  sunday: dayScheduleSchema,
+});
+
 /** Paramètres de la boutique. */
 export const updateShopSchema = z
   .object({
@@ -52,6 +68,7 @@ export const updateShopSchema = z
       .max(1_000_000, { message: "Montant trop élevé." }),
     delivery_enabled: z.boolean(),
     pickup_enabled: z.boolean(),
+    opening_hours: openingHoursSchema.optional(),
   })
   .refine((d) => d.delivery_enabled || d.pickup_enabled, {
     message: "Activez au moins un mode : livraison ou retrait.",

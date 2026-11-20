@@ -60,11 +60,12 @@ function loadImageElement(file: File): Promise<HTMLImageElement> {
   });
 }
 
-export type UploadKind = "product" | "logo";
+export type UploadKind = "product" | "logo" | "banner";
 
 /** Redimensionne puis envoie l'image à /api/upload. Retourne l'URL publique WebP. */
 export async function uploadImage(file: File, kind: UploadKind): Promise<string> {
-  const blob = await resizeImageForUpload(file, kind === "logo" ? 512 : 1200);
+  const maxDim = kind === "logo" ? 512 : 1200;
+  const blob = await resizeImageForUpload(file, maxDim);
   const body = new FormData();
   body.append("file", blob, "image");
   body.append("kind", kind);
