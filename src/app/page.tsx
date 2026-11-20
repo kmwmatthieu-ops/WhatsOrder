@@ -153,7 +153,7 @@ export default function HomePage() {
 
       {/* Footer minimal (pas de page tarifs) */}
       <footer className="border-t border-line bg-white py-6 px-4 text-center text-xs text-muted">
-        <p>© {new Date().getFullYear()} {APP_NAME}. Tous droits réservés.</p>
+        <p>© {new Date().getFullYear()} {APP_NAME} · By Wens Matthieu. Tous droits réservés.</p>
       </footer>
     </div>
   );

@@ -1,6 +1,10 @@
 import { APP_NAME } from "@/lib/constants";
 
-/** Icône symbole de Bon Waz à Dealer : Le « Deal » (Poignée de main géométrique). */
+/**
+ * Icône symbole officielle de Bon Waz à Dealer :
+ * Le sac shopping signature avec anse continue et crochet / deal intérieur.
+ * Conçu en harmonie avec la charte graphique : Deep Teal (#0F766E), blanc pur et accent terracotta (#E2683C).
+ */
 export function LogoIcon({ className = "size-7 sm:size-8" }: { className?: string }) {
   return (
     <svg
@@ -10,23 +14,29 @@ export function LogoIcon({ className = "size-7 sm:size-8" }: { className?: strin
       className={`shrink-0 ${className}`}
       aria-hidden
     >
-      <rect width="256" height="256" rx="64" fill="#0F766E" />
-      {/* Poignée de main géométrique moderne (symbole du Deal / conclusion de vente) */}
-      <path
-        d="M56 128L96 88C104 80 116 80 124 88L140 104L116 128L80 128L56 128Z"
-        fill="#FFFFFF"
-        fillOpacity="0.95"
-      />
-      <path
-        d="M200 128L160 88C152 80 140 80 132 88L116 104L140 128L176 128L200 128Z"
-        fill="#FDE68A"
-      />
-      <path
-        d="M88 128L120 160C128 168 140 168 148 160L168 140L144 116L128 132L112 116L88 128Z"
-        fill="#FFFFFF"
-      />
-      {/* Point d'accentuation terracotta (énergie du deal) */}
-      <circle cx="128" cy="190" r="12" fill="#E2683C" />
+      {/* Conteneur squircle arrondi haute précision */}
+      <rect width="256" height="256" rx="56" fill="#0F766E" />
+      <g transform="scale(0.82) translate(28, 28)">
+        {/* Anse extérieure du sac : arc harmonieux centré */}
+        <path
+          d="M100 84V64C100 44.1178 116.118 28 136 28C155.882 28 172 44.1178 172 64V84"
+          stroke="#FFFFFF"
+          strokeWidth="16"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+
+        {/* Corps du sac shopping avec découpe continue du deal */}
+        <path
+          fillRule="evenodd"
+          clipRule="evenodd"
+          d="M64 82H212C223.046 82 232 90.9543 232 102V194C232 216.091 214.091 234 192 234H80C57.9086 234 40 216.091 40 194V102C40 90.9543 48.9543 82 60 82H64ZM172 82V142C172 153.5 165.5 163.5 155 168.5L99 196C89 200.8 77 196.5 72.2 186.5C67.4 176.5 71.7 164.5 81.7 159.7L133 134.5C140.5 130.8 145 123.1 145 114.7V82H172Z"
+          fill="#FFFFFF"
+        />
+
+        {/* Bouton d'énergie commerçante terracotta */}
+        <circle cx="78" cy="178" r="7" fill="#E2683C" />
+      </g>
     </svg>
   );
 }

@@ -20,14 +20,14 @@ export function PhoneInput({ countryCode, local, onChange, error, label = "Numé
       </label>
       <div className="flex items-center gap-2 w-full">
         <select
-          aria-label="Indicatif du pays"
+          aria-label="Indicatif et pays"
           value={countryCode}
           onChange={(e) => onChange({ countryCode: e.target.value, local })}
-          className="h-12 w-28 sm:w-32 shrink-0 rounded-2xl border border-line bg-white px-2.5 text-[15px] font-medium text-ink outline-none transition-colors focus:border-brand-600 focus:ring-4 focus:ring-brand-100 cursor-pointer"
+          className="h-12 w-[150px] sm:w-48 shrink-0 rounded-2xl border border-line bg-white px-2.5 sm:px-3 text-xs sm:text-sm font-medium text-ink outline-none transition-colors focus:border-brand-600 focus:ring-4 focus:ring-brand-100 cursor-pointer truncate"
         >
           {COUNTRIES.map((c) => (
             <option key={c.code} value={c.code}>
-              {c.flag} +{c.code}
+              {c.flag} {c.name} (+{c.code})
             </option>
           ))}
         </select>
@@ -40,7 +40,7 @@ export function PhoneInput({ countryCode, local, onChange, error, label = "Numé
           value={local}
           onChange={(e) => onChange({ countryCode, local: e.target.value })}
           aria-invalid={!!error || undefined}
-          className={`h-12 min-w-0 flex-1 rounded-2xl border bg-white px-4 text-[16px] text-ink placeholder:text-muted/70 outline-none transition-colors focus:border-brand-600 focus:ring-4 focus:ring-brand-100 ${
+          className={`h-12 min-w-0 flex-1 rounded-2xl border bg-white px-3 sm:px-4 text-[15px] sm:text-[16px] text-ink placeholder:text-muted/70 outline-none transition-colors focus:border-brand-600 focus:ring-4 focus:ring-brand-100 ${
             error ? "border-danger-600 ring-2 ring-danger-100" : "border-line"
           }`}
         />
