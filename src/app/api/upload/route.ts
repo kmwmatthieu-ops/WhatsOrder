@@ -14,7 +14,7 @@ export const runtime = "nodejs";
  * 3. Envoie dans Storage avec la session de l'utilisateur.
  * Pour logo et bannière : met à jour shops.*_url et supprime l'ancien fichier.
  */
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   const shop = await getMyShop();
   if (!shop) return json({ error: "Session expirée. Reconnectez-vous." }, 401);
 
@@ -77,6 +77,6 @@ export async function POST(request: NextRequest) {
   return json({ url }, 200);
 }
 
-function json(body: Record<string, unknown>, status: number) {
+function json(body: Record<string, unknown>, status: number): NextResponse {
   return NextResponse.json(body, { status });
 }
