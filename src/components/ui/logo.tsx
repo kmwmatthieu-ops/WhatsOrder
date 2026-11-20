@@ -1,39 +1,23 @@
 import { APP_NAME } from "@/lib/constants";
 
-/** Icône symbole de Bon Waz à Dealer (sac de commerce + éclair de deal). */
+/** Icône symbole de Bon Waz à Dealer (Monogramme B Conversationnel). */
 export function LogoIcon({ className = "size-7 sm:size-8" }: { className?: string }) {
   return (
     <svg
-      viewBox="0 0 32 32"
+      viewBox="0 0 256 256"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={`shrink-0 ${className}`}
       aria-hidden
     >
-      <rect width="32" height="32" rx="10" fill="#0F766E" />
-      {/* Anse du sac */}
-      <path
-        d="M11 11.5V9.5C11 8.1 12.1 7 13.5 7H18.5C19.9 7 21 8.1 21 9.5V11.5"
-        stroke="#F59E0B"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-      {/* Sac de vente / boutique */}
-      <path
-        d="M7.5 11.5H24.5L23.2 24.2C23.08 25.28 22.18 26 21.1 26H10.9C9.82 26 8.92 25.28 8.8 24.2L7.5 11.5Z"
-        fill="#115E59"
-        stroke="#FFFFFF"
-        strokeWidth="1.8"
-        strokeLinejoin="round"
-      />
-      {/* Éclair / Deal doré au centre */}
-      <path
-        d="M17.2 14L13.8 19H17.8L15 23.5"
-        stroke="#FCD34D"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      <rect width="256" height="256" rx="64" fill="#0F766E" />
+      {/* B moderne formé de 2 bulles de discussion connectées */}
+      <path d="M72 64H136C158.1 64 176 81.9 176 104C176 126.1 158.1 144 136 144H72V64Z" fill="#F0FDFA" />
+      <path d="M72 128H148C172.3 128 192 147.7 192 172C192 196.3 172.3 216 148 216H72V128Z" fill="#CCFBF1" />
+      {/* Accent deal terracotta */}
+      <circle cx="140" cy="172" r="14" fill="#E2683C" />
+      {/* Queue de bulle conversationnelle discrète */}
+      <path d="M72 216L54 226V210L72 216Z" fill="#CCFBF1" />
     </svg>
   );
 }
