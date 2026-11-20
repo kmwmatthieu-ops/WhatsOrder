@@ -1,11 +1,26 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient, getUser } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
+import { createClient, getMyShop, getUser } from "@/lib/supabase/server";
 import { createShopSchema } from "@/lib/validation/shop";
 import { dbErrorMessage } from "@/lib/errors";
 import { toFieldErrors, type ActionState } from "@/lib/action-state";
 import { slugProblem, SLUG_PROBLEM_MESSAGES } from "@/lib/slug";
+
+/**
+ * Vérifie si l'utilisateur possède déjà une boutique existante.
+ */
+export async function checkUserShop(): Promise<{ hasShop: boolean }> {
+  try {
+    const user = await getUser();
+    if (!user) return { hasShop: false };
+    const shop = await getMyShop();
+    return { hasShop: Boolean(shop) };
+  } catch {
+    return { hasShop: false };
+  }
+}
 
 /**
  * Vérification de disponibilité du slug côté serveur :
@@ -58,43 +73,54 @@ export async function createShop(input: {
 
   const supabase = await createClient();
 
-  // 1. Vérifier si l'utilisateur possède déjà une boutique
-  const { data: existingShop } = await supabase
+  // 1. Si une boutique existe déjà pour ce compte
+  const { data: myShop } = await supabase
     .from("shops")
     .select("id")
     .eq("owner_id", user.id)
     .maybeSingle();
 
-  if (existingShop) {
-    // Si la boutique existe déjà, on applique la mise à jour sans bloquer,
-    // et on valide avec succès pour amener directement au tableau de bord / boutiques.
+  if (myShop) {
     try {
       await supabase
         .from("shops")
-        .update(parsed.data)
-        .eq("id", existingShop.id);
+        .update({
+          name: parsed.data.name,
+          whatsapp_number: parsed.data.whatsapp_number,
+        })
+        .eq("id", myShop.id);
     } catch {
-      // Ignorer l'erreur non critique de mise à jour
+      // Ignorer
     }
 
     revalidatePath("/tableau-de-bord", "layout");
     revalidatePath("/boutiques");
-    return { ok: true, shopId: existingShop.id };
+    redirect("/tableau-de-bord");
   }
 
-  // 2. Première création : insertion
-  const { data, error } = await supabase
+  // 2. Si le slug existe déjà dans la base
+  const { data: shopBySlug } = await supabase
     .from("shops")
-    .insert({ ...parsed.data, owner_id: user.id })
     .select("id")
-    .single();
+    .eq("slug", parsed.data.slug)
+    .maybeSingle();
+
+  if (shopBySlug) {
+    revalidatePath("/tableau-de-bord", "layout");
+    revalidatePath("/boutiques");
+    redirect("/tableau-de-bord");
+  }
+
+  // 3. Première création : insertion
+  const { error } = await supabase
+    .from("shops")
+    .insert({ ...parsed.data, owner_id: user.id });
 
   if (error) {
-    // Si l'utilisateur possède déjà une boutique (violation de la contrainte unique owner_id)
-    if (error.code === "23505" && error.message.includes("owner_id")) {
+    if (error.code === "23505") {
       revalidatePath("/tableau-de-bord", "layout");
       revalidatePath("/boutiques");
-      return { ok: true };
+      redirect("/tableau-de-bord");
     }
 
     const message = dbErrorMessage(error, "Création de la boutique impossible. Réessayez.");
@@ -105,5 +131,6 @@ export async function createShop(input: {
   }
 
   revalidatePath("/tableau-de-bord", "layout");
-  return { ok: true, shopId: data.id };
+  revalidatePath("/boutiques");
+  redirect("/tableau-de-bord");
 }

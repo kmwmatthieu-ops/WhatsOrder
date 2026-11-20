@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, PartyPopper } from "lucide-react";
-import { createShop, checkSlugAvailability } from "./actions";
+import { createShop, checkSlugAvailability, checkUserShop } from "./actions";
 import { slugify, slugProblem, SLUG_PROBLEM_MESSAGES } from "@/lib/slug";
 import { DEFAULT_COUNTRY_CODE, isValidE164, toE164 } from "@/lib/phone";
 import { Input } from "@/components/ui/field";
@@ -48,6 +48,19 @@ function OnboardingContent({ existingShop }: Props) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [globalError, setGlobalError] = useState("");
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    checkUserShop().then((res) => {
+      if (res.hasShop) {
+        try {
+          localStorage.removeItem(DRAFT_KEY);
+        } catch {
+          // ignore
+        }
+        router.replace("/tableau-de-bord");
+      }
+    });
+  }, [router]);
 
   useEffect(() => {
     try {
@@ -139,7 +152,10 @@ function OnboardingContent({ existingShop }: Props) {
       // Redirection directe vers le panneau des boutiques ou le tableau de bord
       router.replace("/boutiques");
       router.refresh();
-    } catch {
+    } catch (e: any) {
+      if (e?.digest?.startsWith("NEXT_REDIRECT") || e?.message === "NEXT_REDIRECT") {
+        throw e;
+      }
       setGlobalError("Connexion impossible. Vérifiez votre réseau puis réessayez.");
     } finally {
       setSaving(false);

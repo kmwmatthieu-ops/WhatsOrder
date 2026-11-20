@@ -15,7 +15,7 @@ export default async function OnboardingPage() {
   if (!user) redirect("/connexion");
   const shop = await getMyShop();
   const shops = await getMyShops();
-  if (shop || shops.length > 0) redirect("/boutiques");
+  if (shop || shops.length > 0) redirect("/tableau-de-bord");
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-5 py-6">
