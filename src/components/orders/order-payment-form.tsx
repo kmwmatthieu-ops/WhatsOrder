@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, type SyntheticEvent } from "react";
 import { updateOrderPayment } from "@/app/tableau-de-bord/commandes/actions";
 import { Button } from "@/components/ui/button";
 import { formatFCFA } from "@/lib/format";
@@ -26,7 +26,7 @@ export function OrderPaymentForm({
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
 
-  function handleSave(e: React.FormEvent) {
+  function handleSave(e: SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     setError("");
     setSuccess(false);

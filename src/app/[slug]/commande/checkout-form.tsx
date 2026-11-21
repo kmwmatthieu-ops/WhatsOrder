@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useEffect, useRef, useState, type SyntheticEvent } from "react";
 import { Truck, Store as StoreIcon, ShieldCheck, Clock, CheckCircle2 } from "lucide-react";
 import { submitOrder, type OrderPlacementResult } from "./actions";
 import { initialActionState } from "@/lib/action-state";
@@ -122,7 +122,7 @@ export function CheckoutForm({ shop, zones = [] }: Props) {
     );
   }
 
-  function handleFormSubmit(e: React.FormEvent<HTMLFormElement>) {
+  function handleFormSubmit(e: SyntheticEvent<HTMLFormElement>) {
     if (!isValidE164(fullWhatsapp)) {
       e.preventDefault();
       setPhoneError("Veuillez saisir un numéro de téléphone valide.");

@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { signIn, checkAuthenticated } from "../actions";
+import { useEffect, useState, type SyntheticEvent } from "react";
+import { signIn, checkAuthenticated } from "@/app/(auth)/actions";
 import { initialActionState, type ActionState } from "@/lib/action-state";
 import { Input } from "@/components/ui/field";
 import { PasswordInput } from "@/components/ui/password-input";
@@ -14,8 +14,6 @@ export function SignInForm({ linkError }: { linkError?: string }) {
   const [pending, setPending] = useState(false);
   const [redirecting, setRedirecting] = useState(false);
 
-  // Si l'utilisateur possède déjà une session active (ex: navigation depuis le cache),
-  // on bascule directement vers le panneau de ses boutiques.
   useEffect(() => {
     let active = true;
     checkAuthenticated()
@@ -31,7 +29,7 @@ export function SignInForm({ linkError }: { linkError?: string }) {
     };
   }, []);
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     if (pending || redirecting) return;
 
@@ -57,7 +55,7 @@ export function SignInForm({ linkError }: { linkError?: string }) {
   if (redirecting) {
     return (
       <div className="flex flex-col items-center justify-center gap-3 rounded-3xl border border-line bg-white p-8 text-center shadow-xs">
-        <div className="size-8 animate-spin rounded-full border-3 border-brand-600 border-t-transparent" />
+        <div className="size-8 animate-spin rounded-full border-2 border-brand-600 border-t-transparent" />
         <p className="text-sm font-bold text-ink">Connexion réussie…</p>
         <p className="text-xs text-muted">Ouverture de vos boutiques en cours.</p>
       </div>

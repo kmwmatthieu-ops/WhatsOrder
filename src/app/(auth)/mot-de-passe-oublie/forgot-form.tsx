@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { requestPasswordReset } from "../actions";
+import { useState, type SyntheticEvent } from "react";
+import { requestPasswordReset } from "@/app/(auth)/actions";
 import { initialActionState, type ActionState } from "@/lib/action-state";
 import { Input } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ export function ForgotForm() {
   const [state, setState] = useState<ActionState>(initialActionState);
   const [pending, setPending] = useState(false);
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     if (pending) return;
 

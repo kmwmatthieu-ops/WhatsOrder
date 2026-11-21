@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type SyntheticEvent } from "react";
 import { MailCheck, RefreshCw, CheckCircle2 } from "lucide-react";
 import {
   signUp,
   checkAuthenticated,
   checkSignupVerification,
   resendVerificationEmail,
-} from "../actions";
+} from "@/app/(auth)/actions";
 import { initialActionState, type ActionState } from "@/lib/action-state";
 import { Input } from "@/components/ui/field";
 import { PasswordInput } from "@/components/ui/password-input";
@@ -57,7 +57,7 @@ export function SignUpForm() {
       } catch {
         /* ignore */
       }
-    }, 2500);
+    }, 3000);
 
     return () => {
       active = false;
@@ -65,7 +65,7 @@ export function SignUpForm() {
     };
   }, [state.ok, credentials, redirecting]);
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     if (pending || redirecting) return;
 
@@ -139,7 +139,7 @@ export function SignUpForm() {
   if (redirecting) {
     return (
       <div className="flex flex-col items-center justify-center gap-3 rounded-3xl border border-line bg-white p-8 text-center shadow-xs">
-        <div className="size-8 animate-spin rounded-full border-3 border-brand-600 border-t-transparent" />
+        <div className="size-8 animate-spin rounded-full border-2 border-brand-600 border-t-transparent" />
         <p className="text-sm font-bold text-ink">E-mail confirmé !</p>
         <p className="text-xs text-muted">Ouverture de la création de votre boutique…</p>
       </div>

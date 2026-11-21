@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, type SyntheticEvent } from "react";
 import { Plus, Trash2, Edit2, Check, X, MapPin } from "lucide-react";
 import { formatFCFA } from "@/lib/format";
 import { Spinner } from "@/components/ui/spinner";
@@ -26,7 +26,7 @@ export function DeliveryZonesManager({ initialZones }: Props) {
   const [editName, setEditName] = useState("");
   const [editFee, setEditFee] = useState<number | "">("");
 
-  function handleCreate(e: React.FormEvent) {
+  function handleCreate(e: SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!newName.trim()) return;
     const feeNum = typeof newFee === "number" ? newFee : 0;

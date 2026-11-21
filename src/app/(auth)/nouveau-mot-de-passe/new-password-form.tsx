@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { updatePassword } from "../actions";
+import { useState, type SyntheticEvent } from "react";
+import { updatePassword } from "@/app/(auth)/actions";
 import { initialActionState, type ActionState } from "@/lib/action-state";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,7 @@ export function NewPasswordForm() {
   const [pending, setPending] = useState(false);
   const [redirecting, setRedirecting] = useState(false);
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     if (pending || redirecting) return;
 
@@ -38,7 +38,7 @@ export function NewPasswordForm() {
   if (redirecting) {
     return (
       <div className="flex flex-col items-center justify-center gap-3 rounded-3xl border border-line bg-white p-8 text-center shadow-xs">
-        <div className="size-8 animate-spin rounded-full border-3 border-brand-600 border-t-transparent" />
+        <div className="size-8 animate-spin rounded-full border-2 border-brand-600 border-t-transparent" />
         <p className="text-sm font-bold text-ink">Mot de passe mis à jour…</p>
         <p className="text-xs text-muted">Ouverture de vos boutiques en cours.</p>
       </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, type SyntheticEvent } from "react";
 import { FolderPlus, Pencil, Trash2, X } from "lucide-react";
 import { createCategory, updateCategory, deleteCategory } from "@/app/tableau-de-bord/produits/actions";
 import { Button } from "@/components/ui/button";
@@ -25,7 +25,7 @@ export function CategoryManager({
 
   if (!open) return null;
 
-  function handleCreate(e: React.FormEvent) {
+  function handleCreate(e: SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!newName.trim()) return;
     setError("");
