@@ -213,26 +213,28 @@ export function SettingsForm({ shop, initialZones }: Props) {
       )}
 
       {/* Section 6 : Zone de danger (Suppression irréversible de la boutique) */}
-      <section className="rounded-3xl border border-danger-200 bg-danger-50/40 p-5 shadow-xs flex flex-col gap-4">
-        <div className="flex items-start gap-3">
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-danger-100 text-danger-700">
-            <AlertTriangle className="size-5" />
+      <section className="rounded-2xl sm:rounded-3xl border border-danger-200 bg-danger-50/50 p-4 sm:p-6 shadow-xs flex flex-col gap-4 mb-6 sm:mb-2">
+        <div className="flex flex-col gap-2.5">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <div className="flex size-9 sm:size-10 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-danger-100 text-danger-700">
+              <AlertTriangle className="size-4 sm:size-5" />
+            </div>
+            <h2 className="text-sm sm:text-base font-bold text-danger-900">
+              Zone de danger : Supprimer la boutique
+            </h2>
           </div>
-          <div className="flex-1">
-            <h2 className="text-base font-bold text-danger-900">Zone de danger : Supprimer la boutique</h2>
-            <p className="text-xs text-danger-700 mt-1 leading-relaxed">
-              Cette action est irréversible. La suppression effacera définitivement votre boutique, son catalogue de produits, ses variantes, ses clients, ses commandes et ses règlements. Votre compte utilisateur reste actif et vous pourrez immédiatement créer une nouvelle boutique.
-            </p>
-          </div>
+          <p className="text-xs sm:text-sm text-danger-800/90 leading-relaxed">
+            Cette action est irréversible. La suppression effacera définitivement votre boutique, son catalogue de produits, ses variantes, ses clients, ses commandes et ses règlements. Votre compte utilisateur reste actif et vous pourrez immédiatement créer une nouvelle boutique.
+          </p>
         </div>
 
-        <div className="pt-2 border-t border-danger-200/60 flex justify-end">
+        <div className="pt-3 border-t border-danger-200/60 flex flex-col sm:flex-row sm:justify-end">
           <button
             type="button"
             onClick={() => setShowDeleteModal(true)}
-            className="inline-flex items-center gap-2 rounded-2xl bg-danger-600 px-4 py-2.5 text-xs sm:text-sm font-bold text-white shadow-xs hover:bg-danger-700 active:scale-[0.99] transition-all"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-2xl bg-danger-600 px-5 py-3 text-xs sm:text-sm font-bold text-white shadow-xs hover:bg-danger-700 active:scale-[0.99] transition-all"
           >
-            <Trash2 className="size-4" />
+            <Trash2 className="size-4 shrink-0" />
             <span>Supprimer définitivement cette boutique</span>
           </button>
         </div>

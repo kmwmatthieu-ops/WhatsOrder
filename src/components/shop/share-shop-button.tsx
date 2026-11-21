@@ -35,14 +35,28 @@ export function ShareShopButton({ url, shopName }: { url: string; shopName: stri
   }
 
   return (
-    <div className="flex gap-2">
-      <Button type="button" onClick={share} className="flex-1">
-        <Share2 className="size-5" aria-hidden />
-        Partager ma boutique
+    <div className="flex items-center gap-2.5">
+      <Button type="button" onClick={share} className="flex-1 h-12 text-sm sm:text-base">
+        <Share2 className="size-5 shrink-0" aria-hidden />
+        <span>Partager ma boutique</span>
       </Button>
-      <Button type="button" variant="secondary" onClick={copy} aria-label="Copier le lien" className="w-12 px-0">
-        {copied ? <Check className="size-5 text-success-600" /> : <Copy className="size-5" />}
-      </Button>
+      <button
+        type="button"
+        onClick={copy}
+        title={copied ? "Lien copié !" : "Copier le lien"}
+        aria-label={copied ? "Lien copié dans le presse-papiers" : "Copier le lien de la boutique"}
+        className={`size-12 shrink-0 flex items-center justify-center rounded-2xl border transition-all active:scale-95 ${
+          copied
+            ? "border-emerald-300 bg-emerald-50 text-emerald-600 shadow-xs"
+            : "border-line bg-white text-ink hover:bg-sand/70 hover:border-brand-500 shadow-xs"
+        }`}
+      >
+        {copied ? (
+          <Check className="size-6 sm:size-7 text-emerald-600 stroke-[2.5]" />
+        ) : (
+          <Copy className="size-6 sm:size-7 text-ink stroke-[2.2]" />
+        )}
+      </button>
     </div>
   );
 }
