@@ -115,7 +115,7 @@ export function SignUpForm() {
     setVerifyNotice(null);
 
     try {
-      const res = await verifyEmailOtp(credentials.email, code);
+      const res = await verifyEmailOtp(credentials.email, code, credentials.password);
       if (res.ok) {
         setRedirecting(true);
         window.location.replace(res.nextUrl || "/onboarding");

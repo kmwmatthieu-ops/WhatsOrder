@@ -117,7 +117,8 @@ export async function signUp(_prev: ActionState, formData: FormData): Promise<Ac
  */
 export async function verifyEmailOtp(
   email: string,
-  token: string
+  token: string,
+  password?: string
 ): Promise<{ ok: boolean; nextUrl?: string; error?: string }> {
   try {
     const cleanToken = token.trim().replace(/\s+/g, "");
@@ -136,7 +137,7 @@ export async function verifyEmailOtp(
     });
 
     // 2. Fallback avec le type "email" si nécessaire
-    if (error) {
+    if (error || !data?.user) {
       const fallback = await supabase.auth.verifyOtp({
         email: cleanEmail,
         token: cleanToken,
@@ -148,11 +149,37 @@ export async function verifyEmailOtp(
       }
     }
 
+    // 3. Fallback compte déjà validé : si le code a déjà été consommé (par exemple par
+    // le filtre antispam / scanner de liens Gmail ou un clic simultané),
+    // et que le mot de passe est fourni, tenter de se connecter directement.
+    if ((error || !data?.user) && password) {
+      const signInRes = await supabase.auth.signInWithPassword({
+        email: cleanEmail,
+        password,
+      });
+      if (!signInRes.error && signInRes.data.user?.email_confirmed_at) {
+        data = signInRes.data;
+        error = null;
+      }
+    }
+
     if (error || !data?.user) {
       return {
         ok: false,
         error: "Code invalide ou expiré. Vérifiez les 6 chiffres ou demandez un nouveau code.",
       };
+    }
+
+    // S'assurer que la session active est bien persistée dans les cookies SSR
+    if (data.session) {
+      try {
+        await supabase.auth.setSession({
+          access_token: data.session.access_token,
+          refresh_token: data.session.refresh_token,
+        });
+      } catch {
+        /* ignore si déjà persisté */
+      }
     }
 
     const shops = await getMyShops();
