@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Shield, ArrowLeft, Store, ShoppingBag, CreditCard, DollarSign } from "lucide-react";
+import { Shield, ArrowLeft, Store, ShoppingBag, CreditCard, DollarSign, LogOut } from "lucide-react";
 import { createClient, getUser } from "@/lib/supabase/server";
 import { AdminShopsTable, type AdminShopRow } from "./admin-shops-table";
 import { AdminSubscriptionRequests, type AdminRequestRow } from "./admin-subscription-requests";
+import { AdminManagementCard, type AdminUserRow } from "./admin-management-card";
+import { adminSignOut } from "./connexion/actions";
 import { Logo } from "@/components/ui/logo";
 import { formatFCFA } from "@/lib/format";
 
@@ -12,7 +14,7 @@ export const metadata: Metadata = { title: "Administration générale" };
 
 export default async function AdminPage() {
   const user = await getUser();
-  if (!user) redirect("/connexion");
+  if (!user) redirect("/admin/connexion");
 
   const supabase = await createClient();
 
@@ -20,23 +22,7 @@ export default async function AdminPage() {
   const { data: isAdmin } = await supabase.rpc("is_admin");
 
   if (!isAdmin) {
-    return (
-      <main className="mx-auto flex min-h-dvh max-w-md flex-col items-center justify-center p-6 text-center">
-        <div className="grid size-14 place-items-center rounded-2xl bg-danger-50 text-danger-600 mb-4">
-          <Shield className="size-7" />
-        </div>
-        <h1 className="text-xl font-extrabold text-ink">Accès restreint</h1>
-        <p className="mt-2 text-sm text-muted">
-          Cet espace est strictement réservé aux administrateurs de Bon Waz à Dealer.
-        </p>
-        <Link
-          href="/tableau-de-bord"
-          className="mt-6 rounded-2xl bg-brand-600 px-5 py-2.5 text-xs font-bold text-white shadow-xs"
-        >
-          Retour au tableau de bord
-        </Link>
-      </main>
-    );
+    redirect("/admin/connexion");
   }
 
   // 1. Liste des boutiques
@@ -55,6 +41,14 @@ export default async function AdminPage() {
 
   const activeCount = shopsList.filter((s) => s.status === "active").length;
   const suspendedCount = shopsList.filter((s) => s.status === "suspended").length;
+
+  // 1.bis Administrateurs autorisés (max 2)
+  const { data: adminsData } = await supabase.rpc("admin_list_admins");
+  const adminsList: AdminUserRow[] = (adminsData ?? []).map((a) => ({
+    user_id: a.user_id,
+    email: a.email,
+    created_at: a.created_at,
+  }));
 
   // 2. Commandes globales & volume d'affaires (GMV)
   const { data: ordersData } = await supabase
@@ -118,14 +112,26 @@ export default async function AdminPage() {
               Admin
             </span>
           </div>
-          <Link
-            href="/tableau-de-bord"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-700 hover:underline shrink-0 whitespace-nowrap"
-          >
-            <ArrowLeft className="size-3.5" />
-            <span className="hidden sm:inline">Mon espace commerçant</span>
-            <span className="sm:hidden">Espace pro</span>
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/tableau-de-bord"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-700 hover:underline shrink-0 whitespace-nowrap"
+            >
+              <ArrowLeft className="size-3.5" />
+              <span className="hidden sm:inline">Mon espace commerçant</span>
+              <span className="sm:hidden">Espace pro</span>
+            </Link>
+            <form action={adminSignOut}>
+              <button
+                type="submit"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-line bg-white px-3 py-1.5 text-xs font-semibold text-danger-600 hover:bg-danger-50 transition-colors cursor-pointer"
+                title="Se déconnecter de l'espace administration"
+              >
+                <LogOut className="size-3.5" />
+                <span className="hidden sm:inline">Déconnexion</span>
+              </button>
+            </form>
+          </div>
         </div>
       </header>
 
@@ -185,7 +191,12 @@ export default async function AdminPage() {
           <AdminSubscriptionRequests requests={requestsList} />
         </section>
 
-        {/* Section 2 : Gestion des Boutiques & Modération */}
+        {/* Section 2 : Gestion des Comptes Administrateurs (max 2) */}
+        <section className="space-y-3">
+          <AdminManagementCard admins={adminsList} currentUserId={user.id} />
+        </section>
+
+        {/* Section 3 : Gestion des Boutiques & Modération */}
         <section className="space-y-3">
           <div>
             <h2 className="text-base font-bold text-ink">Boutiques et Modération</h2>

@@ -92,4 +92,46 @@ describe("RLS — Protection de l'Espace Admin et Modération", () => {
 
     expect(activeShop?.status).toBe("active");
   });
+
+  it("interdit à un non-admin de lister les comptes administrateurs", async () => {
+    if (!isConfigured) return;
+
+    const { error } = await ctx.userB.client.rpc("admin_list_admins");
+    expect(error).not.toBeNull();
+  });
+
+  it("permet à l'administrateur de lister les administrateurs et applique le quota max de 2", async () => {
+    if (!isConfigured) return;
+
+    const { data: list, error: listErr } = await ctx.userA.client.rpc("admin_list_admins");
+    expect(listErr).toBeNull();
+    expect(list).not.toBeNull();
+    expect(list!.length).toBeGreaterThanOrEqual(1);
+
+    // Tentative d'ajout si le quota de 2 est atteint
+    if (list!.length >= 2) {
+      const { data: addRes } = await ctx.userA.client.rpc("admin_add_admin_by_email", {
+        p_email: ctx.userB.email,
+      });
+      const res = addRes as { ok: boolean; error?: string };
+      expect(res.ok).toBe(false);
+      expect(res.error).toContain("quota maximal de 2 administrateurs");
+    }
+  });
+
+  it("interdit de supprimer le dernier compte administrateur", async () => {
+    if (!isConfigured) return;
+
+    // Tentative de suppression alors qu'il n'y a qu'1 seul admin (ou si on teste avec 1 admin)
+    // On s'assure que admin_remove_admin refuse si count <= 1
+    const { data: list } = await ctx.userA.client.rpc("admin_list_admins");
+    if (list && list.length === 1) {
+      const { data: removeRes } = await ctx.userA.client.rpc("admin_remove_admin", {
+        p_user_id: list[0].user_id,
+      });
+      const res = removeRes as { ok: boolean; error?: string };
+      expect(res.ok).toBe(false);
+      expect(res.error).toContain("au moins un administrateur");
+    }
+  });
 });

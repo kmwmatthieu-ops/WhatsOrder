@@ -524,6 +524,22 @@ export type Database = {
           orders_count: number;
         }>;
       };
+      admin_list_admins: {
+        Args: Record<PropertyKey, never>;
+        Returns: Array<{
+          user_id: string;
+          email: string;
+          created_at: string;
+        }>;
+      };
+      admin_add_admin_by_email: {
+        Args: { p_email: string };
+        Returns: { ok: boolean; error?: string; user_id?: string };
+      };
+      admin_remove_admin: {
+        Args: { p_user_id: string };
+        Returns: { ok: boolean; error?: string };
+      };
       get_active_shop_plan: {
         Args: { p_shop_id: string };
         Returns: Database["public"]["Tables"]["subscription_plans"]["Row"];

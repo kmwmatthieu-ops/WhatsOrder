@@ -181,3 +181,66 @@ export async function setShopSubscriptionManually(
   revalidatePath("/tableau-de-bord/abonnement");
   return { ok: true };
 }
+
+/**
+ * Ajoute un compte administrateur par email (quota maximum strict de 2 administrateurs).
+ */
+export async function addAdminAction(
+  email: string
+): Promise<{ ok: boolean; error?: string }> {
+  const supabase = await createClient();
+  const { data: isAdmin } = await supabase.rpc("is_admin");
+  if (!isAdmin) {
+    return { ok: false, error: "Accès refusé : privilèges administrateur requis." };
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+  if (!cleanEmail || !cleanEmail.includes("@")) {
+    return { ok: false, error: "Veuillez renseigner une adresse email valide." };
+  }
+
+  const { data, error } = await supabase.rpc("admin_add_admin_by_email", {
+    p_email: cleanEmail,
+  });
+
+  if (error) {
+    return { ok: false, error: dbErrorMessage(error, "Erreur lors de l'ajout de l'administrateur.") };
+  }
+
+  const res = data as { ok: boolean; error?: string };
+  if (!res.ok) {
+    return { ok: false, error: res.error || "Impossible d'ajouter cet administrateur." };
+  }
+
+  revalidatePath("/admin");
+  return { ok: true };
+}
+
+/**
+ * Révoque un compte administrateur (garantit qu'il reste au moins 1 administrateur).
+ */
+export async function removeAdminAction(
+  userId: string
+): Promise<{ ok: boolean; error?: string }> {
+  const supabase = await createClient();
+  const { data: isAdmin } = await supabase.rpc("is_admin");
+  if (!isAdmin) {
+    return { ok: false, error: "Accès refusé : privilèges administrateur requis." };
+  }
+
+  const { data, error } = await supabase.rpc("admin_remove_admin", {
+    p_user_id: userId,
+  });
+
+  if (error) {
+    return { ok: false, error: dbErrorMessage(error, "Erreur lors de la suppression.") };
+  }
+
+  const res = data as { ok: boolean; error?: string };
+  if (!res.ok) {
+    return { ok: false, error: res.error || "Impossible de supprimer cet administrateur." };
+  }
+
+  revalidatePath("/admin");
+  return { ok: true };
+}
