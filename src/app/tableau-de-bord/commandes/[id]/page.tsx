@@ -30,8 +30,8 @@ export default async function OrderDetailPage({ params }: Props) {
   const { id } = await params;
   const { shop, supabase } = await requireShop();
 
-  // Récupérer la commande complète
-  const [{ data: order }, { data: items }, { data: history }] = await Promise.all([
+  // Récupérer la commande complète, ses articles, son historique de statuts et ses transactions de paiement (V2-D)
+  const [{ data: order }, { data: items }, { data: history }, { data: payments }] = await Promise.all([
     supabase
       .from("orders")
       .select(
@@ -62,6 +62,12 @@ export default async function OrderDetailPage({ params }: Props) {
       .select("*")
       .eq("order_id", id)
       .order("changed_at", { ascending: false }),
+    supabase
+      .from("order_payments")
+      .select("*")
+      .eq("order_id", id)
+      .eq("shop_id", shop.id)
+      .order("paid_at", { ascending: false }),
   ]);
 
   if (!order) notFound();
@@ -270,15 +276,15 @@ export default async function OrderDetailPage({ params }: Props) {
         </div>
       </section>
 
-      {/* 4. Enregistrement du Paiement */}
+      {/* 4. Enregistrement des Paiements & Historique des transactions (V2-D) */}
       <section className="rounded-3xl border border-line bg-white p-5 shadow-xs flex flex-col gap-3">
-        <h2 className="text-xs font-bold uppercase tracking-wider text-muted">Gestion du règlement</h2>
+        <h2 className="text-xs font-bold uppercase tracking-wider text-muted">
+          Règlements & Historique des transactions
+        </h2>
         <OrderPaymentForm
           orderId={order.id}
           total={order.total}
-          initialStatus={order.payment_status}
-          initialMethod={order.payment_method}
-          initialAmountPaid={order.amount_paid}
+          initialPayments={payments ?? []}
         />
       </section>
     </div>

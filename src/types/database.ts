@@ -319,6 +319,40 @@ export type Database = {
         Update: Partial<Database["public"]["Tables"]["order_status_history"]["Insert"]>;
         Relationships: [];
       };
+      order_payments: {
+        Row: {
+          id: string;
+          order_id: string;
+          shop_id: string;
+          amount: number;
+          method: PaymentMethod;
+          note: string | null;
+          paid_at: string;
+          idempotency_key: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          order_id: string;
+          shop_id: string;
+          amount: number;
+          method?: PaymentMethod;
+          note?: string | null;
+          paid_at?: string;
+          idempotency_key?: string;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["order_payments"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "order_payments_order_shop_fk";
+            columns: ["order_id", "shop_id"];
+            isOneToOne: false;
+            referencedRelation: "orders";
+            referencedColumns: ["id", "shop_id"];
+          },
+        ];
+      };
       order_rate_limits: {
         Row: { bucket: string; hits: number; window_start: string };
         Insert: { bucket: string; hits?: number; window_start?: string };
@@ -387,4 +421,5 @@ export type ProductWithVariants = Product & {
 export type Customer = Tables<"customers">;
 export type Order = Tables<"orders">;
 export type OrderItem = Tables<"order_items">;
+export type OrderPayment = Tables<"order_payments">;
 export type DeliveryZone = Tables<"delivery_zones">;

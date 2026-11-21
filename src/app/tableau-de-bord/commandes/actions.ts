@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireShop } from "@/lib/supabase/server";
 import { dbErrorMessage } from "@/lib/errors";
+import type { OrderPayment } from "@/types/database";
 
 const VALID_STATUSES = [
   "new",
@@ -14,9 +15,6 @@ const VALID_STATUSES = [
   "cancelled",
 ] as const;
 type OrderStatus = (typeof VALID_STATUSES)[number];
-
-const VALID_PAYMENT_STATUSES = ["unpaid", "partial", "paid"] as const;
-type PaymentStatus = (typeof VALID_PAYMENT_STATUSES)[number];
 
 const VALID_PAYMENT_METHODS = ["cash", "cash_on_delivery", "mobile_money"] as const;
 type PaymentMethod = (typeof VALID_PAYMENT_METHODS)[number];
@@ -47,38 +45,85 @@ export async function updateOrderStatus(
   return {};
 }
 
-export async function updateOrderPayment(
-  orderId: string,
-  paymentStatus: string,
-  paymentMethod: string | null,
-  amountPaid: number
-): Promise<{ error?: string }> {
+/**
+ * V2-D : Ajoute une transaction de paiement (partielle ou intégrale) dans le journal order_payments.
+ * Le trigger PostgreSQL sync_order_payment_summary() recalcule automatiquement
+ * orders.amount_paid, orders.payment_status et orders.payment_method.
+ */
+export async function addOrderPayment(input: {
+  orderId: string;
+  amount: number;
+  method: string;
+  note?: string | null;
+  paidAt?: string | null;
+  idempotencyKey: string;
+}): Promise<{ error?: string; payment?: OrderPayment }> {
   const { shop, supabase } = await requireShop();
 
-  if (!VALID_PAYMENT_STATUSES.includes(paymentStatus as PaymentStatus)) {
-    return { error: "Statut de paiement invalide." };
+  const cleanAmount = Math.round(Number(input.amount));
+  if (!Number.isFinite(cleanAmount) || cleanAmount <= 0) {
+    return { error: "Veuillez saisir un montant supérieur à 0 FCFA." };
   }
 
-  if (paymentMethod && !VALID_PAYMENT_METHODS.includes(paymentMethod as PaymentMethod)) {
+  if (!VALID_PAYMENT_METHODS.includes(input.method as PaymentMethod)) {
     return { error: "Mode de paiement invalide." };
   }
 
-  if (amountPaid < 0) {
-    return { error: "Le montant ne peut pas être négatif." };
+  const cleanNote = input.note?.trim() ? input.note.trim().slice(0, 200) : null;
+  let paidAtIso = new Date().toISOString();
+  if (input.paidAt) {
+    const parsedDate = new Date(input.paidAt);
+    if (!Number.isNaN(parsedDate.getTime())) {
+      paidAtIso = parsedDate.toISOString();
+    }
   }
 
-  const { error } = await supabase
-    .from("orders")
-    .update({
-      payment_status: paymentStatus as PaymentStatus,
-      payment_method: (paymentMethod as PaymentMethod) || null,
-      amount_paid: Math.round(amountPaid),
+  const { data, error } = await supabase
+    .from("order_payments")
+    .insert({
+      order_id: input.orderId,
+      shop_id: shop.id,
+      amount: cleanAmount,
+      method: input.method as PaymentMethod,
+      note: cleanNote,
+      paid_at: paidAtIso,
+      idempotency_key: input.idempotencyKey || crypto.randomUUID(),
     })
-    .eq("id", orderId)
+    .select("*")
+    .single();
+
+  if (error) {
+    if (error.code === "23505") {
+      return { error: "Ce versement vient déjà d'être enregistré." };
+    }
+    return { error: dbErrorMessage(error, "Impossible d'enregistrer ce versement.") };
+  }
+
+  revalidatePath("/tableau-de-bord");
+  revalidatePath("/tableau-de-bord/commandes");
+  revalidatePath(`/tableau-de-bord/commandes/${input.orderId}`);
+  return { payment: data as OrderPayment };
+}
+
+/**
+ * Supprime une écriture de paiement saisie par erreur.
+ * Le trigger PostgreSQL recalcule immédiatement le solde restant et le statut de paiement.
+ */
+export async function deleteOrderPayment(
+  orderId: string,
+  paymentId: string
+): Promise<{ error?: string }> {
+  const { shop, supabase } = await requireShop();
+
+  const { error } = await supabase
+    .from("order_payments")
+    .delete()
+    .eq("id", paymentId)
+    .eq("order_id", orderId)
     .eq("shop_id", shop.id);
 
   if (error) {
-    return { error: dbErrorMessage(error, "Impossible d'enregistrer le paiement.") };
+    return { error: dbErrorMessage(error, "Impossible de supprimer ce versement.") };
   }
 
   revalidatePath("/tableau-de-bord");

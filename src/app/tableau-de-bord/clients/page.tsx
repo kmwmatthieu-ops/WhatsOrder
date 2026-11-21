@@ -7,11 +7,11 @@ export const metadata: Metadata = { title: "Clients" };
 export default async function CustomersPage() {
   const { shop, supabase } = await requireShop();
 
-  // Récupérer les clients et agréger leurs commandes
+  // Récupérer les clients (avec adresse et notes internes pour l'export CSV V2-D) et agréger leurs commandes
   const [{ data: customers }, { data: orders }] = await Promise.all([
     supabase
       .from("customers")
-      .select("id, name, phone, created_at")
+      .select("id, name, phone, address, notes, created_at")
       .eq("shop_id", shop.id)
       .order("created_at", { ascending: false }),
     supabase
@@ -20,7 +20,6 @@ export default async function CustomersPage() {
       .eq("shop_id", shop.id),
   ]);
 
-  // Agrégation locale : nombre de commandes et total dépensé (hors commandes annulées)
   const statsByCustomer: Record<string, { count: number; totalSpent: number }> = {};
 
   for (const o of orders ?? []) {
@@ -37,6 +36,8 @@ export default async function CustomersPage() {
     id: c.id,
     name: c.name,
     phone: c.phone,
+    address: c.address,
+    notes: c.notes,
     orders_count: statsByCustomer[c.id]?.count ?? 0,
     total_spent: statsByCustomer[c.id]?.totalSpent ?? 0,
     created_at: c.created_at,

@@ -4,36 +4,34 @@ import {
   ArrowRight,
   Package,
   ShoppingBag,
-  Clock,
-  TrendingUp,
   Store,
   Users,
 } from "lucide-react";
 import { requireShop } from "@/lib/supabase/server";
 import { shopUrl } from "@/lib/constants";
-import { formatFCFA } from "@/lib/format";
 import { ShareShopButton } from "@/components/shop/share-shop-button";
 import { OrderRow } from "@/components/orders/order-row";
+import {
+  AnalyticsPanel,
+  type AnalyticsOrder,
+  type AnalyticsOrderItem,
+} from "@/components/dashboard/analytics-panel";
 
 export const metadata: Metadata = { title: "Tableau de bord" };
 
 export default async function DashboardHomePage() {
   const { shop, supabase } = await requireShop();
 
-  // Dates de référence pour les statistiques
-  const now = new Date();
-  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-
-  // Requêtes parallèles pour les indicateurs et les dernières commandes
+  // Requêtes parallèles pour les statistiques V2-D et les dernières commandes
   const [
     { data: ordersData },
     { count: productCount },
     { data: recentOrders },
+    { data: orderItemsData },
   ] = await Promise.all([
     supabase
       .from("orders")
-      .select("id, status, total, created_at")
+      .select("id, status, total, amount_paid, created_at")
       .eq("shop_id", shop.id),
     supabase
       .from("products")
@@ -48,6 +46,8 @@ export default async function DashboardHomePage() {
         status,
         fulfillment,
         total,
+        amount_paid,
+        payment_status,
         created_at,
         customer:customers(name, phone)
       `
@@ -55,23 +55,19 @@ export default async function DashboardHomePage() {
       .eq("shop_id", shop.id)
       .order("created_at", { ascending: false })
       .limit(5),
+    supabase
+      .from("order_items")
+      .select("order_id, product_name, unit_price, quantity, orders!inner(shop_id)")
+      .eq("orders.shop_id", shop.id),
   ]);
 
-  const allOrders = ordersData ?? [];
-
-  // 1. Commandes du jour
-  const todayOrders = allOrders.filter((o) => o.created_at >= startOfDay);
-
-  // 2. Commandes du mois
-  const monthOrders = allOrders.filter((o) => o.created_at >= startOfMonth);
-
-  // 3. CA du mois (hors commandes annulées)
-  const monthRevenue = monthOrders
-    .filter((o) => o.status !== "cancelled")
-    .reduce((acc, o) => acc + o.total, 0);
-
-  // 4. Commandes en attente (statut 'new')
-  const pendingOrders = allOrders.filter((o) => o.status === "new");
+  const allOrders = (ordersData as unknown as AnalyticsOrder[]) ?? [];
+  const allOrderItems = ((orderItemsData as unknown as AnalyticsOrderItem[]) ?? []).map((i) => ({
+    order_id: i.order_id,
+    product_name: i.product_name,
+    unit_price: i.unit_price,
+    quantity: i.quantity,
+  }));
 
   type RawOrder = {
     id: string;
@@ -79,6 +75,8 @@ export default async function DashboardHomePage() {
     status: string;
     fulfillment: string;
     total: number;
+    amount_paid: number;
+    payment_status: string;
     created_at: string;
     customer: { name: string; phone: string } | null;
   };
@@ -89,6 +87,8 @@ export default async function DashboardHomePage() {
     status: o.status,
     fulfillment: o.fulfillment,
     total: o.total,
+    amount_paid: o.amount_paid,
+    payment_status: o.payment_status,
     created_at: o.created_at,
     customer: o.customer,
   }));
@@ -119,56 +119,8 @@ export default async function DashboardHomePage() {
         <ShareShopButton url={url} shopName={shop.name} />
       </div>
 
-      {/* 4 Indicateurs Clés MVP */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        {/* Commandes en attente */}
-        <div className="rounded-2xl border border-line bg-white p-4 shadow-xs flex flex-col justify-between">
-          <div className="flex items-center justify-between text-muted mb-2">
-            <span className="text-[11px] font-bold uppercase tracking-wider">En attente</span>
-            <span className="grid size-7 place-items-center rounded-lg bg-blue-50 text-blue-600">
-              <Clock className="size-4" />
-            </span>
-          </div>
-          <p className="text-2xl font-black text-blue-700">{pendingOrders.length}</p>
-          <span className="text-[10px] text-muted mt-1">À traiter rapidement</span>
-        </div>
-
-        {/* Commandes du jour */}
-        <div className="rounded-2xl border border-line bg-white p-4 shadow-xs flex flex-col justify-between">
-          <div className="flex items-center justify-between text-muted mb-2">
-            <span className="text-[11px] font-bold uppercase tracking-wider">Aujourd&apos;hui</span>
-            <span className="grid size-7 place-items-center rounded-lg bg-brand-50 text-brand-600">
-              <ShoppingBag className="size-4" />
-            </span>
-          </div>
-          <p className="text-2xl font-black text-ink">{todayOrders.length}</p>
-          <span className="text-[10px] text-muted mt-1">Commandes reçues</span>
-        </div>
-
-        {/* Commandes du mois */}
-        <div className="rounded-2xl border border-line bg-white p-4 shadow-xs flex flex-col justify-between">
-          <div className="flex items-center justify-between text-muted mb-2">
-            <span className="text-[11px] font-bold uppercase tracking-wider">Ce mois</span>
-            <span className="grid size-7 place-items-center rounded-lg bg-sand text-ink">
-              <ShoppingBag className="size-4" />
-            </span>
-          </div>
-          <p className="text-2xl font-black text-ink">{monthOrders.length}</p>
-          <span className="text-[10px] text-muted mt-1">Total ce mois-ci</span>
-        </div>
-
-        {/* Chiffre d'affaires du mois */}
-        <div className="rounded-2xl border border-line bg-white p-4 shadow-xs flex flex-col justify-between">
-          <div className="flex items-center justify-between text-muted mb-2">
-            <span className="text-[11px] font-bold uppercase tracking-wider">CA du mois</span>
-            <span className="grid size-7 place-items-center rounded-lg bg-success-50 text-success-600">
-              <TrendingUp className="size-4" />
-            </span>
-          </div>
-          <p className="text-xl font-black text-success-700 truncate">{formatFCFA(monthRevenue)}</p>
-          <span className="text-[10px] text-muted mt-1">Hors commandes annulées</span>
-        </div>
-      </div>
+      {/* Panneau de statistiques V2-D (Périodes, CA 30j, Top produits, Commandes terminées) */}
+      <AnalyticsPanel orders={allOrders} orderItems={allOrderItems} />
 
       {/* Raccourcis navigation */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -182,7 +134,9 @@ export default async function DashboardHomePage() {
             </div>
             <div>
               <p className="font-bold text-sm text-ink">Commandes</p>
-              <p className="text-xs text-muted">{allOrders.length} enregistrée{allOrders.length > 1 ? "s" : ""}</p>
+              <p className="text-xs text-muted">
+                {allOrders.length} enregistrée{allOrders.length > 1 ? "s" : ""}
+              </p>
             </div>
           </div>
           <ArrowRight className="size-4 text-muted" />
@@ -214,7 +168,7 @@ export default async function DashboardHomePage() {
             </div>
             <div>
               <p className="font-bold text-sm text-ink">Clients</p>
-              <p className="text-xs text-muted">Répertoire & Historique</p>
+              <p className="text-xs text-muted">Répertoire & Export CSV</p>
             </div>
           </div>
           <ArrowRight className="size-4 text-muted" />

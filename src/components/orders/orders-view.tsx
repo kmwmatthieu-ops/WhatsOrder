@@ -1,15 +1,22 @@
 "use client";
 
 import { useState } from "react";
-import { Search, PackageOpen } from "lucide-react";
+import { Search, PackageOpen, Download } from "lucide-react";
 import { OrderRow, type OrderRowData } from "./order-row";
-import { SIMPLE_ORDER_STATUS_LABELS } from "./order-status-badge";
+import { ORDER_STATUS_LABELS, SIMPLE_ORDER_STATUS_LABELS } from "./order-status-badge";
+import { downloadCsv } from "@/lib/csv";
 
 function normalizeStatus(status: string): string {
   if (status === "preparing") return "confirmed";
   if (status === "ready") return "delivering";
   return status;
 }
+
+const PAYMENT_STATUS_FR: Record<string, string> = {
+  unpaid: "Non payée",
+  partial: "Paiement partiel",
+  paid: "Payée",
+};
 
 export function OrdersView({ orders }: { orders: OrderRowData[] }) {
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
@@ -31,13 +38,64 @@ export function OrdersView({ orders }: { orders: OrderRowData[] }) {
       ? orders.length
       : orders.filter((o) => normalizeStatus(o.status) === status).length;
 
+  function handleExportCsv() {
+    const today = new Date().toISOString().slice(0, 10);
+    const headers = [
+      "Code commande",
+      "Date",
+      "Client",
+      "Téléphone",
+      "Statut commande",
+      "Mode réception",
+      "Zone / Adresse",
+      "Total (FCFA)",
+      "Encaissé (FCFA)",
+      "Reste à payer (FCFA)",
+      "Statut paiement",
+    ];
+
+    const rows = filteredOrders.map((o) => {
+      const paid = o.amount_paid ?? 0;
+      const remaining = Math.max(0, o.total - paid);
+      const zoneOrAddress = [o.delivery_zone_name, o.delivery_address].filter(Boolean).join(" — ");
+      return [
+        o.public_code,
+        new Date(o.created_at).toLocaleString("fr-FR"),
+        o.customer?.name ?? "Client anonyme",
+        o.customer?.phone ?? "",
+        ORDER_STATUS_LABELS[o.status] ?? o.status,
+        o.fulfillment === "delivery" ? "Livraison" : "Retrait",
+        zoneOrAddress,
+        o.total,
+        paid,
+        remaining,
+        PAYMENT_STATUS_FR[o.payment_status ?? "unpaid"] ?? "Non payée",
+      ];
+    });
+
+    downloadCsv(`commandes-${today}.csv`, headers, rows);
+  }
+
   return (
     <div className="flex flex-col gap-5">
-      <div>
-        <h1 className="text-2xl font-extrabold text-ink">Commandes</h1>
-        <p className="text-xs text-muted mt-0.5">
-          Gérez vos commandes simplement : confirmez, livrez et suivez vos règlements.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-extrabold text-ink">Commandes</h1>
+          <p className="text-xs text-muted mt-0.5">
+            Gérez vos commandes simplement : confirmez, livrez et suivez vos règlements.
+          </p>
+        </div>
+
+        {orders.length > 0 && (
+          <button
+            type="button"
+            onClick={handleExportCsv}
+            className="inline-flex h-10 items-center justify-center gap-2 self-start sm:self-auto rounded-2xl border border-line bg-white px-3.5 text-xs font-bold text-ink shadow-xs hover:bg-sand transition-colors cursor-pointer"
+          >
+            <Download className="size-4 text-brand-600" />
+            <span>Exporter en CSV ({filteredOrders.length})</span>
+          </button>
+        )}
       </div>
 
       {/* Recherche rapide */}

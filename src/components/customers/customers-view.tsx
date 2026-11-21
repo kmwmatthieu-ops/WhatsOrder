@@ -1,10 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { Search, Users } from "lucide-react";
+import { Search, Users, Download } from "lucide-react";
 import { CustomerRow, type CustomerRowData } from "@/components/customers/customer-row";
+import { downloadCsv } from "@/lib/csv";
 
-export function CustomersView({ customers }: { customers: CustomerRowData[] }) {
+export type ExtendedCustomerRowData = CustomerRowData & {
+  address?: string | null;
+  notes?: string | null;
+};
+
+export function CustomersView({ customers }: { customers: ExtendedCustomerRowData[] }) {
   const [search, setSearch] = useState("");
 
   const filteredCustomers = customers.filter(
@@ -14,13 +20,51 @@ export function CustomersView({ customers }: { customers: CustomerRowData[] }) {
       c.phone.includes(search)
   );
 
+  function handleExportCsv() {
+    const today = new Date().toISOString().slice(0, 10);
+    const headers = [
+      "Nom complet",
+      "Téléphone WhatsApp",
+      "Adresse",
+      "Nombre de commandes",
+      "Total dépensé (FCFA)",
+      "Notes internes",
+      "Date d'enregistrement",
+    ];
+
+    const rows = filteredCustomers.map((c) => [
+      c.name,
+      c.phone,
+      c.address ?? "",
+      c.orders_count,
+      c.total_spent,
+      c.notes ?? "",
+      new Date(c.created_at).toLocaleDateString("fr-FR"),
+    ]);
+
+    downloadCsv(`clients-${today}.csv`, headers, rows);
+  }
+
   return (
     <div className="flex flex-col gap-5">
-      <div>
-        <h1 className="text-2xl font-extrabold text-ink">Clients</h1>
-        <p className="text-xs text-muted mt-0.5">
-          Vos clients enregistrés automatiquement lors de leurs commandes.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-extrabold text-ink">Clients</h1>
+          <p className="text-xs text-muted mt-0.5">
+            Vos clients enregistrés automatiquement lors de leurs commandes.
+          </p>
+        </div>
+
+        {customers.length > 0 && (
+          <button
+            type="button"
+            onClick={handleExportCsv}
+            className="inline-flex h-10 items-center justify-center gap-2 self-start sm:self-auto rounded-2xl border border-line bg-white px-3.5 text-xs font-bold text-ink shadow-xs hover:bg-sand transition-colors cursor-pointer"
+          >
+            <Download className="size-4 text-brand-600" />
+            <span>Exporter en CSV ({filteredCustomers.length})</span>
+          </button>
+        )}
       </div>
 
       {/* Barre de recherche */}

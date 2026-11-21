@@ -8,7 +8,12 @@ export type OrderRowData = {
   public_code: string;
   status: string;
   fulfillment: string;
+  delivery_address?: string | null;
+  delivery_zone_name?: string | null;
   total: number;
+  amount_paid?: number;
+  payment_status?: string;
+  payment_method?: string | null;
   created_at: string;
   customer?: {
     name: string;
@@ -25,15 +30,27 @@ export function OrderRow({ order }: { order: OrderRowData }) {
     minute: "2-digit",
   });
 
+  const isPaid = order.payment_status === "paid";
+  const isPartial = order.payment_status === "partial";
+
   return (
     <Link
       href={`/tableau-de-bord/commandes/${order.id}`}
       className="flex items-center justify-between rounded-2xl border border-line bg-white p-4 shadow-xs hover:border-brand-500 transition-colors"
     >
       <div className="flex flex-col gap-1 min-w-0 pr-2">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-1.5">
           <span className="font-mono font-bold text-sm text-ink">{order.public_code}</span>
           <OrderStatusBadge status={order.status} />
+          {isPaid ? (
+            <span className="rounded-lg bg-success-50 px-1.5 py-0.5 text-[10px] font-bold text-success-700">
+              Payée
+            </span>
+          ) : isPartial ? (
+            <span className="rounded-lg bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">
+              Partiel ({formatFCFA(order.amount_paid ?? 0)})
+            </span>
+          ) : null}
         </div>
 
         <p className="truncate text-xs font-semibold text-ink">
