@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
 import { signIn } from "../actions";
 import { initialActionState } from "@/lib/action-state";
 import { Input } from "@/components/ui/field";
@@ -11,6 +11,22 @@ import { Alert } from "@/components/ui/alert";
 
 export function SignInForm({ linkError }: { linkError?: string }) {
   const [state, action] = useActionState(signIn, initialActionState);
+
+  useEffect(() => {
+    if (state.ok) {
+      window.location.replace("/boutiques");
+    }
+  }, [state.ok]);
+
+  if (state.ok) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 rounded-3xl border border-line bg-white p-8 text-center shadow-xs">
+        <div className="size-8 animate-spin rounded-full border-3 border-brand-600 border-t-transparent" />
+        <p className="text-sm font-bold text-ink">Connexion réussie…</p>
+        <p className="text-xs text-muted">Ouverture de vos boutiques en cours.</p>
+      </div>
+    );
+  }
 
   return (
     <form action={action} className="flex flex-col gap-4" noValidate>

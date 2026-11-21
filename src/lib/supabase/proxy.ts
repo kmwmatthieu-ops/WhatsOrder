@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { getSupabaseCredentials } from "@/lib/constants";
 import type { Database } from "@/types/database";
 
 const PRIVATE_PREFIXES = ["/tableau-de-bord", "/onboarding", "/boutiques"];
@@ -7,19 +8,13 @@ const GUEST_ONLY = ["/connexion", "/inscription"];
 
 /**
  * Rafraîchit la session Supabase à chaque requête et protège les routes privées.
- * (La vérification "a-t-il une boutique ?" est faite dans les layouts, pas ici,
- * pour éviter une requête base de données sur chaque page.)
+ * Utilise systématiquement getSupabaseCredentials() pour pointer vers la vraie base
+ * (et non un store d'intégration vide injecté par l'hébergeur).
  */
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
 
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!url || !anonKey) {
-    // Variables Supabase non configurées : on laisse passer pour éviter le crash complet au premier démarrage
-    return response;
-  }
+  const { url, key: anonKey } = getSupabaseCredentials();
 
   const supabase = createServerClient<Database>(
     url,
@@ -45,18 +40,23 @@ export async function updateSession(request: NextRequest) {
 
   const path = request.nextUrl.pathname;
 
-  if (!user && PRIVATE_PREFIXES.some((p) => path.startsWith(p))) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/connexion";
-    url.search = "";
-    return NextResponse.redirect(url);
+  function redirectWithCookies(pathname: string) {
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.pathname = pathname;
+    redirectUrl.search = "";
+    const redirectResponse = NextResponse.redirect(redirectUrl);
+    response.cookies.getAll().forEach((cookie) => {
+      redirectResponse.cookies.set(cookie);
+    });
+    return redirectResponse;
   }
 
-  if (user && GUEST_ONLY.includes(path)) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/tableau-de-bord";
-    url.search = "";
-    return NextResponse.redirect(url);
+  if (!user && PRIVATE_PREFIXES.some((p) => path.startsWith(p))) {
+    return redirectWithCookies("/connexion");
+  }
+
+  if (user && request.method === "GET" && GUEST_ONLY.includes(path)) {
+    return redirectWithCookies("/boutiques");
   }
 
   return response;

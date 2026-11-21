@@ -1,8 +1,9 @@
-import { MEDIA_BUCKET } from "@/lib/constants";
+import { MEDIA_BUCKET, getSupabaseCredentials } from "@/lib/constants";
 
 /** Préfixe des URLs publiques des fichiers d'une boutique. */
 export function shopMediaPrefix(shopId: string) {
-  return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${MEDIA_BUCKET}/${shopId}/`;
+  const { url } = getSupabaseCredentials();
+  return `${url}/storage/v1/object/public/${MEDIA_BUCKET}/${shopId}/`;
 }
 
 /** Vrai si l'URL pointe vers le dossier Storage de cette boutique (anti-injection d'URL). */

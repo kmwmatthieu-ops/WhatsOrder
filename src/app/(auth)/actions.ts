@@ -25,8 +25,9 @@ export async function signIn(_prev: ActionState, formData: FormData): Promise<Ac
   const { error } = await supabase.auth.signInWithPassword(parsed.data);
   if (error) return { error: authErrorMessage(error) };
 
-  // Dès la connexion, redirection systématique vers le panneau des boutiques.
-  redirect("/boutiques");
+  // Retourne ok: true pour que le navigateur engage une navigation franche vers /boutiques
+  // avec les cookies de session garantis dans l'en-tête HTTP.
+  return { ok: true };
 }
 
 export async function signUp(_prev: ActionState, formData: FormData): Promise<ActionState> {
@@ -48,7 +49,9 @@ export async function signUp(_prev: ActionState, formData: FormData): Promise<Ac
   if (error) return { error: authErrorMessage(error) };
 
   // Confirmation e-mail désactivée → session immédiate.
-  if (data.session) redirect("/onboarding");
+  if (data.session) {
+    return { ok: true, message: "REDIRECT_ONBOARDING" };
+  }
 
   // Supabase ne signale pas un e-mail déjà inscrit (anti-énumération) : identities vide.
   if (data.user && data.user.identities?.length === 0) {

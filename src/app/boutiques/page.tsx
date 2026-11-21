@@ -74,8 +74,7 @@ export default async function BoutiquesPage() {
           {shops.map((shop) => {
             const { countryCode } = splitE164(shop.whatsapp_number);
             const country = COUNTRIES.find((c) => c.code === countryCode);
-            const flag = country?.flag || "📱";
-            const isOpen = isShopCurrentlyOpen(shop.opening_hours);
+            const { isOpen } = isShopCurrentlyOpen(shop.opening_hours);
             const publicLink = shopUrl(shop.slug);
 
             // Initiales pour l'avatar si pas de logo

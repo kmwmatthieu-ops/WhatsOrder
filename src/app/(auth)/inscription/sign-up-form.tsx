@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
 import { MailCheck } from "lucide-react";
 import { signUp } from "../actions";
 import { initialActionState } from "@/lib/action-state";
@@ -11,6 +11,22 @@ import { Alert } from "@/components/ui/alert";
 
 export function SignUpForm() {
   const [state, action] = useActionState(signUp, initialActionState);
+
+  useEffect(() => {
+    if (state.ok && state.message === "REDIRECT_ONBOARDING") {
+      window.location.replace("/boutiques");
+    }
+  }, [state.ok, state.message]);
+
+  if (state.ok && state.message === "REDIRECT_ONBOARDING") {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 rounded-3xl border border-line bg-white p-8 text-center shadow-xs">
+        <div className="size-8 animate-spin rounded-full border-3 border-brand-600 border-t-transparent" />
+        <p className="text-sm font-bold text-ink">Compte créé…</p>
+        <p className="text-xs text-muted">Préparation de votre espace commerçant.</p>
+      </div>
+    );
+  }
 
   if (state.ok) {
     return (
