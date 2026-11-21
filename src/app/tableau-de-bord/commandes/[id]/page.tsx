@@ -196,7 +196,14 @@ export default async function OrderDetailPage({ params }: Props) {
 
         {/* 2. Changement de Statut & Historique */}
         <section className="rounded-3xl border border-line bg-white p-5 shadow-xs flex flex-col gap-4">
-          <OrderStatusSelect orderId={order.id} currentStatus={order.status} />
+          <OrderStatusSelect
+            orderId={order.id}
+            currentStatus={order.status}
+            publicCode={order.public_code}
+            shopName={shop.name}
+            customerName={customer?.name}
+            customerPhone={customer?.phone}
+          />
 
           <div className="border-t border-line pt-3">
             <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-muted mb-2">

@@ -3,14 +3,21 @@
 import { useState } from "react";
 import { Search, PackageOpen } from "lucide-react";
 import { OrderRow, type OrderRowData } from "./order-row";
-import { ORDER_STATUS_LABELS } from "./order-status-badge";
+import { SIMPLE_ORDER_STATUS_LABELS } from "./order-status-badge";
+
+function normalizeStatus(status: string): string {
+  if (status === "preparing") return "confirmed";
+  if (status === "ready") return "delivering";
+  return status;
+}
 
 export function OrdersView({ orders }: { orders: OrderRowData[] }) {
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [search, setSearch] = useState("");
 
   const filteredOrders = orders.filter((o) => {
-    const matchesStatus = selectedStatus === "all" || o.status === selectedStatus;
+    const norm = normalizeStatus(o.status);
+    const matchesStatus = selectedStatus === "all" || norm === selectedStatus;
     const matchesSearch =
       !search ||
       o.public_code.toLowerCase().includes(search.toLowerCase()) ||
@@ -20,14 +27,16 @@ export function OrdersView({ orders }: { orders: OrderRowData[] }) {
   });
 
   const countByStatus = (status: string) =>
-    status === "all" ? orders.length : orders.filter((o) => o.status === status).length;
+    status === "all"
+      ? orders.length
+      : orders.filter((o) => normalizeStatus(o.status) === status).length;
 
   return (
     <div className="flex flex-col gap-5">
       <div>
         <h1 className="text-2xl font-extrabold text-ink">Commandes</h1>
         <p className="text-xs text-muted mt-0.5">
-          Suivez la préparation, la livraison et les règlements de vos clients.
+          Gérez vos commandes simplement : confirmez, livrez et suivez vos règlements.
         </p>
       </div>
 
@@ -43,7 +52,7 @@ export function OrdersView({ orders }: { orders: OrderRowData[] }) {
         />
       </div>
 
-      {/* Onglets statuts */}
+      {/* Onglets statuts simplifiés */}
       <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
         <button
           type="button"
@@ -56,7 +65,7 @@ export function OrdersView({ orders }: { orders: OrderRowData[] }) {
         >
           Toutes ({countByStatus("all")})
         </button>
-        {Object.entries(ORDER_STATUS_LABELS).map(([statusKey, label]) => {
+        {Object.entries(SIMPLE_ORDER_STATUS_LABELS).map(([statusKey, label]) => {
           const count = countByStatus(statusKey);
           return (
             <button

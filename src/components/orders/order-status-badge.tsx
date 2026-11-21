@@ -1,18 +1,33 @@
-export const ORDER_STATUS_LABELS: Record<string, string> = {
-  new: "Nouvelle",
+/**
+ * Les 5 statuts simples et universels visibles dans les filtres du tableau de bord :
+ * - En attente (à la réception)
+ * - Confirmée
+ * - En livraison
+ * - Livrée
+ * - Annulée
+ */
+export const SIMPLE_ORDER_STATUS_LABELS: Record<string, string> = {
+  new: "En attente",
   confirmed: "Confirmée",
-  preparing: "En préparation",
-  ready: "Prête",
   delivering: "En livraison",
   delivered: "Livrée",
   cancelled: "Annulée",
 };
 
+/**
+ * Dictionnaire complet incluant la rétrocompatibilité pour d'éventuelles anciennes commandes.
+ */
+export const ORDER_STATUS_LABELS: Record<string, string> = {
+  ...SIMPLE_ORDER_STATUS_LABELS,
+  preparing: "Confirmée",
+  ready: "En livraison",
+};
+
 const ORDER_STATUS_STYLES: Record<string, string> = {
-  new: "bg-blue-50 text-blue-700 border-blue-200",
+  new: "bg-amber-50 text-amber-800 border-amber-200",
   confirmed: "bg-brand-50 text-brand-700 border-brand-200",
-  preparing: "bg-purple-50 text-purple-700 border-purple-200",
-  ready: "bg-amber-50 text-amber-700 border-amber-200",
+  preparing: "bg-brand-50 text-brand-700 border-brand-200",
+  ready: "bg-indigo-50 text-indigo-700 border-indigo-200",
   delivering: "bg-indigo-50 text-indigo-700 border-indigo-200",
   delivered: "bg-success-50 text-success-700 border-success-200",
   cancelled: "bg-danger-50 text-danger-700 border-danger-200",
