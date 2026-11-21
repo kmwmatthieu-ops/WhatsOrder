@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Shield, ArrowLeft, Store, ShoppingBag, CreditCard, DollarSign, LogOut } from "lucide-react";
+import { Shield, ArrowLeft, Store, ShoppingBag, CreditCard, DollarSign, LogOut, Wallet, TrendingUp } from "lucide-react";
 import { createClient, getUser } from "@/lib/supabase/server";
 import { AdminShopsTable, type AdminShopRow } from "./admin-shops-table";
 import { AdminSubscriptionRequests, type AdminRequestRow } from "./admin-subscription-requests";
@@ -82,12 +82,21 @@ export default async function AdminPage() {
     return true;
   });
 
+  // Calculs financiers SaaS (Abonnements)
+  const rawRequests = reqRes.data ?? [];
+  const approvedRequests = rawRequests.filter((r) => r.status === "approved");
+  const totalSubscriptionsCollected = approvedRequests.reduce(
+    (sum, r) => sum + (r.amount_due ?? 0),
+    0
+  );
+
   const estimatedMrr = activePaidSubs.reduce((sum, s) => {
     const planPrice = s.subscription_plans?.price_monthly ?? 0;
     return sum + planPrice;
   }, 0);
 
-  const rawRequests = reqRes.data ?? [];
+  const estimatedArr = estimatedMrr * 12;
+
   const requestsList: AdminRequestRow[] = rawRequests.map((r) => ({
     id: r.id,
     shop_id: r.shop_id,
@@ -143,46 +152,71 @@ export default async function AdminPage() {
           </p>
         </div>
 
-        {/* 5 Statistiques Globales de la Plateforme (V2-E) */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
-          <div className="rounded-2xl border border-line bg-white p-4 shadow-xs">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-muted">Boutiques</span>
-              <Store className="size-4 text-brand-600" />
+        {/* Indicateurs Clés de la Plateforme */}
+        <div className="flex flex-col gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+            <div className="rounded-2xl border border-line bg-white p-4 shadow-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-muted">Boutiques</span>
+                <Store className="size-4 text-brand-600" />
+              </div>
+              <p className="text-2xl font-black text-ink mt-1.5">{shopsList.length}</p>
+              <p className="text-[11px] text-muted mt-0.5">
+                <span className="text-success-600 font-bold">{activeCount} actives</span> • {suspendedCount} suspendues
+              </p>
             </div>
-            <p className="text-2xl font-black text-ink mt-1.5">{shopsList.length}</p>
-            <p className="text-[11px] text-muted mt-0.5">
-              <span className="text-success-600 font-bold">{activeCount} actives</span> • {suspendedCount} suspendues
-            </p>
+
+            <div className="rounded-2xl border border-line bg-white p-4 shadow-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-muted">Commandes</span>
+                <ShoppingBag className="size-4 text-brand-600" />
+              </div>
+              <p className="text-2xl font-black text-ink mt-1.5">{totalOrdersCount}</p>
+              <p className="text-[11px] text-muted mt-0.5">Passées sur les boutiques</p>
+            </div>
+
+            <div className="rounded-2xl border border-line bg-white p-4 shadow-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-muted">Volume Commerces (GMV)</span>
+                <DollarSign className="size-4 text-success-600" />
+              </div>
+              <p className="text-2xl font-black text-ink mt-1.5">{formatFCFA(totalGmv)}</p>
+              <p className="text-[11px] text-muted mt-0.5">Ventes globales générées</p>
+            </div>
           </div>
 
-          <div className="rounded-2xl border border-line bg-white p-4 shadow-xs">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-muted">Commandes</span>
-              <ShoppingBag className="size-4 text-brand-600" />
+          {/* Finances & Modèle Économique Plateforme */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            <div className="rounded-2xl border border-success-200 bg-success-50/40 p-4 shadow-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-success-900">
+                  Total Abonnements Encaissés (Cash Collecté)
+                </span>
+                <Wallet className="size-4 text-success-700" />
+              </div>
+              <p className="text-2xl font-black text-success-800 mt-1.5">
+                {formatFCFA(totalSubscriptionsCollected)}
+              </p>
+              <p className="text-[11px] text-success-800/80 mt-0.5">
+                {approvedRequests.length} paiement{approvedRequests.length > 1 ? "s" : ""} validé{approvedRequests.length > 1 ? "s" : ""} (Mobile Money)
+              </p>
             </div>
-            <p className="text-2xl font-black text-ink mt-1.5">{totalOrdersCount}</p>
-            <p className="text-[11px] text-muted mt-0.5">Passées via la plateforme</p>
-          </div>
 
-          <div className="rounded-2xl border border-line bg-white p-4 shadow-xs">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-muted">Volume Commerces (GMV)</span>
-              <DollarSign className="size-4 text-success-600" />
+            <div className="rounded-2xl border border-purple-200 bg-purple-50/40 p-4 shadow-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-purple-900">
+                  MRR (Revenu Récurrent Mensuel)
+                </span>
+                <TrendingUp className="size-4 text-purple-700" />
+              </div>
+              <p className="text-2xl font-black text-purple-900 mt-1.5">
+                {formatFCFA(estimatedMrr)}{" "}
+                <span className="text-xs font-normal text-purple-700">/ mois</span>
+              </p>
+              <p className="text-[11px] text-purple-800/80 mt-0.5">
+                ARR estimé : <strong>{formatFCFA(estimatedArr)}/an</strong> • {activePaidSubs.length} abonnement{activePaidSubs.length > 1 ? "s" : ""} payant{activePaidSubs.length > 1 ? "s" : ""}
+              </p>
             </div>
-            <p className="text-2xl font-black text-ink mt-1.5">{formatFCFA(totalGmv)}</p>
-            <p className="text-[11px] text-muted mt-0.5">Ventes globales générées</p>
-          </div>
-
-          <div className="rounded-2xl border border-line bg-white p-4 shadow-xs">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-muted">MRR Abonnements</span>
-              <CreditCard className="size-4 text-purple-600" />
-            </div>
-            <p className="text-2xl font-black text-ink mt-1.5">{formatFCFA(estimatedMrr)}</p>
-            <p className="text-[11px] text-muted mt-0.5">
-              <span className="font-bold text-purple-700">{activePaidSubs.length}</span> payants actifs
-            </p>
           </div>
         </div>
 
