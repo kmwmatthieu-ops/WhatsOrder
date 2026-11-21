@@ -1,22 +1,26 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { requireShop } from "@/lib/supabase/server";
+import { getShopSubscription } from "@/lib/subscription";
 import { ProductForm } from "@/components/products/product-form";
 import { createProduct } from "../actions";
-import { PRODUCT_LIMIT } from "@/lib/constants";
 
 export const metadata: Metadata = { title: "Nouveau produit" };
 
 export default async function NewProductPage() {
   const { shop, supabase } = await requireShop();
 
-  // Vérifier si la limite des 20 produits est déjà atteinte
-  const { count } = await supabase
-    .from("products")
-    .select("*", { count: "exact", head: true })
-    .eq("shop_id", shop.id);
+  // Vérifier si la limite du catalogue selon l'abonnement est déjà atteinte
+  const [{ count }, sub] = await Promise.all([
+    supabase
+      .from("products")
+      .select("*", { count: "exact", head: true })
+      .eq("shop_id", shop.id),
+    getShopSubscription(shop.id),
+  ]);
 
-  if ((count ?? 0) >= PRODUCT_LIMIT) {
+  const maxLimit = sub.effectivePlan.max_products;
+  if (maxLimit !== null && (count ?? 0) >= maxLimit) {
     redirect("/tableau-de-bord/produits");
   }
 

@@ -2,11 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { requireShop } from "@/lib/supabase/server";
+import { getShopSubscription } from "@/lib/subscription";
 import { productSchema, categoryNameSchema, type ProductVariantInput } from "@/lib/validation/product";
 import { dbErrorMessage } from "@/lib/errors";
 import { toFieldErrors, type ActionState } from "@/lib/action-state";
 import { mediaPathFromUrl } from "@/lib/storage";
-import { MEDIA_BUCKET, PRODUCT_LIMIT } from "@/lib/constants";
+import { MEDIA_BUCKET } from "@/lib/constants";
 
 function parseJsonArray<T>(raw: FormDataEntryValue | null): T[] {
   if (!raw) return [];
@@ -31,14 +32,20 @@ function hasDuplicateVariantLabels(variants: ProductVariantInput[]): boolean {
 export async function createProduct(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const { shop, supabase } = await requireShop();
 
-  // Vérification préalable du quota des 20 produits
-  const { count } = await supabase
-    .from("products")
-    .select("*", { count: "exact", head: true })
-    .eq("shop_id", shop.id);
+  // Vérification préalable du quota de produits selon l'abonnement
+  const [{ count }, sub] = await Promise.all([
+    supabase
+      .from("products")
+      .select("*", { count: "exact", head: true })
+      .eq("shop_id", shop.id),
+    getShopSubscription(shop.id),
+  ]);
 
-  if ((count ?? 0) >= PRODUCT_LIMIT) {
-    return { error: "Vous avez atteint la limite de 20 produits du plan gratuit." };
+  const maxLimit = sub.effectivePlan.max_products;
+  if (maxLimit !== null && (count ?? 0) >= maxLimit) {
+    return {
+      error: `Vous avez atteint la limite de ${maxLimit} produits autorisée par votre formule ${sub.effectivePlan.name}. Rendez-vous dans la rubrique Abonnement pour augmenter votre quota.`,
+    };
   }
 
   const images = parseJsonArray<string>(formData.get("images_json"));

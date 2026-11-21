@@ -68,7 +68,7 @@ export function ProductsView({
               type="button"
               disabled
               className="inline-flex h-11 items-center gap-2 rounded-2xl bg-muted/30 px-4 text-sm font-semibold text-muted cursor-not-allowed"
-              title="Limite de 20 produits atteinte"
+              title={maxProducts ? `Limite de ${maxProducts} produits atteinte` : "Limite atteinte"}
             >
               <Plus className="size-4" />
               <span>Ajouter un produit</span>
