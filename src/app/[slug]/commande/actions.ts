@@ -94,6 +94,7 @@ export async function submitOrder(
       product_id: i.product_id,
       quantity: i.quantity,
       selected_options: i.selected_options ?? null,
+      variant_id: i.variant_id ?? null,
     })),
     p_delivery_zone_id: parsed.data.delivery_zone_id ?? null,
   });
@@ -101,10 +102,13 @@ export async function submitOrder(
   if (error) {
     const msg = error.message ?? "";
     if (msg.includes("INSUFFICIENT_STOCK")) {
-      return { error: "Un article de votre panier n'a plus assez de stock disponible." };
+      return { error: "Un article ou une variante de votre panier n'a plus assez de stock disponible." };
     }
-    if (msg.includes("PRODUCT_UNAVAILABLE")) {
-      return { error: "Un article de votre panier n'est plus disponible." };
+    if (msg.includes("PRODUCT_UNAVAILABLE") || msg.includes("VARIANT_UNAVAILABLE")) {
+      return { error: "Un article ou une variante de votre panier n'est plus disponible." };
+    }
+    if (msg.includes("VARIANT_REQUIRED")) {
+      return { error: "Veuillez sélectionner une variante (taille, couleur, modèle) pour chaque article." };
     }
     if (msg.includes("DELIVERY_ZONE_REQUIRED")) {
       return { error: "Veuillez sélectionner votre zone de livraison." };

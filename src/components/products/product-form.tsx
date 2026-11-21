@@ -9,11 +9,13 @@ import { Toggle } from "@/components/ui/toggle";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { ImagePicker } from "./image-picker";
+import { VariantsEditor } from "./variants-editor";
 import { initialActionState, type ActionState } from "@/lib/action-state";
-import type { Category, Product } from "@/types/database";
+import type { Category, ProductWithVariants } from "@/types/database";
+import type { ProductVariantInput } from "@/lib/validation/product";
 
 type Props = {
-  product?: Product;
+  product?: ProductWithVariants;
   categories: Category[];
   action: (_prev: ActionState, formData: FormData) => Promise<ActionState>;
   onDelete?: () => Promise<{ error?: string }>;
@@ -24,7 +26,20 @@ export function ProductForm({ product, categories, action, onDelete }: Props) {
   const [state, setState] = useState<ActionState>(initialActionState);
   const [pending, setPending] = useState(false);
 
+  const initialVariants = product?.product_variants ?? [];
   const [images, setImages] = useState<string[]>(product?.images ?? []);
+  const [basePrice, setBasePrice] = useState<number>(product?.price ?? 0);
+  const [variantsEnabled, setVariantsEnabled] = useState<boolean>(initialVariants.length > 0);
+  const [variants, setVariants] = useState<ProductVariantInput[]>(() =>
+    initialVariants.map((v) => ({
+      id: v.id,
+      label: v.label,
+      attributes: (v.attributes as ProductVariantInput["attributes"]) || {},
+      price_override: v.price_override,
+      stock: v.stock,
+      is_available: v.is_available,
+    }))
+  );
   const [hasStock, setHasStock] = useState(product ? product.stock !== null : false);
   const [isAvailable, setIsAvailable] = useState(product ? product.is_available : true);
   const [deleting, setDeleting] = useState(false);
@@ -127,12 +142,13 @@ export function ProductForm({ product, categories, action, onDelete }: Props) {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Input
-            label="Prix (FCFA)"
+            label="Prix de base (FCFA)"
             name="price"
             type="number"
             min={1}
             step={50}
             defaultValue={product?.price ?? ""}
+            onChange={(e) => setBasePrice(Number(e.target.value) || 0)}
             placeholder="Ex. 15000"
             required
             hint="Montant entier, sans virgule."
@@ -164,18 +180,25 @@ export function ProductForm({ product, categories, action, onDelete }: Props) {
           placeholder="Matière, caractéristiques, conseils d'utilisation…"
           error={state.fieldErrors?.description}
         />
-
-        <Input
-          label="Options disponibles"
-          name="options_text"
-          defaultValue={product?.options_text ?? ""}
-          maxLength={300}
-          optional
-          placeholder="Ex. Tailles : S, M, L | Couleurs : Rouge, Noir"
-          hint="Champ libre pour informer vos clients des tailles, couleurs ou formats."
-          error={state.fieldErrors?.options_text}
-        />
       </section>
+
+      {/* Variantes structurées (V2-C : remplace options_text) */}
+      <VariantsEditor
+        initialVariants={initialVariants}
+        basePrice={basePrice}
+        onChange={(nextVariants, isEnabled) => {
+          setVariants(nextVariants);
+          setVariantsEnabled(isEnabled && nextVariants.length > 0);
+        }}
+      />
+      <input
+        type="hidden"
+        name="variants_json"
+        value={JSON.stringify(variantsEnabled ? variants : [])}
+      />
+      {state.fieldErrors?.variants && (
+        <Alert tone="error">{state.fieldErrors.variants}</Alert>
+      )}
 
       {/* Disponibilité & Stock */}
       <section className="rounded-3xl border border-line bg-white p-5 shadow-sm flex flex-col gap-4">
@@ -186,32 +209,38 @@ export function ProductForm({ product, categories, action, onDelete }: Props) {
           onChange={setIsAvailable}
           name="is_available"
           label="Disponible à la vente"
-          description="Si désactivé, le produit est affiché comme épuisé."
+          description="Si désactivé, le produit entier est affiché comme épuisé."
         />
 
-        <div className="pt-2 border-t border-line">
-          <Toggle
-            checked={hasStock}
-            onChange={setHasStock}
-            name="has_stock"
-            label="Gérer une quantité en stock"
-            description="Activez pour limiter les ventes au stock disponible."
-          />
+        {variantsEnabled && variants.length > 0 ? (
+          <p className="text-xs text-muted border-t border-line pt-3">
+            Le stock est géré individuellement sur chacune de vos <strong>{variants.length} variantes</strong> ci-dessus.
+          </p>
+        ) : (
+          <div className="pt-2 border-t border-line">
+            <Toggle
+              checked={hasStock}
+              onChange={setHasStock}
+              name="has_stock"
+              label="Gérer une quantité en stock"
+              description="Activez pour limiter les ventes au stock disponible."
+            />
 
-          {hasStock && (
-            <div className="pt-3">
-              <Input
-                label="Quantité en stock"
-                name="stock"
-                type="number"
-                min={0}
-                defaultValue={product?.stock ?? 1}
-                required
-                error={state.fieldErrors?.stock}
-              />
-            </div>
-          )}
-        </div>
+            {hasStock && (
+              <div className="pt-3">
+                <Input
+                  label="Quantité en stock"
+                  name="stock"
+                  type="number"
+                  min={0}
+                  defaultValue={product?.stock ?? 1}
+                  required
+                  error={state.fieldErrors?.stock}
+                />
+              </div>
+            )}
+          </div>
+        )}
       </section>
 
       <div className="sticky bottom-20 md:bottom-6 z-10 pt-2">

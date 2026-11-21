@@ -5,8 +5,13 @@ import type { CartItem, CartState } from "./types";
 
 type CartContextType = CartState & {
   addItem: (item: Omit<CartItem, "quantity">, quantity?: number) => void;
-  updateQuantity: (productId: string, quantity: number, options?: string | null) => void;
-  removeItem: (productId: string, options?: string | null) => void;
+  updateQuantity: (
+    productId: string,
+    quantity: number,
+    options?: string | null,
+    variantId?: string | null
+  ) => void;
+  removeItem: (productId: string, options?: string | null, variantId?: string | null) => void;
   clearCart: () => void;
   isCartDrawerOpen: boolean;
   setIsCartDrawerOpen: (open: boolean) => void;
@@ -16,6 +21,19 @@ const CartContext = createContext<CartContextType | null>(null);
 
 function getStorageKey(shopId: string) {
   return `wo-cart-${shopId}`;
+}
+
+function isSameLine(
+  a: CartItem,
+  productId: string,
+  options?: string | null,
+  variantId?: string | null
+) {
+  return (
+    a.productId === productId &&
+    (a.variantId ?? "") === (variantId ?? "") &&
+    (a.selectedOptions ?? "") === (options ?? "")
+  );
 }
 
 export function CartProvider({
@@ -55,8 +73,8 @@ export function CartProvider({
 
   const addItem = useCallback((item: Omit<CartItem, "quantity">, quantity = 1) => {
     setItems((prev) => {
-      const existingIndex = prev.findIndex(
-        (i) => i.productId === item.productId && (i.selectedOptions ?? "") === (item.selectedOptions ?? "")
+      const existingIndex = prev.findIndex((i) =>
+        isSameLine(i, item.productId, item.selectedOptions, item.variantId)
       );
 
       if (existingIndex > -1) {
@@ -76,24 +94,25 @@ export function CartProvider({
     setIsCartDrawerOpen(true);
   }, []);
 
-  const removeItem = useCallback((productId: string, options?: string | null) => {
-    setItems((prev) =>
-      prev.filter(
-        (i) => !(i.productId === productId && (i.selectedOptions ?? "") === (options ?? ""))
-      )
-    );
-  }, []);
+  const removeItem = useCallback(
+    (productId: string, options?: string | null, variantId?: string | null) => {
+      setItems((prev) =>
+        prev.filter((i) => !isSameLine(i, productId, options, variantId))
+      );
+    },
+    []
+  );
 
   const updateQuantity = useCallback(
-    (productId: string, quantity: number, options?: string | null) => {
+    (productId: string, quantity: number, options?: string | null, variantId?: string | null) => {
       if (quantity <= 0) {
-        removeItem(productId, options);
+        removeItem(productId, options, variantId);
         return;
       }
 
       setItems((prev) =>
         prev.map((i) => {
-          if (i.productId === productId && (i.selectedOptions ?? "") === (options ?? "")) {
+          if (isSameLine(i, productId, options, variantId)) {
             const cappedQty = i.maxStock !== null ? Math.min(quantity, i.maxStock) : quantity;
             return { ...i, quantity: cappedQty };
           }

@@ -143,6 +143,7 @@ export function CheckoutForm({ shop, zones = [] }: Props) {
         value={JSON.stringify(
           items.map((i) => ({
             product_id: i.productId,
+            variant_id: i.variantId ?? null,
             quantity: i.quantity,
             selected_options: i.selectedOptions ?? null,
           }))
@@ -279,7 +280,7 @@ export function CheckoutForm({ shop, zones = [] }: Props) {
 
         <div className="divide-y divide-line">
           {items.map((item) => (
-            <div key={`${item.productId}-${item.selectedOptions ?? ""}`} className="py-2.5 flex items-center justify-between text-xs sm:text-sm">
+            <div key={`${item.productId}-${item.variantId ?? ""}-${item.selectedOptions ?? ""}`} className="py-2.5 flex items-center justify-between text-xs sm:text-sm">
               <div className="flex items-center gap-2 min-w-0 pr-2">
                 <span className="font-bold text-brand-700 shrink-0">{item.quantity}x</span>
                 <span className="truncate text-ink font-semibold">{item.name}</span>

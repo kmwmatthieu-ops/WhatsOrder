@@ -64,7 +64,7 @@ export function CartDrawer({
           <>
             <div className="flex-1 overflow-y-auto p-4 flex flex-col divide-y divide-line">
               {items.map((item) => (
-                <div key={`${item.productId}-${item.selectedOptions ?? ""}`} className="py-3 flex items-center gap-3">
+                <div key={`${item.productId}-${item.variantId ?? ""}-${item.selectedOptions ?? ""}`} className="py-3 flex items-center gap-3">
                   {/* Photo miniature */}
                   <div className="relative size-16 shrink-0 overflow-hidden rounded-xl border border-line bg-sand">
                     {item.imageUrl ? (
@@ -93,7 +93,7 @@ export function CartDrawer({
                   <div className="flex flex-col items-end gap-1.5 shrink-0">
                     <button
                       type="button"
-                      onClick={() => removeItem(item.productId, item.selectedOptions)}
+                      onClick={() => removeItem(item.productId, item.selectedOptions, item.variantId)}
                       className="text-danger-600 hover:text-danger-700 p-1"
                       title="Retirer"
                     >
@@ -103,7 +103,7 @@ export function CartDrawer({
                     <div className="flex items-center rounded-xl border border-line bg-sand/60 p-0.5">
                       <button
                         type="button"
-                        onClick={() => updateQuantity(item.productId, item.quantity - 1, item.selectedOptions)}
+                        onClick={() => updateQuantity(item.productId, item.quantity - 1, item.selectedOptions, item.variantId)}
                         className="grid size-6 place-items-center rounded-lg bg-white text-ink text-xs shadow-xs"
                       >
                         <Minus className="size-3" />
@@ -111,7 +111,7 @@ export function CartDrawer({
                       <span className="w-6 text-center text-xs font-bold">{item.quantity}</span>
                       <button
                         type="button"
-                        onClick={() => updateQuantity(item.productId, item.quantity + 1, item.selectedOptions)}
+                        onClick={() => updateQuantity(item.productId, item.quantity + 1, item.selectedOptions, item.variantId)}
                         className="grid size-6 place-items-center rounded-lg bg-white text-ink text-xs shadow-xs"
                       >
                         <Plus className="size-3" />

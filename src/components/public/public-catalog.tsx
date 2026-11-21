@@ -7,7 +7,7 @@ import { ProductDetailModal } from "./product-detail-modal";
 import { FloatingCartButton } from "./floating-cart-button";
 import { CartDrawer } from "./cart-drawer";
 import { isShopCurrentlyOpen } from "@/lib/opening-hours";
-import type { Category, Product, Shop } from "@/types/database";
+import type { Category, ProductWithVariants, Shop } from "@/types/database";
 
 export function PublicCatalog({
   shop,
@@ -16,11 +16,11 @@ export function PublicCatalog({
 }: {
   shop: Shop;
   categories: Category[];
-  products: Product[];
+  products: ProductWithVariants[];
 }) {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [search, setSearch] = useState("");
-  const [activeProduct, setActiveProduct] = useState<Product | null>(null);
+  const [activeProduct, setActiveProduct] = useState<ProductWithVariants | null>(null);
 
   const openStatus = isShopCurrentlyOpen(shop.opening_hours);
   const isShopOpen = openStatus.isOpen;

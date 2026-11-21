@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { ImageIcon, Plus } from "lucide-react";
 import { formatFCFA } from "@/lib/format";
-import type { Product } from "@/types/database";
+import type { ProductWithVariants } from "@/types/database";
 
 export function ProductCard({
   product,
@@ -11,14 +11,48 @@ export function ProductCard({
   isShopOpen = true,
   onClick,
 }: {
-  product: Product;
+  product: ProductWithVariants;
   primaryColor: string;
   isShopOpen?: boolean;
   onClick: () => void;
 }) {
-  const isOutOfStock = !product.is_available || product.stock === 0;
+  const variants = product.product_variants ?? [];
+  const hasVariants = variants.length > 0;
+
+  const availableVariants = variants.filter((v) => v.is_available && (v.stock === null || v.stock > 0));
+
+  const isOutOfStock = hasVariants
+    ? !product.is_available || availableVariants.length === 0
+    : !product.is_available || product.stock === 0;
+
   const isDisabled = isOutOfStock || !isShopOpen;
   const coverImage = product.images?.[0];
+
+  // Stock total restant pour le badge "Plus que X"
+  let effectiveLowStock: number | null = null;
+  if (!isOutOfStock) {
+    if (hasVariants) {
+      const hasUnlimited = availableVariants.some((v) => v.stock === null);
+      if (!hasUnlimited) {
+        const sum = availableVariants.reduce((acc, v) => acc + (v.stock ?? 0), 0);
+        if (sum > 0 && sum <= 5) effectiveLowStock = sum;
+      }
+    } else if (product.stock !== null && product.stock > 0 && product.stock <= 5) {
+      effectiveLowStock = product.stock;
+    }
+  }
+
+  // Prix affiché (si variantes avec prix différents, on affiche le prix minimum)
+  const prices = hasVariants
+    ? variants.map((v) => v.price_override ?? product.price)
+    : [product.price];
+  const minPrice = Math.min(...prices);
+  const maxPrice = Math.max(...prices);
+  const hasMultiplePrices = minPrice !== maxPrice;
+
+  const variantSummary = hasVariants
+    ? variants.map((v) => v.label).join(" • ")
+    : product.options_text;
 
   return (
     <div
@@ -55,9 +89,9 @@ export function ProductCard({
               Épuisé
             </span>
           </div>
-        ) : product.stock !== null && product.stock <= 5 ? (
+        ) : effectiveLowStock !== null ? (
           <span className="absolute left-2 top-2 rounded-md bg-accent-500/95 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-xs">
-            Plus que {product.stock}
+            Plus que {effectiveLowStock}
           </span>
         ) : null}
       </div>
@@ -68,15 +102,15 @@ export function ProductCard({
           {product.name}
         </h3>
 
-        {product.options_text && (
+        {variantSummary && (
           <p className="mt-1 line-clamp-1 text-[11px] text-muted">
-            {product.options_text}
+            {variantSummary}
           </p>
         )}
 
         <div className="mt-auto pt-2.5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <span className="font-extrabold text-sm sm:text-base text-ink leading-tight truncate">
-            {formatFCFA(product.price)}
+            {hasMultiplePrices ? `Dès ${formatFCFA(minPrice)}` : formatFCFA(minPrice)}
           </span>
 
           <span
@@ -90,7 +124,7 @@ export function ProductCard({
             ) : (
               <>
                 <Plus className="size-3.5 stroke-[2.5] shrink-0" aria-hidden />
-                <span>Ajouter</span>
+                <span>{hasVariants ? "Choisir" : "Ajouter"}</span>
               </>
             )}
           </span>

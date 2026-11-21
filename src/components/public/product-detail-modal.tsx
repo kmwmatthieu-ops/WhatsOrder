@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
-import { X, Minus, Plus, ShoppingBag, ImageIcon, Clock } from "lucide-react";
+import { X, Minus, Plus, ShoppingBag, ImageIcon, Clock, Check } from "lucide-react";
 import { formatFCFA } from "@/lib/format";
 import { useCart } from "@/lib/cart/cart-context";
-import type { Product } from "@/types/database";
+import type { ProductWithVariants } from "@/types/database";
 
 export function ProductDetailModal({
   product,
@@ -13,7 +13,7 @@ export function ProductDetailModal({
   isShopOpen = true,
   onClose,
 }: {
-  product: Product | null;
+  product: ProductWithVariants | null;
   primaryColor: string;
   isShopOpen?: boolean;
   onClose: () => void;
@@ -21,21 +21,88 @@ export function ProductDetailModal({
   const { addItem } = useCart();
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
+  const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
   const [optionsNote, setOptionsNote] = useState("");
+
+  const variants = product?.product_variants ?? [];
+  const hasVariants = variants.length > 0;
+
+  // À chaque ouverture d'un produit, pré-sélectionner la première variante disponible
+  useEffect(() => {
+    if (!product) return;
+    setSelectedPhotoIndex(0);
+    setQuantity(1);
+    setOptionsNote("");
+
+    const prodVariants = product.product_variants ?? [];
+    if (prodVariants.length > 0) {
+      const firstAvail = prodVariants.find(
+        (v) => v.is_available && (v.stock === null || v.stock > 0)
+      );
+      setSelectedVariantId(firstAvail ? firstAvail.id : null);
+    } else {
+      setSelectedVariantId(null);
+    }
+  }, [product]);
 
   if (!product) return null;
 
-  const isOutOfStock = !product.is_available || product.stock === 0;
-  const cannotOrder = isOutOfStock || !isShopOpen;
-  const maxAvailable = product.stock ?? 999;
+  const selectedVariant = hasVariants
+    ? variants.find((v) => v.id === selectedVariantId) ?? null
+    : null;
+
+  const isVariantExhausted = (v: (typeof variants)[number]) =>
+    !v.is_available || v.stock === 0;
+
+  const isOutOfStock = hasVariants
+    ? !product.is_available || variants.every(isVariantExhausted)
+    : !product.is_available || product.stock === 0;
+
+  const activePrice = selectedVariant?.price_override ?? product.price;
+  const activeStock = hasVariants ? (selectedVariant ? selectedVariant.stock : 0) : product.stock;
+  const maxAvailable = activeStock ?? 999;
+
+  const cannotOrder =
+    isOutOfStock ||
+    !isShopOpen ||
+    (hasVariants && (!selectedVariant || isVariantExhausted(selectedVariant)));
+
   const images = product.images ?? [];
   const activeImage = images[selectedPhotoIndex];
 
+  function handleSelectVariant(variantId: string) {
+    const target = variants.find((v) => v.id === variantId);
+    if (!target || isVariantExhausted(target)) return;
+    setSelectedVariantId(variantId);
+    if (target.stock !== null && quantity > target.stock) {
+      setQuantity(Math.max(1, target.stock));
+    }
+  }
+
   function handleAddToCart() {
     if (cannotOrder || !product) return;
+
+    if (hasVariants && selectedVariant) {
+      addItem(
+        {
+          productId: product.id,
+          variantId: selectedVariant.id,
+          name: product.name,
+          price: activePrice,
+          imageUrl: images[0] ?? null,
+          maxStock: selectedVariant.stock,
+          selectedOptions: selectedVariant.label,
+        },
+        quantity
+      );
+      onClose();
+      return;
+    }
+
     addItem(
       {
         productId: product.id,
+        variantId: null,
         name: product.name,
         price: product.price,
         imageUrl: images[0] ?? null,
@@ -110,11 +177,11 @@ export function ProductDetailModal({
             <div>
               <h2 className="text-lg sm:text-xl font-extrabold text-ink">{product.name}</h2>
               <p className="mt-1 font-extrabold text-xl" style={{ color: primaryColor }}>
-                {formatFCFA(product.price)}
+                {formatFCFA(activePrice)}
               </p>
-              {product.stock !== null && (
+              {activeStock !== null && (
                 <p className="text-xs text-muted mt-1">
-                  {product.stock > 0 ? `${product.stock} disponibles en stock` : "Rupture de stock"}
+                  {activeStock > 0 ? `${activeStock} disponible${activeStock > 1 ? "s" : ""} en stock` : "Rupture de stock"}
                 </p>
               )}
             </div>
@@ -128,7 +195,65 @@ export function ProductDetailModal({
               </div>
             )}
 
-            {product.options_text && isShopOpen && !isOutOfStock && (
+            {/* Sélecteur de variantes structurées (V2-C) */}
+            {hasVariants && (
+              <div className="border-t border-line pt-3 flex flex-col gap-2.5">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-muted">
+                    Choisissez votre variante
+                  </h4>
+                  {selectedVariant && (
+                    <span className="text-xs font-extrabold text-ink">
+                      {selectedVariant.label}
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  {variants.map((v) => {
+                    const exhausted = isVariantExhausted(v);
+                    const isSelected = selectedVariantId === v.id && !exhausted;
+                    const vPrice = v.price_override ?? product.price;
+                    const hasCustomPrice = v.price_override !== null && v.price_override !== product.price;
+
+                    return (
+                      <button
+                        key={v.id}
+                        type="button"
+                        disabled={exhausted}
+                        onClick={() => handleSelectVariant(v.id)}
+                        className={`inline-flex items-center gap-1.5 rounded-2xl border px-3.5 py-2 text-xs font-bold transition-all ${
+                          exhausted
+                            ? "border-line bg-sand/50 text-muted line-through opacity-55 cursor-not-allowed"
+                            : isSelected
+                              ? "text-white shadow-sm scale-[1.02]"
+                              : "border-line bg-white text-ink hover:bg-sand/50 cursor-pointer"
+                        }`}
+                        style={
+                          isSelected
+                            ? { backgroundColor: primaryColor, borderColor: primaryColor }
+                            : undefined
+                        }
+                      >
+                        {isSelected && <Check className="size-3.5 stroke-[3] shrink-0" />}
+                        <span>{v.label}</span>
+                        {hasCustomPrice && !exhausted && (
+                          <span className={`text-[11px] ${isSelected ? "opacity-90" : "text-muted"}`}>
+                            ({formatFCFA(vPrice)})
+                          </span>
+                        )}
+                        {exhausted && (
+                          <span className="text-[10px] font-semibold no-underline">(Épuisé)</span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Rétrocompatibilité si un ancien produit avait encore options_text sans variantes */}
+            {!hasVariants && product.options_text && isShopOpen && !isOutOfStock && (
               <div className="border-t border-line pt-3">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-muted">Options proposées</h4>
                 <p className="mt-1 text-xs text-brand-700 bg-brand-50 p-2.5 rounded-xl border border-brand-100">
@@ -196,6 +321,11 @@ export function ProductDetailModal({
               <>
                 <ShoppingBag className="size-5 shrink-0" />
                 <span>Produit épuisé</span>
+              </>
+            ) : hasVariants && !selectedVariant ? (
+              <>
+                <ShoppingBag className="size-5 shrink-0" />
+                <span>Choisissez une variante</span>
               </>
             ) : (
               <>

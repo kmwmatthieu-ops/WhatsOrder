@@ -1,6 +1,6 @@
 /**
  * Types de la base Supabase.
- * Écrits à la main d'après supabase/migrations (V2-B inclus).
+ * Écrits à la main d'après supabase/migrations (V2-B et V2-C inclus).
  */
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
@@ -19,6 +19,12 @@ export type OpeningHours = {
   friday: DaySchedule;
   saturday: DaySchedule;
   sunday: DaySchedule;
+};
+
+export type VariantAttributes = {
+  taille?: string;
+  couleur?: string;
+  modele?: string;
 };
 
 export type Database = {
@@ -159,6 +165,44 @@ export type Database = {
           },
         ];
       };
+      product_variants: {
+        Row: {
+          id: string;
+          product_id: string;
+          shop_id: string;
+          label: string;
+          attributes: VariantAttributes;
+          price_override: number | null;
+          stock: number | null;
+          is_available: boolean;
+          position: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          product_id: string;
+          shop_id: string;
+          label: string;
+          attributes?: VariantAttributes;
+          price_override?: number | null;
+          stock?: number | null;
+          is_available?: boolean;
+          position?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["product_variants"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "product_variants_product_shop_fk";
+            columns: ["product_id", "shop_id"];
+            isOneToOne: false;
+            referencedRelation: "products";
+            referencedColumns: ["id", "shop_id"];
+          },
+        ];
+      };
       customers: {
         Row: {
           id: string;
@@ -232,6 +276,7 @@ export type Database = {
           id: string;
           order_id: string;
           product_id: string | null;
+          variant_id: string | null;
           product_name: string;
           unit_price: number;
           quantity: number;
@@ -241,6 +286,7 @@ export type Database = {
           id?: string;
           order_id: string;
           product_id?: string | null;
+          variant_id?: string | null;
           product_name: string;
           unit_price: number;
           quantity: number;
@@ -297,6 +343,7 @@ export type Database = {
             product_id: string;
             quantity: number;
             selected_options: string | null;
+            variant_id?: string | null;
           }>;
           p_delivery_zone_id?: string | null;
         };
@@ -333,6 +380,10 @@ export type Tables<T extends keyof Database["public"]["Tables"]> =
 export type Shop = Tables<"shops">;
 export type Category = Tables<"categories">;
 export type Product = Tables<"products">;
+export type ProductVariant = Tables<"product_variants">;
+export type ProductWithVariants = Product & {
+  product_variants?: ProductVariant[];
+};
 export type Customer = Tables<"customers">;
 export type Order = Tables<"orders">;
 export type OrderItem = Tables<"order_items">;

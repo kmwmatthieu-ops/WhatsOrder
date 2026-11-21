@@ -33,8 +33,8 @@ export function getAnonClient(): SupabaseClient<Database> {
 
 export type TestContext = {
   admin: SupabaseClient<Database>;
-  userA: { id: string; email: string; client: SupabaseClient<Database>; shopId: string };
-  userB: { id: string; email: string; client: SupabaseClient<Database>; shopId: string };
+  userA: { id: string; email: string; client: SupabaseClient<Database>; shopId: string; shopSlug: string };
+  userB: { id: string; email: string; client: SupabaseClient<Database>; shopId: string; shopSlug: string };
   anon: SupabaseClient<Database>;
 };
 
@@ -91,6 +91,7 @@ export async function createTestUserWithShop(
     email,
     client: userClient,
     shopId: shop.id,
+    shopSlug: slug,
   };
 }
 

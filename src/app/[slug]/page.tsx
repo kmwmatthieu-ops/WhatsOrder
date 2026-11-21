@@ -5,6 +5,7 @@ import { CartProvider } from "@/lib/cart/cart-context";
 import { ShopHeader } from "@/components/public/shop-header";
 import { PublicCatalog } from "@/components/public/public-catalog";
 import { AlertTriangle } from "lucide-react";
+import type { ProductWithVariants } from "@/types/database";
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -69,15 +70,20 @@ export default async function PublicShopPage({ params }: Props) {
     );
   }
 
-  // Récupérer les catégories et les produits
+  // Récupérer les catégories et les produits (avec leurs variantes structurées V2-C)
   const [{ data: categories }, { data: products }] = await Promise.all([
     supabase.from("categories").select("*").eq("shop_id", shop.id).order("name"),
     supabase
       .from("products")
-      .select("*")
+      .select("*, product_variants(*)")
       .eq("shop_id", shop.id)
       .order("created_at", { ascending: false }),
   ]);
+
+  const typedProducts = ((products as ProductWithVariants[]) ?? []).map((p) => ({
+    ...p,
+    product_variants: [...(p.product_variants ?? [])].sort((a, b) => a.position - b.position),
+  }));
 
   return (
     <CartProvider shopId={shop.id}>
@@ -86,7 +92,7 @@ export default async function PublicShopPage({ params }: Props) {
         <PublicCatalog
           shop={shop}
           categories={categories ?? []}
-          products={products ?? []}
+          products={typedProducts}
         />
       </div>
     </CartProvider>

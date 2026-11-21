@@ -7,13 +7,13 @@ import { ProductRow } from "@/components/products/product-row";
 import { CategoryManager } from "@/components/products/category-manager";
 import { LimitBanner } from "@/components/products/limit-banner";
 import { PRODUCT_LIMIT } from "@/lib/constants";
-import type { Category, Product } from "@/types/database";
+import type { Category, ProductWithVariants } from "@/types/database";
 
 export function ProductsView({
   products,
   categories,
 }: {
-  products: Product[];
+  products: ProductWithVariants[];
   categories: Category[];
 }) {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
