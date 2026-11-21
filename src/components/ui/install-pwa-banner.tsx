@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Download, X, Share2, PlusSquare } from "lucide-react";
+import { Download, X, Share2, PlusSquare, MoreVertical } from "lucide-react";
 import { LogoIcon } from "@/components/ui/logo";
 
 interface BeforeInstallPromptEvent extends Event {
@@ -12,11 +12,19 @@ interface BeforeInstallPromptEvent extends Event {
 export function InstallPwaBanner() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isIos, setIsIos] = useState(false);
-  const [showIosTip, setShowIosTip] = useState(false);
+  const [showManualTip, setShowManualTip] = useState(false);
   const [dismissed, setDismissed] = useState(true);
 
   useEffect(() => {
-    // Ne rien afficher si déjà installé ou lancé en mode autonome
+    // 1. Enregistrer systématiquement le Service Worker pour que Chrome/Android
+    // installe une vraie WebAPK autonome avec le logo Bon Waz à Dealer (sans badge Chrome).
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(() => {
+        /* ignore */
+      });
+    }
+
+    // 2. Ne rien afficher si déjà installé ou lancé en mode autonome
     const isStandalone =
       window.matchMedia("(display-mode: standalone)").matches ||
       (navigator as unknown as { standalone?: boolean }).standalone === true;
@@ -39,8 +47,17 @@ export function InstallPwaBanner() {
       setDeferredPrompt(e as BeforeInstallPromptEvent);
     };
 
+    const handleAppInstalled = () => {
+      setDismissed(true);
+      setDeferredPrompt(null);
+    };
+
     window.addEventListener("beforeinstallprompt", handleBeforeInstall);
-    return () => window.removeEventListener("beforeinstallprompt", handleBeforeInstall);
+    window.addEventListener("appinstalled", handleAppInstalled);
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handleBeforeInstall);
+      window.removeEventListener("appinstalled", handleAppInstalled);
+    };
   }, []);
 
   if (dismissed) return null;
@@ -53,8 +70,8 @@ export function InstallPwaBanner() {
         setDismissed(true);
       }
       setDeferredPrompt(null);
-    } else if (isIos) {
-      setShowIosTip(true);
+    } else {
+      setShowManualTip((prev) => !prev);
     }
   }
 
@@ -72,7 +89,7 @@ export function InstallPwaBanner() {
         <LogoIcon className="size-10 shrink-0 rounded-xl" />
         <div className="flex-1 min-w-0">
           <p className="text-xs font-bold text-ink leading-tight">Installer Bon Waz à Dealer</p>
-          <p className="text-[11px] text-muted truncate">Accédez à votre boutique en 1 clic sans navigateur</p>
+          <p className="text-[11px] text-muted truncate">Application officielle sur votre écran d&apos;accueil</p>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
           <button
@@ -94,19 +111,36 @@ export function InstallPwaBanner() {
         </div>
       </div>
 
-      {showIosTip && (
+      {showManualTip && (
         <div className="mt-3 border-t border-line/60 pt-2.5 text-xs text-muted leading-relaxed">
-          <p className="font-semibold text-ink mb-1">Pour installer sur iPhone :</p>
-          <ol className="list-decimal list-inside space-y-1">
-            <li className="flex items-center gap-1.5">
-              <span>1. Appuyez sur le bouton Partager</span>
-              <Share2 className="size-3.5 text-brand-600 inline shrink-0" aria-hidden />
-            </li>
-            <li className="flex items-center gap-1.5">
-              <span>2. Choisissez &laquo;&nbsp;Sur l&apos;écran d&apos;accueil&nbsp;&raquo;</span>
-              <PlusSquare className="size-3.5 text-brand-600 inline shrink-0" aria-hidden />
-            </li>
-          </ol>
+          {isIos ? (
+            <>
+              <p className="font-semibold text-ink mb-1">Pour installer sur iPhone / iPad :</p>
+              <ol className="list-decimal list-inside space-y-1">
+                <li className="flex items-center gap-1.5">
+                  <span>1. Appuyez sur le bouton Partager</span>
+                  <Share2 className="size-3.5 text-brand-600 inline shrink-0" aria-hidden />
+                </li>
+                <li className="flex items-center gap-1.5">
+                  <span>2. Choisissez &laquo;&nbsp;Sur l&apos;écran d&apos;accueil&nbsp;&raquo;</span>
+                  <PlusSquare className="size-3.5 text-brand-600 inline shrink-0" aria-hidden />
+                </li>
+              </ol>
+            </>
+          ) : (
+            <>
+              <p className="font-semibold text-ink mb-1">Pour installer l&apos;application :</p>
+              <ol className="list-decimal list-inside space-y-1">
+                <li className="flex items-center gap-1.5">
+                  <span>1. Ouvrez le menu du navigateur</span>
+                  <MoreVertical className="size-3.5 text-brand-600 inline shrink-0" aria-hidden />
+                </li>
+                <li className="flex items-center gap-1.5">
+                  <span>2. Sélectionnez &laquo;&nbsp;Installer l&apos;application&nbsp;&raquo;</span>
+                </li>
+              </ol>
+            </>
+          )}
         </div>
       )}
     </aside>

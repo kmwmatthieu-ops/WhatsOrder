@@ -36,7 +36,6 @@ export async function checkSlugAvailability(
   const user = await getUser();
   const supabase = await createClient();
 
-  // Si l'utilisateur connecté possède déjà ce slug, il est disponible pour lui
   if (user) {
     const myShop = await getMyShop();
     if (myShop && myShop.slug === slug) {
@@ -46,15 +45,14 @@ export async function checkSlugAvailability(
 
   const { data, error } = await supabase.rpc("is_slug_available", { p_slug: slug });
   if (error) {
-    // Si la vérification échoue temporairement, on ne bloque jamais l'utilisateur
     return { available: true };
   }
   return { available: Boolean(data) };
 }
 
 /**
- * Fin de l'étape 2 : crée la boutique. Si le compte en possède déjà une,
- * on ne crée rien et on renvoie vers le panneau « Vos boutiques ».
+ * Fin de l'étape 2 : crée la boutique en base puis laisse l'utilisateur
+ * passer à l'étape 3 (Design : photo de profil / logo & couleur) avant d'entrer dans sa boutique.
  */
 export async function createShop(input: {
   name: string;
@@ -69,14 +67,14 @@ export async function createShop(input: {
 
   const supabase = await createClient();
 
-  // 1. Le compte possède déjà une boutique → aucune création.
+  // 1. Si le compte possède déjà une boutique, on renvoie son identifiant
   const myShop = await getMyShop();
   if (myShop) {
-    revalidatePath("/boutiques");
     return { ok: true, shopId: myShop.id, alreadyExists: true };
   }
 
-  // 2. Création.
+  // 2. Création en base (pas de revalidatePath ici pour ne pas provoquer un re-rendu
+  // anticipé qui éjecterait l'utilisateur de l'étape 3 de personnalisation).
   const { data, error } = await supabase
     .from("shops")
     .insert({ ...parsed.data, owner_id: user.id })
@@ -91,12 +89,31 @@ export async function createShop(input: {
     if (error.code === "23505" && error.message.includes("slug")) {
       return { fieldErrors: { slug: "Ce lien de boutique est déjà pris. Choisissez-en un autre." } };
     }
-    // Message réel affiché (plus de message générique qui masque la cause).
     const friendly = dbErrorMessage(error, "Création de la boutique impossible.");
     return { error: `${friendly} (${error.code ?? "?"} : ${error.message})` };
   }
 
+  return { ok: true, shopId: data.id };
+}
+
+/**
+ * Fin de l'étape 3 : enregistre la couleur choisie lors du design de la boutique
+ * et invalide le cache avant d'entrer directement dans /tableau-de-bord.
+ */
+export async function completeOnboardingDesign(primaryColor?: string): Promise<{ ok: boolean }> {
+  try {
+    const shop = await getMyShop();
+    if (shop && primaryColor && /^#[0-9a-fA-F]{6}$/.test(primaryColor)) {
+      const supabase = await createClient();
+      await supabase
+        .from("shops")
+        .update({ primary_color: primaryColor })
+        .eq("id", shop.id);
+    }
+  } catch {
+    /* ignore */
+  }
   revalidatePath("/tableau-de-bord", "layout");
   revalidatePath("/boutiques");
-  return { ok: true, shopId: data.id };
+  return { ok: true };
 }

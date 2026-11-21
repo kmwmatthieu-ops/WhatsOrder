@@ -32,12 +32,22 @@ export async function updateSession(request: NextRequest) {
     },
   );
 
+  const path = request.nextUrl.pathname;
+  const authCode = request.nextUrl.searchParams.get("code");
+
+  // Si Supabase redirige vers la racine /?code=... après confirmation d'e-mail,
+  // on achemine automatiquement le code PKCE vers /auth/confirmer.
+  if (authCode && path !== "/auth/confirmer") {
+    const confirmUrl = request.nextUrl.clone();
+    confirmUrl.pathname = "/auth/confirmer";
+    return NextResponse.redirect(confirmUrl);
+  }
+
   // Important : ne rien exécuter entre createServerClient et getUser().
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const path = request.nextUrl.pathname;
   const isRscOrPrefetch =
     request.headers.get("rsc") === "1" ||
     request.headers.has("next-router-prefetch") ||
@@ -61,7 +71,6 @@ export async function updateSession(request: NextRequest) {
 
   // Sur une navigation document directe (hors requête RSC/prefetch qui casserait l'arbre
   // du layout (auth) dans Next.js 16), on redirige immédiatement vers /boutiques.
-  // Sur une transition RSC, SignInForm / SignUpForm redirige proprement via window.location.replace("/boutiques").
   if (user && request.method === "GET" && !isRscOrPrefetch && GUEST_ONLY.includes(path)) {
     return redirectWithCookies("/boutiques");
   }

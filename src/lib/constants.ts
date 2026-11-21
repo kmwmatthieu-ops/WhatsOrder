@@ -27,9 +27,19 @@ export const SHOP_COLOR_PRESETS = [
   "#111827", // noir
 ];
 
+/** Domaine public officiel de la plateforme en production. */
+export const PRODUCTION_SITE_URL = "https://bonwazadealer.vercel.app";
+
 /** URL publique de l'application (liens e-mail et liens de boutique). */
 export function siteUrl() {
-  return (process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000").replace(/\/$/, "");
+  const envUrl = process.env.NEXT_PUBLIC_SITE_URL;
+  if (envUrl && !envUrl.includes("localhost")) {
+    return envUrl.replace(/\/$/, "");
+  }
+  if (process.env.NODE_ENV === "production") {
+    return PRODUCTION_SITE_URL;
+  }
+  return (envUrl || "http://localhost:3000").replace(/\/$/, "");
 }
 
 /** Configuration cible Supabase du projet WhatsOrder */

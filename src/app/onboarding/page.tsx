@@ -1,27 +1,39 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { getMyShop, getMyShops, getUser } from "@/lib/supabase/server";
+import { getMyShop, getUser } from "@/lib/supabase/server";
 import { Logo } from "@/components/ui/logo";
 import OnboardingWizard from "./onboarding-wizard";
 
 export const metadata: Metadata = { title: "Créer ma boutique" };
 
 /**
- * Création de boutique : réservée aux comptes SANS boutique.
- * Un compte qui possède déjà une boutique est renvoyé vers « Vos boutiques ».
+ * Page de création de boutique en 3 étapes :
+ * Ne fait PAS de redirect("/boutiques") côté serveur afin de ne jamais interrompre
+ * l'étape 3 (design / photo de profil) juste après la création en base à l'étape 2.
+ * La redirection d'un utilisateur qui possédait déjà une boutique avant d'entrer
+ * dans le parcours est gérée par OnboardingWizard au montage initial.
  */
 export default async function OnboardingPage() {
   const user = await getUser();
   if (!user) redirect("/connexion");
-  const shops = await getMyShops();
-  if (shops.length > 0) redirect("/boutiques");
+
   const shop = await getMyShop();
-  if (shop) redirect("/boutiques");
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-5 py-6">
       <Logo className="mb-8" />
-      <OnboardingWizard existingShop={null} />
+      <OnboardingWizard
+        existingShop={
+          shop
+            ? {
+                id: shop.id,
+                name: shop.name,
+                logo_url: shop.logo_url,
+                primary_color: shop.primary_color,
+              }
+            : null
+        }
+      />
     </main>
   );
 }

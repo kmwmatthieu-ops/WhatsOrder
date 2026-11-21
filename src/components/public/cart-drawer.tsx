@@ -2,16 +2,18 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { X, Trash2, Plus, Minus, ArrowRight, ShoppingBag } from "lucide-react";
+import { X, Trash2, Plus, Minus, ArrowRight, ShoppingBag, Clock } from "lucide-react";
 import { formatFCFA } from "@/lib/format";
 import { useCart } from "@/lib/cart/cart-context";
 
 export function CartDrawer({
   slug,
   primaryColor,
+  isShopOpen = true,
 }: {
   slug: string;
   primaryColor: string;
+  isShopOpen?: boolean;
 }) {
   const { items, itemCount, subtotal, updateQuantity, removeItem, clearCart, isCartDrawerOpen, setIsCartDrawerOpen } =
     useCart();
@@ -138,15 +140,26 @@ export function CartDrawer({
                 >
                   Vider
                 </button>
-                <Link
-                  href={`/${slug}/commande`}
-                  onClick={() => setIsCartDrawerOpen(false)}
-                  style={{ backgroundColor: primaryColor }}
-                  className="flex-1 flex h-12 items-center justify-center gap-2 rounded-2xl font-bold text-white shadow-md active:scale-98 transition-transform"
-                >
-                  <span>Passer la commande</span>
-                  <ArrowRight className="size-4" />
-                </Link>
+                {isShopOpen ? (
+                  <Link
+                    href={`/${slug}/commande`}
+                    onClick={() => setIsCartDrawerOpen(false)}
+                    style={{ backgroundColor: primaryColor }}
+                    className="flex-1 flex h-12 items-center justify-center gap-2 rounded-2xl font-bold text-white shadow-md active:scale-98 transition-transform"
+                  >
+                    <span>Passer la commande</span>
+                    <ArrowRight className="size-4" />
+                  </Link>
+                ) : (
+                  <button
+                    type="button"
+                    disabled
+                    className="flex-1 flex h-12 items-center justify-center gap-2 rounded-2xl bg-gray-400 font-bold text-white cursor-not-allowed"
+                  >
+                    <Clock className="size-4" />
+                    <span>Boutique fermée</span>
+                  </button>
+                )}
               </div>
             </div>
           </>

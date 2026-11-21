@@ -22,6 +22,7 @@ export function OpeningHoursEditor({ value, onChange }: Props) {
   }
 
   function handleTimeChange(day: DayKey, field: "start" | "end", time: string) {
+    if (!time) return;
     onChange({
       ...value,
       [day]: {
@@ -34,7 +35,7 @@ export function OpeningHoursEditor({ value, onChange }: Props) {
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-2 text-xs font-bold text-muted">
-        <Clock className="size-4 text-brand-600" aria-hidden />
+        <Clock className="size-4 shrink-0 text-brand-600" aria-hidden />
         <span>Définissez vos horaires d&apos;ouverture hebdomadaires</span>
       </div>
 
@@ -46,18 +47,18 @@ export function OpeningHoursEditor({ value, onChange }: Props) {
           return (
             <div
               key={day}
-              className={`flex flex-col sm:flex-row sm:items-center justify-between p-3 gap-2.5 transition-colors ${
+              className={`flex flex-wrap items-center justify-between px-3 py-2.5 gap-2 transition-colors ${
                 isOpen ? "bg-white" : "bg-sand/30"
               }`}
             >
-              <div className="flex items-center justify-between sm:justify-start gap-3 sm:w-36">
-                <span className={`text-sm font-bold ${isOpen ? "text-ink" : "text-muted"}`}>
+              <div className="flex items-center gap-2 shrink-0">
+                <span className={`w-18 text-xs sm:text-sm font-bold ${isOpen ? "text-ink" : "text-muted"}`}>
                   {DAY_LABELS_FR[day]}
                 </span>
                 <button
                   type="button"
                   onClick={() => handleToggleDay(day)}
-                  className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold transition-colors ${
+                  className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold transition-colors ${
                     isOpen
                       ? "bg-success-50 text-success-700 border border-success-200"
                       : "bg-sand text-muted border border-line"
@@ -68,28 +69,48 @@ export function OpeningHoursEditor({ value, onChange }: Props) {
               </div>
 
               {isOpen ? (
-                <div className="flex items-center gap-2 text-xs">
-                  <div className="flex items-center gap-1">
-                    <span className="text-muted">De</span>
+                <div className="flex items-center gap-1.5 text-xs shrink-0">
+                  <span className="text-[11px] text-muted">De</span>
+                  <label className="relative inline-flex items-center justify-center rounded-lg border border-line bg-sand/30 px-2 py-1 text-xs font-extrabold tabular-nums text-ink shadow-2xs transition-colors hover:border-brand-600 focus-within:border-brand-600 focus-within:bg-white focus-within:ring-2 focus-within:ring-brand-100 cursor-pointer">
+                    <span>{schedule.start}</span>
                     <input
                       type="time"
                       value={schedule.start}
+                      aria-label={`Heure d'ouverture ${DAY_LABELS_FR[day]}`}
                       onChange={(e) => handleTimeChange(day, "start", e.target.value)}
-                      className="h-8 rounded-xl border border-line bg-white px-2 text-xs font-bold text-ink outline-none focus:border-brand-600"
+                      onClick={(e) => {
+                        try {
+                          e.currentTarget.showPicker?.();
+                        } catch {
+                          /* ignore */
+                        }
+                      }}
+                      className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
                     />
-                  </div>
-                  <span className="text-muted">à</span>
-                  <div className="flex items-center gap-1">
+                  </label>
+
+                  <span className="text-[11px] text-muted">à</span>
+
+                  <label className="relative inline-flex items-center justify-center rounded-lg border border-line bg-sand/30 px-2 py-1 text-xs font-extrabold tabular-nums text-ink shadow-2xs transition-colors hover:border-brand-600 focus-within:border-brand-600 focus-within:bg-white focus-within:ring-2 focus-within:ring-brand-100 cursor-pointer">
+                    <span>{schedule.end}</span>
                     <input
                       type="time"
                       value={schedule.end}
+                      aria-label={`Heure de fermeture ${DAY_LABELS_FR[day]}`}
                       onChange={(e) => handleTimeChange(day, "end", e.target.value)}
-                      className="h-8 rounded-xl border border-line bg-white px-2 text-xs font-bold text-ink outline-none focus:border-brand-600"
+                      onClick={(e) => {
+                        try {
+                          e.currentTarget.showPicker?.();
+                        } catch {
+                          /* ignore */
+                        }
+                      }}
+                      className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
                     />
-                  </div>
+                  </label>
                 </div>
               ) : (
-                <span className="text-xs italic text-muted">Boutique fermée toute la journée</span>
+                <span className="text-[11px] italic text-muted">Fermé toute la journée</span>
               )}
             </div>
           );

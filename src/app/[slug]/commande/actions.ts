@@ -6,6 +6,8 @@ import { checkoutSchema } from "@/lib/validation/checkout";
 import { toFieldErrors, type ActionState } from "@/lib/action-state";
 import { dbErrorMessage } from "@/lib/errors";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { isShopCurrentlyOpen } from "@/lib/opening-hours";
+import type { OpeningHours } from "@/types/database";
 
 export type OrderPlacementResult = ActionState & {
   publicCode?: string;
@@ -18,7 +20,6 @@ export async function submitOrder(
 ): Promise<OrderPlacementResult> {
   const honeypot = String(formData.get("hp_check") ?? "");
   if (honeypot.length > 0) {
-    // Spam bot détecté
     return { error: "Activité suspecte détectée." };
   }
 
@@ -28,6 +29,31 @@ export async function submitOrder(
   const ipRateLimit = checkRateLimit(`ip:${ip}`, 5, 10 * 60 * 1000);
   if (!ipRateLimit.success) {
     return { error: "Trop de commandes envoyées récemment. Veuillez patienter quelques minutes avant de renouveler." };
+  }
+
+  const supabase = await createClient();
+
+  // Vérification que la boutique est active et actuellement ouverte
+  const { data: shopData } = await supabase
+    .from("shops")
+    .select("id, status, opening_hours, whatsapp_number")
+    .eq("slug", shopSlug)
+    .maybeSingle();
+
+  if (!shopData || shopData.status !== "active") {
+    return { error: "Cette boutique n'est pas disponible actuellement." };
+  }
+
+  const openStatus = isShopCurrentlyOpen(
+    shopData.opening_hours as OpeningHours | null,
+    new Date(),
+    shopData.whatsapp_number
+  );
+
+  if (!openStatus.isOpen) {
+    return {
+      error: `Cette boutique est actuellement fermée (${openStatus.dayLabel} : ${openStatus.hoursText}). Vous ne pouvez pas passer commande en dehors des horaires d'ouverture.`,
+    };
   }
 
   const itemsRaw = formData.get("items_json");
@@ -55,8 +81,6 @@ export async function submitOrder(
   if (!parsed.success) {
     return { fieldErrors: toFieldErrors(parsed.error.issues) };
   }
-
-  const supabase = await createClient();
 
   // Appel de la fonction transactionnelle sécurisée place_order
   const { data, error } = await supabase.rpc("place_order", {

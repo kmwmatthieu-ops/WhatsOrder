@@ -152,13 +152,13 @@ export default async function OrderConfirmationPage({ params }: Props) {
       </div>
 
       <div className="flex justify-center pt-2">
-        <Link
+        <a
           href={`/${shop.slug}`}
-          className="inline-flex items-center gap-2 text-xs font-semibold text-brand-700 hover:underline"
+          className="inline-flex items-center justify-center gap-2 rounded-2xl border border-line bg-white px-5 py-3 text-xs font-bold text-ink shadow-xs hover:bg-sand active:scale-95 transition-all cursor-pointer"
         >
-          <Store className="size-4" />
+          <Store className="size-4 text-brand-700" />
           <span>Retourner à la boutique {shop.name}</span>
-        </Link>
+        </a>
       </div>
     </main>
   );

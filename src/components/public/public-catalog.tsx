@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Search, PackageOpen } from "lucide-react";
+import { Search, PackageOpen, Clock } from "lucide-react";
 import { ProductCard } from "./product-card";
 import { ProductDetailModal } from "./product-detail-modal";
 import { FloatingCartButton } from "./floating-cart-button";
 import { CartDrawer } from "./cart-drawer";
+import { isShopCurrentlyOpen } from "@/lib/opening-hours";
 import type { Category, Product, Shop } from "@/types/database";
 
 export function PublicCatalog({
@@ -21,6 +22,9 @@ export function PublicCatalog({
   const [search, setSearch] = useState("");
   const [activeProduct, setActiveProduct] = useState<Product | null>(null);
 
+  const openStatus = isShopCurrentlyOpen(shop.opening_hours);
+  const isShopOpen = openStatus.isOpen;
+
   // Filtrage combiné : catégorie + recherche
   const filteredProducts = products.filter((p) => {
     const matchesCategory =
@@ -35,6 +39,22 @@ export function PublicCatalog({
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-6 flex flex-col gap-5 pb-24">
+      {/* Bandeau d'information si la boutique est actuellement fermée */}
+      {!isShopOpen && (
+        <div
+          role="status"
+          className="flex items-start gap-3 rounded-2xl border border-rose-200 bg-rose-50/90 p-3.5 text-xs text-rose-900 shadow-2xs"
+        >
+          <Clock className="size-4 shrink-0 text-rose-600 mt-0.5" aria-hidden />
+          <div>
+            <p className="font-extrabold">Cette boutique est actuellement fermée</p>
+            <p className="mt-0.5 text-rose-700 leading-relaxed">
+              Vous pouvez consulter le catalogue, mais la prise de commande est désactivée en dehors des horaires d&apos;ouverture ({openStatus.dayLabel} : {openStatus.hoursText}).
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Barre de recherche rapide */}
       <div className="relative">
         <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted" aria-hidden />
@@ -102,6 +122,7 @@ export function PublicCatalog({
               key={p.id}
               product={p}
               primaryColor={shop.primary_color}
+              isShopOpen={isShopOpen}
               onClick={() => setActiveProduct(p)}
             />
           ))}
@@ -112,14 +133,19 @@ export function PublicCatalog({
       <ProductDetailModal
         product={activeProduct}
         primaryColor={shop.primary_color}
+        isShopOpen={isShopOpen}
         onClose={() => setActiveProduct(null)}
       />
 
       {/* Tiroir Panier */}
-      <CartDrawer slug={shop.slug} primaryColor={shop.primary_color} />
+      <CartDrawer
+        slug={shop.slug}
+        primaryColor={shop.primary_color}
+        isShopOpen={isShopOpen}
+      />
 
-      {/* Bouton flottant mobile */}
-      <FloatingCartButton primaryColor={shop.primary_color} />
+      {/* Bouton flottant mobile (uniquement si la boutique est ouverte) */}
+      {isShopOpen && <FloatingCartButton primaryColor={shop.primary_color} />}
     </div>
   );
 }

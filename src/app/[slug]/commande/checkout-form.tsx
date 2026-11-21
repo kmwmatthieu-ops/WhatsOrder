@@ -1,13 +1,12 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { ArrowLeft, Truck, Store as StoreIcon, ShieldCheck, MapPin } from "lucide-react";
+import { useActionState, useEffect, useRef, useState } from "react";
+import { Truck, Store as StoreIcon, ShieldCheck, Clock, CheckCircle2 } from "lucide-react";
 import { submitOrder, type OrderPlacementResult } from "./actions";
 import { initialActionState } from "@/lib/action-state";
 import { useCart } from "@/lib/cart/cart-context";
 import { formatFCFA } from "@/lib/format";
+import { isShopCurrentlyOpen } from "@/lib/opening-hours";
 import { DEFAULT_COUNTRY_CODE, isValidE164, toE164 } from "@/lib/phone";
 import { Input, Textarea } from "@/components/ui/field";
 import { SubmitButton } from "@/components/ui/submit-button";
@@ -21,8 +20,8 @@ type Props = {
 };
 
 export function CheckoutForm({ shop, zones = [] }: Props) {
-  const router = useRouter();
   const { items, subtotal, clearCart } = useCart();
+  const hasRedirectedRef = useRef(false);
 
   const boundSubmit = submitOrder.bind(null, shop.slug);
   const [state, action] = useActionState<OrderPlacementResult, FormData>(
@@ -40,6 +39,9 @@ export function CheckoutForm({ shop, zones = [] }: Props) {
     zones.length > 0 ? zones[0].id : ""
   );
 
+  const openStatus = isShopCurrentlyOpen(shop.opening_hours, new Date(), shop.whatsapp_number);
+  const isShopOpen = openStatus.isOpen;
+
   const isDelivery = fulfillment === "delivery";
   const activeZone = zones.find((z) => z.id === selectedZoneId) || zones[0];
   const deliveryFee = isDelivery
@@ -51,24 +53,71 @@ export function CheckoutForm({ shop, zones = [] }: Props) {
   const fullWhatsapp = toE164(phone.countryCode, phone.local);
 
   useEffect(() => {
-    if (state.ok && state.publicCode) {
+    if (state.ok && state.publicCode && !hasRedirectedRef.current) {
+      hasRedirectedRef.current = true;
       clearCart();
-      router.replace(`/${shop.slug}/commande/${state.publicCode}`);
+      window.location.replace(`/${shop.slug}/commande/${state.publicCode}`);
     }
-  }, [state, router, shop.slug, clearCart]);
+  }, [state.ok, state.publicCode, shop.slug, clearCart]);
 
+  // 1. Si la commande vient d'être validée, on affiche l'écran de transition
+  // (évite d'afficher "Votre panier est vide" pendant le vidage du panier).
+  if (state.ok && state.publicCode) {
+    return (
+      <div className="flex flex-col items-center justify-center rounded-3xl border border-line bg-white p-8 text-center my-6 shadow-xs">
+        <span className="grid size-14 place-items-center rounded-2xl bg-success-50 text-success-600 mb-3">
+          <CheckCircle2 className="size-8" />
+        </span>
+        <p className="font-extrabold text-ink text-base">Commande enregistrée !</p>
+        <p className="text-xs text-muted mt-1">
+          Ouverture de votre récapitulatif de commande WhatsApp…
+        </p>
+        <a
+          href={`/${shop.slug}/commande/${state.publicCode}`}
+          className="mt-4 inline-flex items-center justify-center rounded-2xl px-5 py-2.5 text-xs font-bold text-white shadow-xs cursor-pointer"
+          style={{ backgroundColor: shop.primary_color }}
+        >
+          Voir ma commande
+        </a>
+      </div>
+    );
+  }
+
+  // 2. Si la boutique est fermée, interdire la prise de commande.
+  if (!isShopOpen) {
+    return (
+      <div className="flex flex-col items-center justify-center rounded-3xl border border-rose-200 bg-white p-8 text-center my-6 shadow-xs">
+        <span className="grid size-14 place-items-center rounded-2xl bg-rose-50 text-rose-600 mb-3">
+          <Clock className="size-7" />
+        </span>
+        <p className="font-extrabold text-ink text-base">Cette boutique est actuellement fermée</p>
+        <p className="text-xs text-muted mt-1.5 max-w-xs leading-relaxed">
+          Les commandes ne sont pas disponibles en dehors des horaires d&apos;ouverture ({openStatus.dayLabel} : {openStatus.hoursText}).
+        </p>
+        <a
+          href={`/${shop.slug}`}
+          className="mt-5 inline-flex items-center justify-center rounded-2xl px-5 py-3 text-xs font-bold text-white shadow-xs hover:opacity-95 active:scale-95 transition-all cursor-pointer"
+          style={{ backgroundColor: shop.primary_color }}
+        >
+          Retour à la boutique
+        </a>
+      </div>
+    );
+  }
+
+  // 3. Si le panier est vide
   if (items.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-line bg-white p-8 text-center my-6">
         <p className="font-bold text-ink text-base">Votre panier est vide</p>
         <p className="text-xs text-muted mt-1">Ajoutez des articles avant de passer commande.</p>
-        <Link
+        <a
           href={`/${shop.slug}`}
-          className="mt-4 rounded-2xl px-5 py-2.5 text-xs font-bold text-white shadow-xs"
+          className="mt-4 inline-flex items-center justify-center rounded-2xl px-5 py-3 text-xs font-bold text-white shadow-xs hover:opacity-95 active:scale-95 transition-all cursor-pointer"
           style={{ backgroundColor: shop.primary_color }}
         >
           Retour à la boutique
-        </Link>
+        </a>
       </div>
     );
   }

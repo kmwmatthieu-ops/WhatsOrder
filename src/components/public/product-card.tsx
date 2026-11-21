@@ -1,20 +1,23 @@
 "use client";
 
 import Image from "next/image";
-import { ImageIcon } from "lucide-react";
+import { ImageIcon, Plus } from "lucide-react";
 import { formatFCFA } from "@/lib/format";
 import type { Product } from "@/types/database";
 
 export function ProductCard({
   product,
   primaryColor,
+  isShopOpen = true,
   onClick,
 }: {
   product: Product;
   primaryColor: string;
+  isShopOpen?: boolean;
   onClick: () => void;
 }) {
   const isOutOfStock = !product.is_available || product.stock === 0;
+  const isDisabled = isOutOfStock || !isShopOpen;
   const coverImage = product.images?.[0];
 
   return (
@@ -61,7 +64,7 @@ export function ProductCard({
 
       {/* Contenu */}
       <div className="flex flex-1 flex-col p-3">
-        <h3 className="line-clamp-2 text-xs sm:text-sm font-bold text-ink group-hover:text-brand-600 transition-colors">
+        <h3 className="line-clamp-2 text-xs sm:text-sm font-bold text-ink group-hover:text-brand-600 transition-colors leading-snug">
           {product.name}
         </h3>
 
@@ -71,16 +74,25 @@ export function ProductCard({
           </p>
         )}
 
-        <div className="mt-auto pt-2 flex items-center justify-between">
-          <span className="font-extrabold text-sm sm:text-base text-ink">
+        <div className="mt-auto pt-2.5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <span className="font-extrabold text-sm sm:text-base text-ink leading-tight truncate">
             {formatFCFA(product.price)}
           </span>
 
           <span
-            className="rounded-lg px-2.5 py-1 text-[11px] font-bold text-white shadow-xs transition-transform active:scale-95"
-            style={{ backgroundColor: isOutOfStock ? "#6b6f6a" : primaryColor }}
+            className="inline-flex w-full sm:w-auto items-center justify-center gap-1 rounded-xl px-3 py-1.5 text-xs font-bold text-white whitespace-nowrap shadow-xs transition-transform active:scale-95"
+            style={{ backgroundColor: isDisabled ? "#6b6f6a" : primaryColor }}
           >
-            {isOutOfStock ? "Voir" : "+ Ajouter"}
+            {isOutOfStock ? (
+              "Voir"
+            ) : !isShopOpen ? (
+              "Fermé"
+            ) : (
+              <>
+                <Plus className="size-3.5 stroke-[2.5] shrink-0" aria-hidden />
+                <span>Ajouter</span>
+              </>
+            )}
           </span>
         </div>
       </div>

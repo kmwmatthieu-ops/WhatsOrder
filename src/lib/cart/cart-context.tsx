@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
 import type { CartItem, CartState } from "./types";
 
 type CartContextType = CartState & {
@@ -53,7 +53,7 @@ export function CartProvider({
     }
   }, [items, isInitialized, shopId]);
 
-  const addItem = (item: Omit<CartItem, "quantity">, quantity = 1) => {
+  const addItem = useCallback((item: Omit<CartItem, "quantity">, quantity = 1) => {
     setItems((prev) => {
       const existingIndex = prev.findIndex(
         (i) => i.productId === item.productId && (i.selectedOptions ?? "") === (item.selectedOptions ?? "")
@@ -74,41 +74,44 @@ export function CartProvider({
       return [...prev, { ...item, quantity: cappedQty }];
     });
     setIsCartDrawerOpen(true);
-  };
+  }, []);
 
-  const updateQuantity = (productId: string, quantity: number, options?: string | null) => {
-    if (quantity <= 0) {
-      removeItem(productId, options);
-      return;
-    }
-
-    setItems((prev) =>
-      prev.map((i) => {
-        if (i.productId === productId && (i.selectedOptions ?? "") === (options ?? "")) {
-          const cappedQty = i.maxStock !== null ? Math.min(quantity, i.maxStock) : quantity;
-          return { ...i, quantity: cappedQty };
-        }
-        return i;
-      })
-    );
-  };
-
-  const removeItem = (productId: string, options?: string | null) => {
+  const removeItem = useCallback((productId: string, options?: string | null) => {
     setItems((prev) =>
       prev.filter(
         (i) => !(i.productId === productId && (i.selectedOptions ?? "") === (options ?? ""))
       )
     );
-  };
+  }, []);
 
-  const clearCart = () => {
+  const updateQuantity = useCallback(
+    (productId: string, quantity: number, options?: string | null) => {
+      if (quantity <= 0) {
+        removeItem(productId, options);
+        return;
+      }
+
+      setItems((prev) =>
+        prev.map((i) => {
+          if (i.productId === productId && (i.selectedOptions ?? "") === (options ?? "")) {
+            const cappedQty = i.maxStock !== null ? Math.min(quantity, i.maxStock) : quantity;
+            return { ...i, quantity: cappedQty };
+          }
+          return i;
+        })
+      );
+    },
+    [removeItem]
+  );
+
+  const clearCart = useCallback(() => {
     setItems([]);
     try {
       localStorage.removeItem(getStorageKey(shopId));
     } catch {
       /* ignore */
     }
-  };
+  }, [shopId]);
 
   const itemCount = items.reduce((acc, item) => acc + item.quantity, 0);
   const subtotal = items.reduce((acc, item) => acc + item.price * item.quantity, 0);

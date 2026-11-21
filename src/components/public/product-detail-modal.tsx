@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { X, Minus, Plus, ShoppingBag, ImageIcon } from "lucide-react";
+import { X, Minus, Plus, ShoppingBag, ImageIcon, Clock } from "lucide-react";
 import { formatFCFA } from "@/lib/format";
 import { useCart } from "@/lib/cart/cart-context";
 import type { Product } from "@/types/database";
@@ -10,10 +10,12 @@ import type { Product } from "@/types/database";
 export function ProductDetailModal({
   product,
   primaryColor,
+  isShopOpen = true,
   onClose,
 }: {
   product: Product | null;
   primaryColor: string;
+  isShopOpen?: boolean;
   onClose: () => void;
 }) {
   const { addItem } = useCart();
@@ -24,12 +26,13 @@ export function ProductDetailModal({
   if (!product) return null;
 
   const isOutOfStock = !product.is_available || product.stock === 0;
+  const cannotOrder = isOutOfStock || !isShopOpen;
   const maxAvailable = product.stock ?? 999;
   const images = product.images ?? [];
   const activeImage = images[selectedPhotoIndex];
 
   function handleAddToCart() {
-    if (isOutOfStock || !product) return;
+    if (cannotOrder || !product) return;
     addItem(
       {
         productId: product.id,
@@ -125,7 +128,7 @@ export function ProductDetailModal({
               </div>
             )}
 
-            {product.options_text && (
+            {product.options_text && isShopOpen && !isOutOfStock && (
               <div className="border-t border-line pt-3">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-muted">Options proposées</h4>
                 <p className="mt-1 text-xs text-brand-700 bg-brand-50 p-2.5 rounded-xl border border-brand-100">
@@ -151,9 +154,9 @@ export function ProductDetailModal({
           </div>
         </div>
 
-        {/* Pied : Quantité & Bouton Ajouter */}
+        {/* Pied : Quantité & Bouton Ajouter (sans répétition du prix) */}
         <div className="border-t border-line bg-white p-4 flex items-center gap-3">
-          {!isOutOfStock && (
+          {!cannotOrder && (
             <div className="flex items-center rounded-2xl border border-line bg-sand/60 p-1">
               <button
                 type="button"
@@ -179,13 +182,27 @@ export function ProductDetailModal({
 
           <button
             type="button"
-            disabled={isOutOfStock}
+            disabled={cannotOrder}
             onClick={handleAddToCart}
-            style={{ backgroundColor: isOutOfStock ? "#9ca3af" : primaryColor }}
+            style={{ backgroundColor: cannotOrder ? "#9ca3af" : primaryColor }}
             className="flex-1 flex h-12 items-center justify-center gap-2 rounded-2xl font-bold text-white shadow-md active:scale-98 transition-transform disabled:cursor-not-allowed"
           >
-            <ShoppingBag className="size-5" />
-            {isOutOfStock ? "Produit épuisé" : `Ajouter • ${formatFCFA(product.price * quantity)}`}
+            {!isShopOpen ? (
+              <>
+                <Clock className="size-5 shrink-0" />
+                <span>Boutique fermée</span>
+              </>
+            ) : isOutOfStock ? (
+              <>
+                <ShoppingBag className="size-5 shrink-0" />
+                <span>Produit épuisé</span>
+              </>
+            ) : (
+              <>
+                <ShoppingBag className="size-5 shrink-0" />
+                <span>Ajouter</span>
+              </>
+            )}
           </button>
         </div>
       </div>

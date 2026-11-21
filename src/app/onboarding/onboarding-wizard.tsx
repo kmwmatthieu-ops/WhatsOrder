@@ -1,12 +1,16 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { ArrowLeft, PartyPopper } from "lucide-react";
-import { createShop, checkSlugAvailability, checkUserShop } from "./actions";
+import { useEffect, useRef, useState } from "react";
+import { ArrowLeft, PartyPopper, Check } from "lucide-react";
+import {
+  createShop,
+  checkSlugAvailability,
+  completeOnboardingDesign,
+} from "./actions";
 import { slugify, slugProblem, SLUG_PROBLEM_MESSAGES } from "@/lib/slug";
 import { DEFAULT_COUNTRY_CODE, isValidE164, toE164 } from "@/lib/phone";
+import { DEFAULT_SHOP_COLOR, SHOP_COLOR_PRESETS } from "@/lib/constants";
 import { Input } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
@@ -16,22 +20,60 @@ import { PhoneInput } from "@/components/shop/phone-input";
 import { LogoUploader } from "@/components/shop/logo-uploader";
 
 const DRAFT_KEY = "wo-onboarding-draft";
+const IN_PROGRESS_KEY = "wo-onboarding-in-progress";
 
 type Draft = { name: string; slug: string; slugTouched: boolean; countryCode: string; local: string };
 const EMPTY: Draft = { name: "", slug: "", slugTouched: false, countryCode: DEFAULT_COUNTRY_CODE, local: "" };
 
-type Props = { existingShop: { id: string; name: string } | null };
+type Props = {
+  existingShop: {
+    id: string;
+    name: string;
+    logo_url?: string | null;
+    primary_color?: string | null;
+  } | null;
+};
 
 function OnboardingContent({ existingShop }: Props) {
-  const router = useRouter();
-  const [step, setStep] = useState<1 | 2 | 3>(existingShop ? 3 : 1);
+  // Détermine si l'utilisateur est en train de créer sa boutique (étape 1 -> 2 -> 3)
+  // ou s'il avait déjà terminé sa création dans le passé.
+  const isCreatingFlowRef = useRef<boolean | null>(null);
+  if (isCreatingFlowRef.current === null) {
+    let inProgressFlag = false;
+    try {
+      inProgressFlag = sessionStorage.getItem(IN_PROGRESS_KEY) === "1";
+    } catch {
+      /* ignore */
+    }
+    if (!existingShop) {
+      isCreatingFlowRef.current = true;
+      try {
+        sessionStorage.setItem(IN_PROGRESS_KEY, "1");
+      } catch {
+        /* ignore */
+      }
+    } else if (inProgressFlag) {
+      // L'utilisateur vient de passer l'étape 2 (ou son navigateur mobile a rechargé pendant le choix photo à l'étape 3)
+      isCreatingFlowRef.current = true;
+    } else {
+      isCreatingFlowRef.current = false;
+    }
+  }
+
+  const [step, setStep] = useState<1 | 2 | 3>(() => {
+    if (existingShop && isCreatingFlowRef.current) return 3;
+    return 1;
+  });
+  const [selectedColor, setSelectedColor] = useState<string>(
+    existingShop?.primary_color || DEFAULT_SHOP_COLOR
+  );
+  const [finishing, setFinishing] = useState(false);
+
   const [draft, setDraft] = useState<Draft>(() => {
-    // Reprise du brouillon si l'utilisateur a quitté en cours de route.
     try {
       const saved = localStorage.getItem(DRAFT_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        // Si le slug est vide ou correspond déjà au nom, on reconnecte la synchronisation
         const shouldSync = !parsed.slug || parsed.slug === slugify(parsed.name || "");
         return {
           ...EMPTY,
@@ -49,35 +91,30 @@ function OnboardingContent({ existingShop }: Props) {
   const [globalError, setGlobalError] = useState("");
   const [saving, setSaving] = useState(false);
 
+  // Uniquement si le compte possédait DÉJÀ une boutique avant d'entrer sur /onboarding,
+  // on le renvoie vers le panneau « Vos boutiques ».
   useEffect(() => {
-    checkUserShop().then((res) => {
-      if (res.hasShop) {
-        try {
-          localStorage.removeItem(DRAFT_KEY);
-        } catch {
-          // ignore
-        }
-        window.location.href = "/boutiques";
-      }
-    });
-  }, [router]);
+    if (isCreatingFlowRef.current === false && existingShop) {
+      window.location.replace("/boutiques");
+    }
+  }, [existingShop]);
 
   useEffect(() => {
     try {
       localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
     } catch {
-      /* stockage indisponible (navigation privée) */
+      /* stockage indisponible */
     }
   }, [draft]);
+
+  if (isCreatingFlowRef.current === false && existingShop) {
+    return <PageSkeleton />;
+  }
 
   const update = (patch: Partial<Draft>) => setDraft((d) => ({ ...d, ...patch }));
 
   function onNameChange(name: string) {
     const autoSlug = slugify(name);
-    // Le lien suit automatiquement le nom de la boutique si :
-    // - l'utilisateur n'a pas tapé de slug personnalisé distinct
-    // - OU si le slug actuel est vide
-    // - OU si le slug actuel correspondait déjà à l'ancien nom
     const shouldSyncSlug = !draft.slugTouched || !draft.slug || draft.slug === slugify(draft.name);
 
     update({
@@ -106,14 +143,12 @@ function OnboardingContent({ existingShop }: Props) {
       update({ slug: effectiveSlug });
     }
 
-    // Si déjà validé comme disponible
     if (slugStatus === "available" && draft.slug === effectiveSlug) {
       setErrors({});
       setStep(2);
       return;
     }
 
-    // Vérification directe via server action pour ne jamais bloquer l'utilisateur
     setSaving(true);
     try {
       const res = await checkSlugAvailability(effectiveSlug);
@@ -141,6 +176,11 @@ function OnboardingContent({ existingShop }: Props) {
     setGlobalError("");
     setSaving(true);
     try {
+      try {
+        sessionStorage.setItem(IN_PROGRESS_KEY, "1");
+      } catch {
+        /* ignore */
+      }
       const res = await createShop({ name: draft.name, slug: draft.slug, whatsapp_number: whatsapp });
       if (res.fieldErrors) {
         setErrors(res.fieldErrors);
@@ -148,7 +188,6 @@ function OnboardingContent({ existingShop }: Props) {
         return;
       }
       if (res.error) {
-        // On reste sur l'étape 2, saisie conservée, cause réelle affichée.
         setGlobalError(res.error);
         return;
       }
@@ -157,11 +196,8 @@ function OnboardingContent({ existingShop }: Props) {
       } catch {
         /* ignore */
       }
-      if (res.alreadyExists) {
-        window.location.href = "/boutiques";
-        return;
-      }
-      setStep(3); // logo facultatif, puis tableau de bord
+      // Passe systématiquement à l'étape 3 (Design de la boutique : photo de profil & couleur)
+      setStep(3);
     } catch {
       setGlobalError("Connexion impossible. Vérifiez votre réseau puis réessayez.");
     } finally {
@@ -169,9 +205,22 @@ function OnboardingContent({ existingShop }: Props) {
     }
   }
 
-  function finish() {
-    router.replace("/tableau-de-bord");
-    router.refresh();
+  async function finish() {
+    if (finishing) return;
+    setFinishing(true);
+    try {
+      await completeOnboardingDesign(selectedColor);
+    } catch {
+      /* ignore */
+    }
+    try {
+      sessionStorage.removeItem(IN_PROGRESS_KEY);
+      localStorage.removeItem(DRAFT_KEY);
+    } catch {
+      /* ignore */
+    }
+    // Une fois toutes les étapes validées, accès direct à la boutique créée
+    window.location.replace("/tableau-de-bord");
   }
 
   return (
@@ -232,7 +281,7 @@ function OnboardingContent({ existingShop }: Props) {
             error={errors.slug || undefined}
           />
           <div className="mt-auto pt-4">
-            <Button type="submit" block>
+            <Button type="submit" block loading={saving}>
               Continuer
             </Button>
           </div>
@@ -263,28 +312,67 @@ function OnboardingContent({ existingShop }: Props) {
           />
           <div className="mt-auto pt-4">
             <Button type="submit" block loading={saving}>
-              {saving ? "Création de la boutique…" : "Créer ma boutique"}
+              {saving ? " Enregistrement…" : "Continuer vers le design"}
             </Button>
           </div>
         </form>
       )}
 
       {step === 3 && (
-        <div className="flex flex-1 flex-col gap-5">
+        <div className="flex flex-1 flex-col gap-6">
           <div>
             <h1 className="flex items-center gap-2 text-2xl font-extrabold">
-              Boutique créée <PartyPopper className="size-6 text-accent-500" aria-hidden />
+              Design de votre boutique <PartyPopper className="size-6 text-accent-500" aria-hidden />
             </h1>
-            <p className="mt-1 text-muted">
-              Ajoutez votre logo pour que vos clients vous reconnaissent (facultatif).
+            <p className="mt-1 text-sm text-muted">
+              Personnalisez votre photo de profil (logo) et la couleur principale de votre vitrine avant d&apos;entrer dans votre boutique.
             </p>
           </div>
-          <LogoUploader initialUrl={null} />
+
+          <div className="rounded-3xl border border-line bg-white p-5 shadow-xs flex flex-col gap-5">
+            <div>
+              <label className="text-sm font-bold text-ink mb-2 block">
+                Photo de profil / Logo <span className="font-normal text-muted">(facultatif)</span>
+              </label>
+              <LogoUploader initialUrl={existingShop?.logo_url ?? null} />
+            </div>
+
+            <div className="border-t border-line pt-4">
+              <label className="text-sm font-bold text-ink mb-1 block">
+                Couleur principale de la boutique
+              </label>
+              <p className="text-xs text-muted mb-3">
+                Utilisée pour vos boutons d&apos;achat et les accents de votre catalogue.
+              </p>
+              <div className="flex flex-wrap items-center gap-2.5">
+                {SHOP_COLOR_PRESETS.map((preset) => {
+                  const isSelected = selectedColor.toLowerCase() === preset.toLowerCase();
+                  return (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => setSelectedColor(preset)}
+                      style={{ backgroundColor: preset }}
+                      className={`grid size-9 place-items-center rounded-full text-white transition-transform ${
+                        isSelected
+                          ? "ring-4 ring-brand-100 scale-110 shadow-sm"
+                          : "hover:scale-105"
+                      }`}
+                      aria-label={`Couleur ${preset}`}
+                    >
+                      {isSelected && <Check className="size-4 stroke-[3]" />}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
           <div className="mt-auto flex flex-col gap-2 pt-4">
-            <Button type="button" block onClick={finish}>
-              Terminer
+            <Button type="button" block loading={finishing} onClick={finish}>
+              {finishing ? "Ouverture de votre boutique…" : "Valider et accéder à ma boutique"}
             </Button>
-            <Button type="button" variant="ghost" block onClick={finish}>
+            <Button type="button" variant="ghost" block disabled={finishing} onClick={finish}>
               Passer cette étape
             </Button>
           </div>
@@ -294,8 +382,6 @@ function OnboardingContent({ existingShop }: Props) {
   );
 }
 
-// Rendu uniquement côté client (évite les erreurs d'hydratation liées aux
-// extensions navigateur et à la lecture du brouillon dans localStorage).
 export default dynamic(() => Promise.resolve(OnboardingContent), {
   ssr: false,
   loading: () => <PageSkeleton />,
