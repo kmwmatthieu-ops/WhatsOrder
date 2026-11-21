@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { requireShop } from "@/lib/supabase/server";
+import { getShopSubscription } from "@/lib/subscription";
 import { CustomersView } from "@/components/customers/customers-view";
 
 export const metadata: Metadata = { title: "Clients" };
@@ -7,8 +8,8 @@ export const metadata: Metadata = { title: "Clients" };
 export default async function CustomersPage() {
   const { shop, supabase } = await requireShop();
 
-  // Récupérer les clients (avec adresse et notes internes pour l'export CSV V2-D) et agréger leurs commandes
-  const [{ data: customers }, { data: orders }] = await Promise.all([
+  // Récupérer les clients, commandes et abonnement (V2-D/V2-E)
+  const [{ data: customers }, { data: orders }, subscription] = await Promise.all([
     supabase
       .from("customers")
       .select("id, name, phone, address, notes, created_at")
@@ -18,6 +19,7 @@ export default async function CustomersPage() {
       .from("orders")
       .select("customer_id, total, status")
       .eq("shop_id", shop.id),
+    getShopSubscription(shop.id),
   ]);
 
   const statsByCustomer: Record<string, { count: number; totalSpent: number }> = {};
@@ -43,5 +45,10 @@ export default async function CustomersPage() {
     created_at: c.created_at,
   }));
 
-  return <CustomersView customers={formattedCustomers} />;
+  return (
+    <CustomersView
+      customers={formattedCustomers}
+      hasCsvExport={subscription.effectivePlan.has_csv_export}
+    />
+  );
 }

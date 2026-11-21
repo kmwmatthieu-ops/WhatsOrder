@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Shield, ArrowLeft } from "lucide-react";
+import { Shield, ArrowLeft, Store, ShoppingBag, CreditCard, DollarSign } from "lucide-react";
 import { createClient, getUser } from "@/lib/supabase/server";
 import { AdminShopsTable, type AdminShopRow } from "./admin-shops-table";
+import { AdminSubscriptionRequests, type AdminRequestRow } from "./admin-subscription-requests";
 import { Logo } from "@/components/ui/logo";
+import { formatFCFA } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Administration générale" };
 
@@ -37,7 +39,7 @@ export default async function AdminPage() {
     );
   }
 
-  // Récupérer la liste complète des boutiques via la fonction RPC sécurisée
+  // 1. Liste des boutiques
   const { data: shops } = await supabase.rpc("admin_list_shops");
 
   const shopsList: AdminShopRow[] = (shops ?? []).map((s) => ({
@@ -53,6 +55,58 @@ export default async function AdminPage() {
 
   const activeCount = shopsList.filter((s) => s.status === "active").length;
   const suspendedCount = shopsList.filter((s) => s.status === "suspended").length;
+
+  // 2. Commandes globales & volume d'affaires (GMV)
+  const { data: ordersData } = await supabase
+    .from("orders")
+    .select("total, status");
+
+  const allOrders = ordersData ?? [];
+  const totalOrdersCount = allOrders.length;
+  const totalGmv = allOrders
+    .filter((o) => o.status !== "cancelled")
+    .reduce((sum, o) => sum + (o.total || 0), 0);
+
+  // 3. Abonnements actifs et demandes en attente (V2-E)
+  const [subRes, reqRes] = await Promise.all([
+    supabase
+      .from("shop_subscriptions")
+      .select("*, subscription_plans(price_monthly, name)"),
+    supabase
+      .from("subscription_requests")
+      .select("*, shops(name)")
+      .order("created_at", { ascending: false }),
+  ]);
+
+  const subscriptions = subRes.data ?? [];
+  const now = new Date();
+
+  const activePaidSubs = subscriptions.filter((s) => {
+    if (s.plan_id === "gratuit") return false;
+    if (s.status !== "active") return false;
+    if (s.expires_at && new Date(s.expires_at) < now) return false;
+    return true;
+  });
+
+  const estimatedMrr = activePaidSubs.reduce((sum, s) => {
+    const planPrice = s.subscription_plans?.price_monthly ?? 0;
+    return sum + planPrice;
+  }, 0);
+
+  const rawRequests = reqRes.data ?? [];
+  const requestsList: AdminRequestRow[] = rawRequests.map((r) => ({
+    id: r.id,
+    shop_id: r.shop_id,
+    shop_name: r.shops?.name || "Boutique inconnue",
+    requested_plan_id: r.requested_plan_id,
+    duration_months: r.duration_months,
+    amount_due: r.amount_due,
+    payment_method: r.payment_method,
+    sender_phone: r.sender_phone,
+    transaction_reference: r.transaction_reference,
+    status: r.status,
+    created_at: r.created_at,
+  }));
 
   return (
     <div className="min-h-dvh bg-cream text-ink">
@@ -75,31 +129,70 @@ export default async function AdminPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl p-4 sm:p-6 flex flex-col gap-6">
+      <main className="mx-auto max-w-5xl p-4 sm:p-6 flex flex-col gap-8">
         <div>
-          <h1 className="text-2xl font-black text-ink">Gestion des boutiques</h1>
+          <h1 className="text-2xl font-black text-ink">Supervision & Administration Générale</h1>
           <p className="text-xs text-muted mt-0.5">
-            Supervision générale et modération des boutiques créées.
+            Tableau de bord de gestion globale de la plateforme, abonnements et modération.
           </p>
         </div>
 
-        {/* Indicateurs admin */}
-        <div className="grid grid-cols-3 gap-3">
-          <div className="rounded-2xl border border-line bg-white p-4 shadow-xs text-center">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-muted">Total boutiques</p>
-            <p className="text-2xl font-black text-ink mt-1">{shopsList.length}</p>
+        {/* 5 Statistiques Globales de la Plateforme (V2-E) */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+          <div className="rounded-2xl border border-line bg-white p-4 shadow-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-muted">Boutiques</span>
+              <Store className="size-4 text-brand-600" />
+            </div>
+            <p className="text-2xl font-black text-ink mt-1.5">{shopsList.length}</p>
+            <p className="text-[11px] text-muted mt-0.5">
+              <span className="text-success-600 font-bold">{activeCount} actives</span> • {suspendedCount} suspendues
+            </p>
           </div>
-          <div className="rounded-2xl border border-line bg-white p-4 shadow-xs text-center">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-success-700">Actives</p>
-            <p className="text-2xl font-black text-success-700 mt-1">{activeCount}</p>
+
+          <div className="rounded-2xl border border-line bg-white p-4 shadow-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-muted">Commandes</span>
+              <ShoppingBag className="size-4 text-brand-600" />
+            </div>
+            <p className="text-2xl font-black text-ink mt-1.5">{totalOrdersCount}</p>
+            <p className="text-[11px] text-muted mt-0.5">Passées via la plateforme</p>
           </div>
-          <div className="rounded-2xl border border-line bg-white p-4 shadow-xs text-center">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-danger-700">Suspendues</p>
-            <p className="text-2xl font-black text-danger-700 mt-1">{suspendedCount}</p>
+
+          <div className="rounded-2xl border border-line bg-white p-4 shadow-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-muted">Volume Commerces (GMV)</span>
+              <DollarSign className="size-4 text-success-600" />
+            </div>
+            <p className="text-2xl font-black text-ink mt-1.5">{formatFCFA(totalGmv)}</p>
+            <p className="text-[11px] text-muted mt-0.5">Ventes globales générées</p>
+          </div>
+
+          <div className="rounded-2xl border border-line bg-white p-4 shadow-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-muted">MRR Abonnements</span>
+              <CreditCard className="size-4 text-purple-600" />
+            </div>
+            <p className="text-2xl font-black text-ink mt-1.5">{formatFCFA(estimatedMrr)}</p>
+            <p className="text-[11px] text-muted mt-0.5">
+              <span className="font-bold text-purple-700">{activePaidSubs.length}</span> payants actifs
+            </p>
           </div>
         </div>
 
-        <AdminShopsTable initialShops={shopsList} />
+        {/* Section 1 : Demandes de Paiement Mobile Money en Attente */}
+        <section className="space-y-3">
+          <AdminSubscriptionRequests requests={requestsList} />
+        </section>
+
+        {/* Section 2 : Gestion des Boutiques & Modération */}
+        <section className="space-y-3">
+          <div>
+            <h2 className="text-base font-bold text-ink">Boutiques et Modération</h2>
+            <p className="text-xs text-muted">Consultez et suspendez ou réactivez les boutiques.</p>
+          </div>
+          <AdminShopsTable initialShops={shopsList} />
+        </section>
       </main>
     </div>
   );

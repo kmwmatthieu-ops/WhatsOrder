@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Package, ShoppingBag, Users, Settings, ExternalLink, LogOut } from "lucide-react";
+import { Home, Package, ShoppingBag, Users, Settings, ExternalLink, LogOut, CreditCard } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 import { signOut } from "@/app/(auth)/actions";
 import { shopUrl } from "@/lib/constants";
@@ -13,6 +13,7 @@ const NAV_ITEMS = [
   { href: "/tableau-de-bord/commandes", label: "Commandes", icon: ShoppingBag, exact: false },
   { href: "/tableau-de-bord/produits", label: "Produits", icon: Package, exact: false },
   { href: "/tableau-de-bord/clients", label: "Clients", icon: Users, exact: false },
+  { href: "/tableau-de-bord/abonnement", label: "Abonnement", icon: CreditCard, exact: false },
   { href: "/tableau-de-bord/parametres", label: "Paramètres", icon: Settings, exact: false },
 ];
 

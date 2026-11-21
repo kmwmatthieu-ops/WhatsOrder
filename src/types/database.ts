@@ -9,6 +9,8 @@ export type OrderStatus = "new" | "confirmed" | "preparing" | "ready" | "deliver
 export type FulfillmentType = "delivery" | "pickup";
 export type PaymentStatus = "unpaid" | "partial" | "paid";
 export type PaymentMethod = "cash" | "cash_on_delivery" | "mobile_money";
+export type SubscriptionStatus = "active" | "expired" | "past_due";
+export type SubscriptionRequestStatus = "pending" | "approved" | "rejected";
 
 export type DaySchedule = { open: boolean; start: string; end: string };
 export type OpeningHours = {
@@ -361,6 +363,130 @@ export type Database = {
         Update: { bucket?: string; hits?: number; window_start?: string };
         Relationships: [];
       };
+      subscription_plans: {
+        Row: {
+          id: string;
+          name: string;
+          description: string;
+          price_monthly: number;
+          max_products: number | null;
+          max_orders_per_month: number | null;
+          has_advanced_stats: boolean;
+          has_csv_export: boolean;
+          badge: string | null;
+          is_active: boolean;
+          sort_order: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id: string;
+          name: string;
+          description: string;
+          price_monthly?: number;
+          max_products?: number | null;
+          max_orders_per_month?: number | null;
+          has_advanced_stats?: boolean;
+          has_csv_export?: boolean;
+          badge?: string | null;
+          is_active?: boolean;
+          sort_order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["subscription_plans"]["Insert"]>;
+        Relationships: [];
+      };
+      shop_subscriptions: {
+        Row: {
+          id: string;
+          shop_id: string;
+          plan_id: string;
+          status: SubscriptionStatus;
+          starts_at: string;
+          expires_at: string | null;
+          notes: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          shop_id: string;
+          plan_id?: string;
+          status?: SubscriptionStatus;
+          starts_at?: string;
+          expires_at?: string | null;
+          notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["shop_subscriptions"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "shop_subscriptions_shop_id_fkey";
+            columns: ["shop_id"];
+            isOneToOne: true;
+            referencedRelation: "shops";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "shop_subscriptions_plan_id_fkey";
+            columns: ["plan_id"];
+            isOneToOne: false;
+            referencedRelation: "subscription_plans";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      subscription_requests: {
+        Row: {
+          id: string;
+          shop_id: string;
+          requested_plan_id: string;
+          duration_months: number;
+          amount_due: number;
+          payment_method: string;
+          sender_phone: string;
+          transaction_reference: string | null;
+          status: SubscriptionRequestStatus;
+          admin_notes: string | null;
+          reviewed_by: string | null;
+          reviewed_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          shop_id: string;
+          requested_plan_id: string;
+          duration_months?: number;
+          amount_due: number;
+          payment_method: string;
+          sender_phone: string;
+          transaction_reference?: string | null;
+          status?: SubscriptionRequestStatus;
+          admin_notes?: string | null;
+          reviewed_by?: string | null;
+          reviewed_at?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["subscription_requests"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "subscription_requests_shop_id_fkey";
+            columns: ["shop_id"];
+            isOneToOne: false;
+            referencedRelation: "shops";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "subscription_requests_requested_plan_id_fkey";
+            columns: ["requested_plan_id"];
+            isOneToOne: false;
+            referencedRelation: "subscription_plans";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: { [_ in never]: never };
     Functions: {
@@ -398,6 +524,22 @@ export type Database = {
           orders_count: number;
         }>;
       };
+      get_active_shop_plan: {
+        Args: { p_shop_id: string };
+        Returns: Database["public"]["Tables"]["subscription_plans"]["Row"];
+      };
+      shop_product_limit: {
+        Args: { p_shop_id: string };
+        Returns: number;
+      };
+      shop_monthly_orders_limit: {
+        Args: { p_shop_id: string };
+        Returns: number;
+      };
+      shop_monthly_orders_count: {
+        Args: { p_shop_id: string };
+        Returns: number;
+      };
     };
     Enums: {
       shop_status: ShopStatus;
@@ -425,3 +567,6 @@ export type Order = Tables<"orders">;
 export type OrderItem = Tables<"order_items">;
 export type OrderPayment = Tables<"order_payments">;
 export type DeliveryZone = Tables<"delivery_zones">;
+export type SubscriptionPlan = Tables<"subscription_plans">;
+export type ShopSubscription = Tables<"shop_subscriptions">;
+export type SubscriptionRequest = Tables<"subscription_requests">;

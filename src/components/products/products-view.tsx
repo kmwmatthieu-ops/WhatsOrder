@@ -12,16 +12,18 @@ import type { Category, ProductWithVariants } from "@/types/database";
 export function ProductsView({
   products,
   categories,
+  maxProducts = PRODUCT_LIMIT,
 }: {
   products: ProductWithVariants[];
   categories: Category[];
+  maxProducts?: number | null;
 }) {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [categoryModalOpen, setCategoryModalOpen] = useState(false);
 
   const productCount = products.length;
-  const isLimitReached = productCount >= PRODUCT_LIMIT;
+  const isLimitReached = maxProducts !== null && productCount >= maxProducts;
 
   // Filtrage combiné : catégorie + recherche textuelle
   const filteredProducts = products.filter((p) => {
@@ -43,7 +45,7 @@ export function ProductsView({
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-extrabold text-ink">Produits</h1>
             <span className="rounded-full bg-sand px-2.5 py-0.5 text-xs font-bold text-muted">
-              {productCount} / {PRODUCT_LIMIT}
+              {maxProducts ? `${productCount} / ${maxProducts}` : `${productCount} (Illimité)`}
             </span>
           </div>
           <p className="text-xs text-muted mt-0.5">
@@ -83,8 +85,8 @@ export function ProductsView({
         </div>
       </div>
 
-      {/* Bannière limite 20 produits */}
-      <LimitBanner currentCount={productCount} maxLimit={PRODUCT_LIMIT} />
+      {/* Bannière limite produits du plan */}
+      <LimitBanner currentCount={productCount} maxLimit={maxProducts} />
 
       {/* Barre de recherche */}
       <div className="relative">

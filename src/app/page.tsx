@@ -27,6 +27,13 @@ export default async function HomePage() {
           <Logo />
           <div className="flex items-center gap-1 sm:gap-3 shrink-0">
             <Link
+              href="/tarifs"
+              prefetch={false}
+              className="whitespace-nowrap text-xs sm:text-sm font-semibold text-muted hover:text-ink px-2 sm:px-3 py-1.5 rounded-xl transition-colors shrink-0"
+            >
+              Tarifs
+            </Link>
+            <Link
               href="/connexion"
               prefetch={false}
               className="whitespace-nowrap text-xs sm:text-sm font-semibold text-muted hover:text-ink px-2 sm:px-3 py-1.5 rounded-xl transition-colors shrink-0"

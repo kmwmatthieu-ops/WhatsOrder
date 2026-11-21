@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { requireShop } from "@/lib/supabase/server";
+import { getShopSubscription } from "@/lib/subscription";
 import { OrdersView } from "@/components/orders/orders-view";
 
 export const metadata: Metadata = { title: "Commandes" };
@@ -7,27 +8,30 @@ export const metadata: Metadata = { title: "Commandes" };
 export default async function OrdersPage() {
   const { shop, supabase } = await requireShop();
 
-  // Récupérer toutes les commandes de la boutique avec les données client et paiement (V2-D)
-  const { data: orders } = await supabase
-    .from("orders")
-    .select(
+  // Récupérer les commandes et l'abonnement actif (V2-D/V2-E)
+  const [{ data: orders }, subscription] = await Promise.all([
+    supabase
+      .from("orders")
+      .select(
+        `
+        id,
+        public_code,
+        status,
+        fulfillment,
+        delivery_address,
+        delivery_zone_name,
+        total,
+        amount_paid,
+        payment_status,
+        payment_method,
+        created_at,
+        customer:customers(name, phone)
       `
-      id,
-      public_code,
-      status,
-      fulfillment,
-      delivery_address,
-      delivery_zone_name,
-      total,
-      amount_paid,
-      payment_status,
-      payment_method,
-      created_at,
-      customer:customers(name, phone)
-    `
-    )
-    .eq("shop_id", shop.id)
-    .order("created_at", { ascending: false });
+      )
+      .eq("shop_id", shop.id)
+      .order("created_at", { ascending: false }),
+    getShopSubscription(shop.id),
+  ]);
 
   type RawOrder = {
     id: string;
@@ -59,5 +63,10 @@ export default async function OrdersPage() {
     customer: o.customer,
   }));
 
-  return <OrdersView orders={formattedOrders} />;
+  return (
+    <OrdersView
+      orders={formattedOrders}
+      hasCsvExport={subscription.effectivePlan.has_csv_export}
+    />
+  );
 }

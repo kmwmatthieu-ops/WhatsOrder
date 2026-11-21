@@ -8,6 +8,7 @@ import {
   Users,
 } from "lucide-react";
 import { requireShop } from "@/lib/supabase/server";
+import { getShopSubscription } from "@/lib/subscription";
 import { shopUrl } from "@/lib/constants";
 import { ShareShopButton } from "@/components/shop/share-shop-button";
 import { OrderRow } from "@/components/orders/order-row";
@@ -22,13 +23,15 @@ export const metadata: Metadata = { title: "Tableau de bord" };
 export default async function DashboardHomePage() {
   const { shop, supabase } = await requireShop();
 
-  // Requêtes parallèles pour les statistiques V2-D et les dernières commandes
+  // Requêtes parallèles pour les données de la boutique, le forfait et les dernières commandes
   const [
+    subscription,
     { data: ordersData },
     { count: productCount },
     { data: recentOrders },
     { data: orderItemsData },
   ] = await Promise.all([
+    getShopSubscription(shop.id),
     supabase
       .from("orders")
       .select("id, status, total, amount_paid, created_at")
@@ -119,8 +122,12 @@ export default async function DashboardHomePage() {
         <ShareShopButton url={url} shopName={shop.name} />
       </div>
 
-      {/* Panneau de statistiques V2-D (Périodes, CA 30j, Top produits, Commandes terminées) */}
-      <AnalyticsPanel orders={allOrders} orderItems={allOrderItems} />
+      {/* Panneau de statistiques V2-D/V2-E (Périodes, CA 30j, Top produits, Commandes terminées) */}
+      <AnalyticsPanel
+        orders={allOrders}
+        orderItems={allOrderItems}
+        hasAdvancedStats={subscription.effectivePlan.has_advanced_stats}
+      />
 
       {/* Raccourcis navigation */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -152,7 +159,12 @@ export default async function DashboardHomePage() {
             </div>
             <div>
               <p className="font-bold text-sm text-ink">Catalogue</p>
-              <p className="text-xs text-muted">{productCount ?? 0} / 20 produits</p>
+              <p className="text-xs text-muted">
+                {productCount ?? 0} /{" "}
+                {subscription.effectivePlan.max_products
+                  ? `${subscription.effectivePlan.max_products} produits`
+                  : "illimités"}
+              </p>
             </div>
           </div>
           <ArrowRight className="size-4 text-muted" />
@@ -168,7 +180,9 @@ export default async function DashboardHomePage() {
             </div>
             <div>
               <p className="font-bold text-sm text-ink">Clients</p>
-              <p className="text-xs text-muted">Répertoire & Export CSV</p>
+              <p className="text-xs text-muted">
+                Répertoire & {subscription.effectivePlan.has_csv_export ? "Export CSV" : "Historique"}
+              </p>
             </div>
           </div>
           <ArrowRight className="size-4 text-muted" />

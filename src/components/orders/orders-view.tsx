@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Search, PackageOpen, Download } from "lucide-react";
+import Link from "next/link";
+import { Search, PackageOpen, Download, Lock } from "lucide-react";
 import { OrderRow, type OrderRowData } from "./order-row";
 import { ORDER_STATUS_LABELS, SIMPLE_ORDER_STATUS_LABELS } from "./order-status-badge";
 import { downloadCsv } from "@/lib/csv";
@@ -18,7 +19,13 @@ const PAYMENT_STATUS_FR: Record<string, string> = {
   paid: "Payée",
 };
 
-export function OrdersView({ orders }: { orders: OrderRowData[] }) {
+export function OrdersView({
+  orders,
+  hasCsvExport = true,
+}: {
+  orders: OrderRowData[];
+  hasCsvExport?: boolean;
+}) {
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [search, setSearch] = useState("");
 
@@ -86,16 +93,26 @@ export function OrdersView({ orders }: { orders: OrderRowData[] }) {
           </p>
         </div>
 
-        {orders.length > 0 && (
-          <button
-            type="button"
-            onClick={handleExportCsv}
-            className="inline-flex h-10 items-center justify-center gap-2 self-start sm:self-auto rounded-2xl border border-line bg-white px-3.5 text-xs font-bold text-ink shadow-xs hover:bg-sand transition-colors cursor-pointer"
-          >
-            <Download className="size-4 text-brand-600" />
-            <span>Exporter en CSV ({filteredOrders.length})</span>
-          </button>
-        )}
+        {orders.length > 0 &&
+          (hasCsvExport ? (
+            <button
+              type="button"
+              onClick={handleExportCsv}
+              className="inline-flex h-10 items-center justify-center gap-2 self-start sm:self-auto rounded-2xl border border-line bg-white px-3.5 text-xs font-bold text-ink shadow-xs hover:bg-sand transition-colors cursor-pointer"
+            >
+              <Download className="size-4 text-brand-600" />
+              <span>Exporter en CSV ({filteredOrders.length})</span>
+            </button>
+          ) : (
+            <Link
+              href="/tableau-de-bord/abonnement"
+              title="L'export CSV est réservé aux forfaits Business et Premium"
+              className="inline-flex h-10 items-center justify-center gap-2 self-start sm:self-auto rounded-2xl border border-line bg-white px-3.5 text-xs font-bold text-muted shadow-xs hover:border-brand-300 hover:text-brand-600 transition-colors"
+            >
+              <Lock className="size-4 text-amber-600" />
+              <span>Export CSV (Business)</span>
+            </Link>
+          ))}
       </div>
 
       {/* Recherche rapide */}

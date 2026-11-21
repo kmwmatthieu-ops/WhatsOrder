@@ -69,3 +69,14 @@ export function isSupabaseConfigured(): boolean {
 export function shopUrl(slug: string) {
   return `${siteUrl()}/${slug}`;
 }
+
+/** Coordonnées de paiement Mobile Money pour les abonnements manuels */
+export const MOBILE_MONEY_PAYMENT_CONFIG = {
+  supportWhatsapp: "2250700000000",
+  accounts: [
+    { provider: "wave", label: "Wave", number: "+225 07 00 00 00 00", recipient: "Support Bon Waz à Dealer" },
+    { provider: "orange_money", label: "Orange Money", number: "+225 07 00 00 00 00", recipient: "Support Bon Waz à Dealer" },
+    { provider: "mtn_momo", label: "MTN MoMo", number: "+225 05 00 00 00 00", recipient: "Support Bon Waz à Dealer" },
+    { provider: "moov_money", label: "Moov Money", number: "+225 01 00 00 00 00", recipient: "Support Bon Waz à Dealer" },
+  ],
+};
