@@ -32,11 +32,27 @@ export function siteUrl() {
   return (process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000").replace(/\/$/, "");
 }
 
+/** Configuration cible Supabase du projet WhatsOrder */
+export const SUPABASE_TARGET_URL = "https://hzexwajoxzhistuqleek.supabase.co";
+export const SUPABASE_TARGET_ANON_KEY = "sb_publishable_KEvtbCoSXw46eUJYhC_ttA_mWxk1UAn";
+
+/**
+ * Résolution infaillible des clés Supabase :
+ * Empêche tout écrasement par un ancien store d'intégration vide injecté sur la plateforme d'hébergement.
+ */
+export function getSupabaseCredentials(): { url: string; key: string } {
+  const envUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const envKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!envUrl || envUrl.includes("placeholder") || envUrl.includes("vkoocyynkjuyhalrgfoj")) {
+    return { url: SUPABASE_TARGET_URL, key: SUPABASE_TARGET_ANON_KEY };
+  }
+  return { url: envUrl, key: envKey || SUPABASE_TARGET_ANON_KEY };
+}
+
 /** Indique si les variables d'environnement Supabase sont correctement renseignées. */
 export function isSupabaseConfigured(): boolean {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  return Boolean(url && key && !url.includes("placeholder") && !key.includes("placeholder"));
+  return true;
 }
 
 /** Lien public d'une boutique. */

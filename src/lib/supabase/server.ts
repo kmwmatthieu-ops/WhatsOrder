@@ -4,6 +4,7 @@ import { cache } from "react";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
+import { getSupabaseCredentials } from "@/lib/constants";
 import type { Database, Shop } from "@/types/database";
 
 /**
@@ -12,8 +13,7 @@ import type { Database, Shop } from "@/types/database";
  */
 export async function createClient() {
   const cookieStore = await cookies();
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co";
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "placeholder-key";
+  const { url, key } = getSupabaseCredentials();
   return createServerClient<Database>(
     url,
     key,
