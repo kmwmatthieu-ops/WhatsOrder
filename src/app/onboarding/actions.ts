@@ -38,12 +38,7 @@ export async function checkSlugAvailability(
 
   // Si l'utilisateur connecté possède déjà ce slug, il est disponible pour lui
   if (user) {
-    const { data: myShop } = await supabase
-      .from("shops")
-      .select("id, slug")
-      .eq("owner_id", user.id)
-      .maybeSingle();
-
+    const myShop = await getMyShop();
     if (myShop && myShop.slug === slug) {
       return { available: true };
     }
@@ -75,16 +70,7 @@ export async function createShop(input: {
   const supabase = await createClient();
 
   // 1. Le compte possède déjà une boutique → aucune création.
-  const { data: myShop, error: readError } = await supabase
-    .from("shops")
-    .select("id")
-    .eq("owner_id", user.id)
-    .maybeSingle();
-
-  if (readError) {
-    console.error("[createShop] lecture boutique", readError);
-    return { error: `Lecture de votre boutique impossible (${readError.code ?? "?"} : ${readError.message}).` };
-  }
+  const myShop = await getMyShop();
   if (myShop) {
     revalidatePath("/boutiques");
     return { ok: true, shopId: myShop.id, alreadyExists: true };

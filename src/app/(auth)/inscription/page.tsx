@@ -16,7 +16,7 @@ export default function InscriptionPage() {
       <SignUpForm />
       <p className="text-center text-sm text-muted">
         Déjà inscrit ?{" "}
-        <Link href="/connexion" className="font-semibold text-brand-700 underline-offset-4 hover:underline">
+        <Link href="/connexion" prefetch={false} className="font-semibold text-brand-700 underline-offset-4 hover:underline">
           Se connecter
         </Link>
       </p>

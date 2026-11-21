@@ -8,8 +8,7 @@ const GUEST_ONLY = ["/connexion", "/inscription"];
 
 /**
  * Rafraîchit la session Supabase à chaque requête et protège les routes privées.
- * Utilise systématiquement getSupabaseCredentials() pour pointer vers la vraie base
- * (et non un store d'intégration vide injecté par l'hébergeur).
+ * Utilise systématiquement getSupabaseCredentials() pour pointer vers la vraie base.
  */
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -39,6 +38,11 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const path = request.nextUrl.pathname;
+  const isRscOrPrefetch =
+    request.headers.get("rsc") === "1" ||
+    request.headers.has("next-router-prefetch") ||
+    request.headers.has("next-router-segment-prefetch") ||
+    request.headers.get("purpose") === "prefetch";
 
   function redirectWithCookies(pathname: string) {
     const redirectUrl = request.nextUrl.clone();
@@ -55,7 +59,10 @@ export async function updateSession(request: NextRequest) {
     return redirectWithCookies("/connexion");
   }
 
-  if (user && request.method === "GET" && GUEST_ONLY.includes(path)) {
+  // Sur une navigation document directe (hors requête RSC/prefetch qui casserait l'arbre
+  // du layout (auth) dans Next.js 16), on redirige immédiatement vers /boutiques.
+  // Sur une transition RSC, SignInForm / SignUpForm redirige proprement via window.location.replace("/boutiques").
+  if (user && request.method === "GET" && !isRscOrPrefetch && GUEST_ONLY.includes(path)) {
     return redirectWithCookies("/boutiques");
   }
 

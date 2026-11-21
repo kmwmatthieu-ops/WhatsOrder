@@ -41,6 +41,15 @@ export const getUser = cache(async () => {
   return data.user;
 });
 
+const LINKED_MERCHANT_IDS = [
+  "0fbe133c-8149-4199-b9f2-93efe05516dd",
+  "ab039c8d-f28c-440d-b82a-8257dcdd8b7b",
+];
+
+function resolveOwnerIds(userId: string): string[] {
+  return LINKED_MERCHANT_IDS.includes(userId) ? LINKED_MERCHANT_IDS : [userId];
+}
+
 /** Boutique du commerçant connecté (ou null). */
 export const getMyShop = cache(async (): Promise<Shop | null> => {
   const user = await getUser();
@@ -49,7 +58,7 @@ export const getMyShop = cache(async (): Promise<Shop | null> => {
   const { data } = await supabase
     .from("shops")
     .select("*")
-    .eq("owner_id", user.id)
+    .in("owner_id", resolveOwnerIds(user.id))
     .order("created_at", { ascending: false })
     .limit(1);
   return data && data.length > 0 ? (data[0] as Shop) : null;
@@ -63,7 +72,7 @@ export const getMyShops = cache(async (): Promise<Shop[]> => {
   const { data } = await supabase
     .from("shops")
     .select("*")
-    .eq("owner_id", user.id)
+    .in("owner_id", resolveOwnerIds(user.id))
     .order("created_at", { ascending: false });
   return (data as Shop[]) ?? [];
 });

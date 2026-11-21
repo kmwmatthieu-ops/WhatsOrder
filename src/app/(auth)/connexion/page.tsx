@@ -27,7 +27,7 @@ export default async function ConnexionPage({
       />
       <p className="text-center text-sm text-muted">
         Pas encore de boutique ?{" "}
-        <Link href="/inscription" className="font-semibold text-brand-700 underline-offset-4 hover:underline">
+        <Link href="/inscription" prefetch={false} className="font-semibold text-brand-700 underline-offset-4 hover:underline">
           Créer ma boutique
         </Link>
       </p>

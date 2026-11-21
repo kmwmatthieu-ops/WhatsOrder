@@ -28,12 +28,14 @@ export default async function HomePage() {
           <div className="flex items-center gap-1 sm:gap-3 shrink-0">
             <Link
               href="/connexion"
+              prefetch={false}
               className="whitespace-nowrap text-xs sm:text-sm font-semibold text-muted hover:text-ink px-2 sm:px-3 py-1.5 rounded-xl transition-colors shrink-0"
             >
               Connexion
             </Link>
             <Link
               href="/inscription"
+              prefetch={false}
               className="whitespace-nowrap rounded-xl sm:rounded-2xl bg-brand-600 px-3 py-2 sm:px-4 sm:py-2.5 text-xs sm:text-sm font-bold text-white shadow-xs hover:bg-brand-700 active:scale-98 transition-all shrink-0"
             >
               <span>Créer</span>
@@ -63,6 +65,7 @@ export default async function HomePage() {
           <div className="mt-8 flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
             <Link
               href="/inscription"
+              prefetch={false}
               className="flex h-13 w-full sm:w-auto items-center justify-center gap-2 rounded-2xl bg-brand-600 px-8 text-base font-bold text-white shadow-md hover:bg-brand-700 active:scale-98 transition-all"
             >
               <span>Créer ma boutique gratuitement</span>
@@ -70,6 +73,7 @@ export default async function HomePage() {
             </Link>
             <Link
               href="/connexion"
+              prefetch={false}
               className="flex h-13 w-full sm:w-auto items-center justify-center rounded-2xl border border-line bg-white px-6 text-sm font-bold text-ink hover:bg-sand transition-colors"
             >
               J&apos;ai déjà un compte
@@ -151,6 +155,7 @@ export default async function HomePage() {
           </p>
           <Link
             href="/inscription"
+            prefetch={false}
             className="flex h-13 items-center justify-center gap-2 rounded-2xl bg-brand-600 px-8 text-base font-bold text-white shadow-md hover:bg-brand-700 transition-colors"
           >
             <span>Créer ma boutique gratuitement</span>
