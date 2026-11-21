@@ -107,8 +107,65 @@ export async function signUp(_prev: ActionState, formData: FormData): Promise<Ac
 
   return {
     ok: true,
-    message: `Nous avons envoyé un lien de confirmation à ${parsed.data.email}. Cliquez sur ce lien dans votre boîte mail (vérifiez aussi les spams) : cette page détectera automatiquement la validation et ouvrira la création de votre boutique.`,
+    message: `Nous avons envoyé un code de confirmation à 6 chiffres à ${parsed.data.email}. Consultez votre boîte mail et saisissez le code ci-dessous pour continuer.`,
   };
+}
+
+/**
+ * Vérifie le code de confirmation (OTP à 6 chiffres) envoyé par e-mail lors de l'inscription.
+ * Si le code est valide, ouvre la session de l'utilisateur et renvoie vers /onboarding ou /boutiques.
+ */
+export async function verifyEmailOtp(
+  email: string,
+  token: string
+): Promise<{ ok: boolean; nextUrl?: string; error?: string }> {
+  try {
+    const cleanToken = token.trim().replace(/\s+/g, "");
+    if (!cleanToken || cleanToken.length < 6) {
+      return { ok: false, error: "Veuillez saisir le code à 6 chiffres reçu par e-mail." };
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    const supabase = await createClient();
+
+    // 1. Tenter la vérification avec le type "signup"
+    let { data, error } = await supabase.auth.verifyOtp({
+      email: cleanEmail,
+      token: cleanToken,
+      type: "signup",
+    });
+
+    // 2. Fallback avec le type "email" si nécessaire
+    if (error) {
+      const fallback = await supabase.auth.verifyOtp({
+        email: cleanEmail,
+        token: cleanToken,
+        type: "email",
+      });
+      if (!fallback.error && fallback.data.user) {
+        data = fallback.data;
+        error = null;
+      }
+    }
+
+    if (error || !data?.user) {
+      return {
+        ok: false,
+        error: "Code invalide ou expiré. Vérifiez les 6 chiffres ou demandez un nouveau code.",
+      };
+    }
+
+    const shops = await getMyShops();
+    return {
+      ok: true,
+      nextUrl: shops.length > 0 ? "/boutiques" : "/onboarding",
+    };
+  } catch {
+    return {
+      ok: false,
+      error: "Une erreur est survenue lors de la vérification du code. Réessayez.",
+    };
+  }
 }
 
 /**
@@ -160,7 +217,7 @@ export async function resendVerificationEmail(
     if (error) return { ok: false, error: authErrorMessage(error) };
     return {
       ok: true,
-      message: "Un nouveau lien de confirmation vient d'être envoyé dans votre boîte mail.",
+      message: "Un nouveau code de confirmation vient d'être envoyé dans votre boîte mail.",
     };
   } catch {
     return { ok: false, error: "Impossible de renvoyer l'e-mail pour le moment." };

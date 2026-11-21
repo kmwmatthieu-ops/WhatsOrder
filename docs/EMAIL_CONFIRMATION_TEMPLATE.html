@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Votre code de confirmation Bon Waz à Dealer</title>
+  <!--[if mso]>
+  <style type="text/css">
+    body, table, td {font-family: Arial, Helvetica, sans-serif !important;}
+  </style>
+  <![endif]-->
+</head>
+<body style="margin: 0; padding: 0; background-color: #F8FAFC; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; color: #0F172A;">
+  
+  <!-- Pré-en-tête masqué pour aperçu dans la boîte de réception -->
+  <div style="display: none; font-size: 1px; color: #F8FAFC; line-height: 1px; max-height: 0px; max-width: 0px; opacity: 0; overflow: hidden;">
+    Votre code de confirmation Bon Waz à Dealer est : {{ .Token }}. Utilisez ce code pour activer votre boutique.
+  </div>
+
+  <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #F8FAFC; padding: 32px 16px;">
+    <tr>
+      <td align="center">
+        
+        <!-- Conteneur principal (max 580px) -->
+        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 580px; background-color: #FFFFFF; border-radius: 24px; border: 1px solid #E2E8F0; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04); overflow: hidden;">
+          
+          <!-- En-tête avec marque -->
+          <tr>
+            <td style="background-color: #0F766E; padding: 32px 28px; text-align: center;">
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                <tr>
+                  <td align="center">
+                    <div style="display: inline-block; background-color: #115E59; border-radius: 16px; padding: 10px 18px; margin-bottom: 8px;">
+                      <span style="font-size: 20px; font-weight: 900; color: #FFFFFF; letter-spacing: -0.5px;">
+                        Bon Waz à Dealer
+                      </span>
+                    </div>
+                    <div style="color: #CCFBF1; font-size: 12px; font-weight: 500; margin-top: 4px;">
+                      Plateforme de vente en ligne & commandes WhatsApp
+                    </div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Corps du message -->
+          <tr>
+            <td style="padding: 36px 32px 28px 32px;">
+              <h1 style="margin: 0 0 16px 0; font-size: 22px; font-weight: 800; color: #0F172A; text-align: center;">
+                Confirmez votre adresse e-mail
+              </h1>
+              
+              <p style="margin: 0 0 20px 0; font-size: 14px; line-height: 22px; color: #475569; text-align: center;">
+                Bienvenue parmi nous ! Pour activer votre compte commerçant et commencer à publier votre boutique, veuillez saisir le code de vérification suivant :
+              </p>
+
+              <!-- Encadré Code OTP à 6 chiffres -->
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="margin: 24px 0;">
+                <tr>
+                  <td align="center" style="background-color: #F0FDFA; border: 2px dashed #0D9488; border-radius: 18px; padding: 22px 16px;">
+                    <div style="font-size: 11px; font-weight: 700; color: #0F766E; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 6px;">
+                      Votre code de vérification
+                    </div>
+                    <div style="font-family: 'SF Pro Mono', 'Courier New', Courier, monospace; font-size: 38px; font-weight: 900; letter-spacing: 8px; color: #115E59; margin: 4px 0 8px 0; padding-left: 8px;">
+                      {{ .Token }}
+                    </div>
+                    <div style="font-size: 11px; color: #64748B;">
+                      Valable pendant 60 minutes • Ne le partagez avec personne
+                    </div>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Option 2 : Bouton 1-clic direct -->
+              <div style="text-align: center; margin: 28px 0 20px 0;">
+                <p style="margin: 0 0 12px 0; font-size: 12px; color: #64748B;">
+                  Ou confirmez directement en un clic :
+                </p>
+                <a href="{{ .ConfirmationURL }}" target="_blank" style="display: inline-block; background-color: #0F766E; color: #FFFFFF; font-size: 13px; font-weight: 700; text-decoration: none; padding: 13px 26px; border-radius: 12px; box-shadow: 0 2px 6px rgba(15, 118, 110, 0.25);">
+                  Valider mon e-mail automatiquement →
+                </a>
+              </div>
+
+              <!-- Note de sécurité -->
+              <div style="border-top: 1px solid #F1F5F9; padding-top: 20px; margin-top: 24px; text-align: center;">
+                <p style="margin: 0; font-size: 11px; line-height: 18px; color: #94A3B8;">
+                  Si vous n'êtes pas à l'origine de cette inscription, ignorez simplement cet e-mail. Aucun compte ne sera activé sans ce code.
+                </p>
+              </div>
+
+            </td>
+          </tr>
+
+          <!-- Pied de page & Support client -->
+          <tr>
+            <td style="background-color: #F8FAFC; border-top: 1px solid #E2E8F0; padding: 24px 32px; text-align: center;">
+              <p style="margin: 0 0 8px 0; font-size: 12px; font-weight: 700; color: #334155;">
+                Support Client Bon Waz à Dealer
+              </p>
+              <p style="margin: 0 0 12px 0; font-size: 11px; line-height: 18px; color: #64748B;">
+                Une question ou besoin d'accompagnement ? Répondez directement à cet e-mail, notre équipe est là pour vous assister.
+              </p>
+              <p style="margin: 0; font-size: 11px; color: #94A3B8;">
+                <a href="https://bonwazadealer.vercel.app" target="_blank" style="color: #0F766E; text-decoration: underline; font-weight: 600;">
+                  bonwazadealer.vercel.app
+                </a>
+                • Tous droits réservés
+              </p>
+            </td>
+          </tr>
+
+        </table>
+
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>
