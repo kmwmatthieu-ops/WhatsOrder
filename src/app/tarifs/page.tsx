@@ -272,7 +272,24 @@ export default async function TarifsPage() {
       </main>
 
       {/* Pied de page */}
-      <footer className="border-t border-line bg-white py-8 text-center text-xs text-muted">
+      <footer className="border-t border-line bg-white py-8 px-4 text-center text-xs text-muted space-y-3">
+        <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 font-semibold text-ink">
+          <Link href="/" className="hover:text-brand-600 transition-colors">
+            Accueil
+          </Link>
+          <span className="text-line">•</span>
+          <Link href="/cgu" className="hover:text-brand-600 transition-colors">
+            Conditions Générales d&apos;Utilisation
+          </Link>
+          <span className="text-line">•</span>
+          <Link href="/confidentialite" className="hover:text-brand-600 transition-colors">
+            Confidentialité
+          </Link>
+          <span className="text-line">•</span>
+          <Link href="/mentions-legales" className="hover:text-brand-600 transition-colors">
+            Mentions Légales
+          </Link>
+        </div>
         <p>© {new Date().getFullYear()} Bon Waz à Dealer • Vente en ligne simplifiée sur WhatsApp</p>
       </footer>
     </div>

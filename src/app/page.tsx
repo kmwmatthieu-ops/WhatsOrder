@@ -171,9 +171,26 @@ export default async function HomePage() {
         </section>
       </main>
 
-      {/* Footer minimal (pas de page tarifs) */}
-      <footer className="border-t border-line bg-white py-6 px-4 text-center text-xs text-muted">
-        <p>© {new Date().getFullYear()} {APP_NAME} · By Wens Matthieu. Tous droits réservés.</p>
+      {/* Footer */}
+      <footer className="border-t border-line bg-white py-8 px-4 text-center text-xs text-muted space-y-3">
+        <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 font-semibold text-ink">
+          <Link href="/tarifs" className="hover:text-brand-600 transition-colors">
+            Tarifs
+          </Link>
+          <span className="text-line">•</span>
+          <Link href="/cgu" className="hover:text-brand-600 transition-colors">
+            Conditions Générales d&apos;Utilisation
+          </Link>
+          <span className="text-line">•</span>
+          <Link href="/confidentialite" className="hover:text-brand-600 transition-colors">
+            Confidentialité
+          </Link>
+          <span className="text-line">•</span>
+          <Link href="/mentions-legales" className="hover:text-brand-600 transition-colors">
+            Mentions Légales
+          </Link>
+        </div>
+        <p>© {new Date().getFullYear()} {APP_NAME} · Tous droits réservés.</p>
       </footer>
     </div>
   );

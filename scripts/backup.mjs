@@ -20,12 +20,20 @@ const supabase = createClient(SUPABASE_URL, SERVICE_KEY, {
 });
 
 const TABLES = [
+  "admins",
+  "subscription_plans",
   "shops",
+  "shop_subscriptions",
+  "subscription_requests",
+  "saspay_payments",
   "categories",
+  "delivery_zones",
   "products",
+  "product_variants",
   "customers",
   "orders",
   "order_items",
+  "order_payments",
   "order_status_history",
 ];
 

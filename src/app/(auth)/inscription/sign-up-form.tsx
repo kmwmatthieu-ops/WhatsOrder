@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, type SyntheticEvent } from "react";
+import Link from "next/link";
 import { MailCheck, RefreshCw, CheckCircle2, ArrowLeft, KeyRound } from "lucide-react";
 import {
   signUp,
@@ -19,6 +20,7 @@ export function SignUpForm() {
   const [state, setState] = useState<ActionState>(initialActionState);
   const [pending, setPending] = useState(false);
   const [redirecting, setRedirecting] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [credentials, setCredentials] = useState<{ email: string; password: string } | null>(null);
   const [verifyNotice, setVerifyNotice] = useState<{ tone: "error" | "success"; text: string } | null>(
     null
@@ -80,6 +82,11 @@ export function SignUpForm() {
   async function handleSubmit(e: SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     if (pending || redirecting) return;
+
+    if (!acceptedTerms) {
+      setState({ error: "Veuillez accepter les CGU et la Politique de Confidentialité pour continuer." });
+      return;
+    }
 
     setPending(true);
     setState(initialActionState);
@@ -292,7 +299,29 @@ export function SignUpForm() {
         hint="Au moins 8 caractères."
         error={state.fieldErrors?.password}
       />
-      <Button type="submit" block loading={pending}>
+      <div className="flex items-start gap-2.5 pt-1">
+        <input
+          id="terms-checkbox"
+          type="checkbox"
+          required
+          checked={acceptedTerms}
+          onChange={(e) => setAcceptedTerms(e.target.checked)}
+          className="mt-0.5 size-4 rounded border-line text-brand-600 focus:ring-brand-500 cursor-pointer"
+        />
+        <label htmlFor="terms-checkbox" className="text-xs text-muted leading-relaxed cursor-pointer select-none">
+          J&apos;accepte les{" "}
+          <Link href="/cgu" target="_blank" className="font-semibold text-brand-700 underline hover:text-brand-800">
+            Conditions Générales d&apos;Utilisation
+          </Link>{" "}
+          et la{" "}
+          <Link href="/confidentialite" target="_blank" className="font-semibold text-brand-700 underline hover:text-brand-800">
+            Politique de Confidentialité
+          </Link>
+          .
+        </label>
+      </div>
+
+      <Button type="submit" block loading={pending} disabled={!acceptedTerms || pending}>
         {pending ? "Création du compte…" : "Créer mon compte"}
       </Button>
     </form>
