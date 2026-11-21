@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { AlertTriangle, Trash2 } from "lucide-react";
 import { updateShopSettings, removeLogo, removeBanner } from "./actions";
 import { initialActionState } from "@/lib/action-state";
 import { Input, Textarea } from "@/components/ui/field";
@@ -13,6 +14,7 @@ import { LogoUploader } from "@/components/shop/logo-uploader";
 import { BannerUploader } from "@/components/shop/banner-uploader";
 import { OpeningHoursEditor } from "@/components/shop/opening-hours-editor";
 import { DeliveryZonesManager } from "@/components/shop/delivery-zones-manager";
+import { DeleteShopModal } from "@/components/shop/delete-shop-modal";
 import { splitE164, toE164 } from "@/lib/phone";
 import { SHOP_COLOR_PRESETS } from "@/lib/constants";
 import { DEFAULT_OPENING_HOURS } from "@/lib/opening-hours";
@@ -35,6 +37,7 @@ export function SettingsForm({ shop, initialZones }: Props) {
   const [openingHours, setOpeningHours] = useState<OpeningHours>(
     shop.opening_hours || DEFAULT_OPENING_HOURS
   );
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const fullWhatsapp = toE164(phone.countryCode, phone.local);
 
@@ -208,6 +211,39 @@ export function SettingsForm({ shop, initialZones }: Props) {
           <DeliveryZonesManager initialZones={initialZones} />
         </section>
       )}
+
+      {/* Section 6 : Zone de danger (Suppression irréversible de la boutique) */}
+      <section className="rounded-3xl border border-danger-200 bg-danger-50/40 p-5 shadow-xs flex flex-col gap-4">
+        <div className="flex items-start gap-3">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-danger-100 text-danger-700">
+            <AlertTriangle className="size-5" />
+          </div>
+          <div className="flex-1">
+            <h2 className="text-base font-bold text-danger-900">Zone de danger : Supprimer la boutique</h2>
+            <p className="text-xs text-danger-700 mt-1 leading-relaxed">
+              Cette action est irréversible. La suppression effacera définitivement votre boutique, son catalogue de produits, ses variantes, ses clients, ses commandes et ses règlements. Votre compte utilisateur reste actif et vous pourrez immédiatement créer une nouvelle boutique.
+            </p>
+          </div>
+        </div>
+
+        <div className="pt-2 border-t border-danger-200/60 flex justify-end">
+          <button
+            type="button"
+            onClick={() => setShowDeleteModal(true)}
+            className="inline-flex items-center gap-2 rounded-2xl bg-danger-600 px-4 py-2.5 text-xs sm:text-sm font-bold text-white shadow-xs hover:bg-danger-700 active:scale-[0.99] transition-all"
+          >
+            <Trash2 className="size-4" />
+            <span>Supprimer définitivement cette boutique</span>
+          </button>
+        </div>
+      </section>
+
+      <DeleteShopModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        shopId={shop.id}
+        shopName={shop.name}
+      />
     </div>
   );
 }

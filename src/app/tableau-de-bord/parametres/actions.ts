@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireShop } from "@/lib/supabase/server";
+import { requireShop, getUser, createClient } from "@/lib/supabase/server";
 import { updateShopSchema } from "@/lib/validation/shop";
 import { dbErrorMessage } from "@/lib/errors";
 import { toFieldErrors, type ActionState } from "@/lib/action-state";
@@ -180,4 +180,71 @@ export async function deleteDeliveryZone(zoneId: string): Promise<{ error?: stri
   revalidatePath("/tableau-de-bord/parametres");
   revalidatePath(`/${shop.slug}/commande`);
   return {};
+}
+
+/**
+ * Supprime définitivement la boutique et toutes ses données associées (cascade PostgreSQL),
+ * ainsi que ses fichiers d'images hébergés.
+ * Le compte auth.users de l'utilisateur reste actif pour lui permettre de créer une nouvelle boutique.
+ */
+export async function deleteShop(
+  shopId: string,
+  confirmationName: string
+): Promise<{ ok?: boolean; error?: string }> {
+  const user = await getUser();
+  if (!user) return { error: "Non authentifié." };
+
+  const supabase = await createClient();
+
+  // 1. Récupérer la boutique pour valider la propriété et le nom
+  const { data: shop, error: fetchError } = await supabase
+    .from("shops")
+    .select("id, name, slug, owner_id")
+    .eq("id", shopId)
+    .single();
+
+  if (fetchError || !shop) {
+    return { error: "Boutique introuvable ou accès refusé." };
+  }
+
+  // 2. Vérification stricte du nom de confirmation
+  if (confirmationName.trim().toLowerCase() !== shop.name.trim().toLowerCase()) {
+    return {
+      error: `Veuillez saisir exactement « ${shop.name} » pour confirmer la suppression définitive.`,
+    };
+  }
+
+  // 3. Nettoyage préventif des médias hébergés dans Storage
+  try {
+    const folders = ["logo", "banner", "products"];
+    for (const folder of folders) {
+      const { data: files } = await supabase.storage
+        .from(MEDIA_BUCKET)
+        .list(`${shop.id}/${folder}`);
+      if (files && files.length > 0) {
+        const paths = files.map((f) => `${shop.id}/${folder}/${f.name}`);
+        await supabase.storage.from(MEDIA_BUCKET).remove(paths);
+      }
+    }
+  } catch {
+    // Échec de nettoyage non bloquant
+  }
+
+  // 4. Suppression en base (cascade PostgreSQL vers toutes les tables enfants)
+  const { error: deleteError } = await supabase
+    .from("shops")
+    .delete()
+    .eq("id", shop.id);
+
+  if (deleteError) {
+    return { error: dbErrorMessage(deleteError, "Impossible de supprimer la boutique.") };
+  }
+
+  // 5. Invalidation des chemins et caches Next.js
+  revalidatePath("/tableau-de-bord", "layout");
+  revalidatePath("/boutiques");
+  revalidatePath("/onboarding");
+  revalidatePath(`/${shop.slug}`);
+
+  return { ok: true };
 }

@@ -102,4 +102,93 @@ describe("RLS — Isolation des Boutiques (shops)", () => {
     // Rétablir active
     await ctx.admin.from("shops").update({ status: "active" }).eq("id", ctx.userB.shopId);
   });
+
+  it("empêche le commerçant A de supprimer la boutique du commerçant B", async () => {
+    if (!isConfigured) return;
+
+    const { error, count } = await ctx.userA.client
+      .from("shops")
+      .delete({ count: "exact" })
+      .eq("id", ctx.userB.shopId);
+
+    expect(count === 0 || count === null || error !== null).toBe(true);
+
+    const { data: shopB } = await ctx.admin
+      .from("shops")
+      .select("id")
+      .eq("id", ctx.userB.shopId)
+      .single();
+    expect(shopB?.id).toBe(ctx.userB.shopId);
+  });
+
+  it("interdit au public (anonyme) de supprimer une boutique", async () => {
+    if (!isConfigured) return;
+
+    const { error, count } = await ctx.anon
+      .from("shops")
+      .delete({ count: "exact" })
+      .eq("id", ctx.userA.shopId);
+
+    expect(count === 0 || count === null || error !== null).toBe(true);
+  });
+
+  it("permet au commerçant de supprimer sa propre boutique et supprime les produits en cascade", async () => {
+    if (!isConfigured) return;
+
+    // Ajouter un produit à la boutique A
+    const { data: product } = await ctx.userA.client
+      .from("products")
+      .insert({
+        shop_id: ctx.userA.shopId,
+        name: "Produit avant suppression boutique",
+        price: 2500,
+      })
+      .select("id")
+      .single();
+
+    expect(product?.id).toBeDefined();
+
+    // Commerçant A supprime sa boutique
+    const { error: deleteError } = await ctx.userA.client
+      .from("shops")
+      .delete()
+      .eq("id", ctx.userA.shopId);
+
+    expect(deleteError).toBeNull();
+
+    // Vérifier que la boutique n'existe plus
+    const { data: shopA } = await ctx.admin
+      .from("shops")
+      .select("id")
+      .eq("id", ctx.userA.shopId)
+      .maybeSingle();
+    expect(shopA).toBeNull();
+
+    // Vérifier que le produit a bien été supprimé en cascade
+    const { data: cascadedProduct } = await ctx.admin
+      .from("products")
+      .select("id")
+      .eq("id", product!.id)
+      .maybeSingle();
+    expect(cascadedProduct).toBeNull();
+
+    // L'utilisateur A peut désormais recréer une nouvelle boutique (contrainte unique owner_id libérée)
+    const newSlug = `nouvelle-boutique-${Date.now().toString(36)}`;
+    const { data: newShop, error: createError } = await ctx.userA.client
+      .from("shops")
+      .insert({
+        owner_id: ctx.userA.id,
+        name: "Nouvelle Boutique A",
+        slug: newSlug,
+        whatsapp_number: "+2250700000001",
+      })
+      .select("id")
+      .single();
+
+    expect(createError).toBeNull();
+    expect(newShop?.id).toBeDefined();
+
+    // Mettre à jour ctx.userA.shopId pour le cleanup après tests
+    ctx.userA.shopId = newShop!.id;
+  });
 });

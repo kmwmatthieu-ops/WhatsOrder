@@ -8,6 +8,7 @@ import { Logo } from "@/components/ui/logo";
 import { COUNTRIES, formatPhone, splitE164 } from "@/lib/phone";
 import { isShopCurrentlyOpen } from "@/lib/opening-hours";
 import { shopUrl } from "@/lib/constants";
+import { DeleteShopButton } from "@/components/shop/delete-shop-button";
 
 export const metadata: Metadata = {
   title: "Vos boutiques — Bon Waz à Dealer",
@@ -179,6 +180,11 @@ export default async function BoutiquesPage() {
                   <Store className="size-3.5" aria-hidden />
                   <span>Voir la vitrine en direct (vue client)</span>
                 </a>
+
+                {/* Option de suppression de la boutique */}
+                <div className="mt-1 border-t border-line/60 pt-1">
+                  <DeleteShopButton shopId={shop.id} shopName={shop.name} />
+                </div>
               </div>
             );
           })}
