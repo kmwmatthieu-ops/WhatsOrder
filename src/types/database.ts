@@ -487,6 +487,65 @@ export type Database = {
           },
         ];
       };
+      saspay_payments: {
+        Row: {
+          id: string;
+          shop_id: string;
+          user_id: string | null;
+          plan_id: string;
+          duration_months: number;
+          amount: string;
+          currency: string;
+          saspay_session_id: string | null;
+          saspay_payment_id: string | null;
+          checkout_url: string | null;
+          status: "PENDING" | "SUCCESS" | "FAILED";
+          net_amount: string | null;
+          debited_amount: string | null;
+          idempotency_key: string | null;
+          metadata: Json;
+          delivered_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          shop_id: string;
+          user_id?: string | null;
+          plan_id: string;
+          duration_months: number;
+          amount: string;
+          currency?: string;
+          saspay_session_id?: string | null;
+          saspay_payment_id?: string | null;
+          checkout_url?: string | null;
+          status?: "PENDING" | "SUCCESS" | "FAILED";
+          net_amount?: string | null;
+          debited_amount?: string | null;
+          idempotency_key?: string | null;
+          metadata?: Json;
+          delivered_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["saspay_payments"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "saspay_payments_shop_id_fkey";
+            columns: ["shop_id"];
+            isOneToOne: false;
+            referencedRelation: "shops";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "saspay_payments_plan_id_fkey";
+            columns: ["plan_id"];
+            isOneToOne: false;
+            referencedRelation: "subscription_plans";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: { [_ in never]: never };
     Functions: {
@@ -586,3 +645,4 @@ export type DeliveryZone = Tables<"delivery_zones">;
 export type SubscriptionPlan = Tables<"subscription_plans">;
 export type ShopSubscription = Tables<"shop_subscriptions">;
 export type SubscriptionRequest = Tables<"subscription_requests">;
+export type SaspayPayment = Tables<"saspay_payments">;

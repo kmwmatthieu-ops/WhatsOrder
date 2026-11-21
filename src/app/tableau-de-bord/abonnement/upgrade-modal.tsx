@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Sparkles, X, Check, Smartphone, MessageCircle, AlertCircle, ArrowRight } from "lucide-react";
+import { Sparkles, X, Check, Smartphone, MessageCircle, AlertCircle, ArrowRight, CreditCard, ShieldCheck } from "lucide-react";
 import { formatFCFA } from "@/lib/format";
 import { MOBILE_MONEY_PAYMENT_CONFIG } from "@/lib/constants";
 import type { SubscriptionPlan, Shop } from "@/types/database";
 import { requestSubscriptionUpgrade, type UpgradeActionState } from "./actions";
+import { initiateSaspaySubscriptionCheckout } from "./saspay-actions";
 
 type UpgradeModalProps = {
   shop: Shop;
@@ -18,21 +19,53 @@ export function UpgradeModal({ shop, plans, currentPlanId, isExpired }: UpgradeM
   const [isOpen, setIsOpen] = useState(false);
   const paidPlans = plans.filter((p) => p.id !== "gratuit");
 
+  // Mode de paiement : 'online' (SasPay instantané) ou 'manual' (Virement manuel)
+  const [payMode, setPayMode] = useState<"online" | "manual">("online");
+
   const [selectedPlanId, setSelectedPlanId] = useState<"business" | "premium">(
     currentPlanId === "premium" ? "premium" : "business"
   );
   const [duration, setDuration] = useState<number>(1);
+
+  // Pour paiement manuel
   const [paymentMethod, setPaymentMethod] = useState<string>("wave");
   const [senderPhone, setSenderPhone] = useState(shop.whatsapp_number || "");
   const [txRef, setTxRef] = useState("");
   const [pending, setPending] = useState(false);
   const [state, setState] = useState<UpgradeActionState | null>(null);
 
+  // Pour paiement en ligne SasPay
+  const [onlinePending, setOnlinePending] = useState(false);
+  const [onlineError, setOnlineError] = useState<string | null>(null);
+
   const selectedPlan = paidPlans.find((p) => p.id === selectedPlanId) || paidPlans[0];
   const totalAmount = selectedPlan ? selectedPlan.price_monthly * duration : 0;
-  const currentProvider = MOBILE_MONEY_PAYMENT_CONFIG.accounts.find((a) => a.provider === paymentMethod) || MOBILE_MONEY_PAYMENT_CONFIG.accounts[0];
+  const currentProvider =
+    MOBILE_MONEY_PAYMENT_CONFIG.accounts.find((a) => a.provider === paymentMethod) ||
+    MOBILE_MONEY_PAYMENT_CONFIG.accounts[0];
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  // Paiement en ligne immédiat via SasPay
+  async function handleOnlineSaspayPay() {
+    if (onlinePending) return;
+    setOnlinePending(true);
+    setOnlineError(null);
+
+    try {
+      const res = await initiateSaspaySubscriptionCheckout(selectedPlanId, duration);
+      if (res.ok && res.checkoutUrl) {
+        window.location.href = res.checkoutUrl;
+        return;
+      }
+      setOnlineError(res.error || "Impossible d'initialiser le paiement sécurisé.");
+    } catch {
+      setOnlineError("Une erreur est survenue lors de la connexion à SasPay.");
+    } finally {
+      setOnlinePending(false);
+    }
+  }
+
+  // Soumission manuelle
+  async function handleManualSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (pending) return;
 
@@ -67,6 +100,7 @@ export function UpgradeModal({ shop, plans, currentPlanId, isExpired }: UpgradeM
         onClick={() => {
           setIsOpen(true);
           setState(null);
+          setOnlineError(null);
         }}
         className="inline-flex items-center justify-center gap-2 rounded-2xl bg-brand-600 px-5 py-3 text-xs sm:text-sm font-bold text-white shadow-md hover:bg-brand-700 active:scale-98 transition-all"
       >
@@ -76,7 +110,7 @@ export function UpgradeModal({ shop, plans, currentPlanId, isExpired }: UpgradeM
 
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs overflow-y-auto">
-          <div className="relative w-full max-w-lg rounded-3xl bg-white p-6 sm:p-7 shadow-2xl my-8">
+          <div className="relative w-full max-w-lg rounded-3xl bg-white p-6 sm:p-7 shadow-2xl my-8 max-h-[92vh] overflow-y-auto">
             <button
               type="button"
               onClick={() => setIsOpen(false)}
@@ -122,20 +156,51 @@ export function UpgradeModal({ shop, plans, currentPlanId, isExpired }: UpgradeM
                 </div>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="space-y-5">
+              <div className="space-y-5">
                 <div>
-                  <h3 className="text-lg font-black text-ink">Passer à la formule supérieure</h3>
+                  <h3 className="text-lg font-black text-ink">Mettre à niveau mon abonnement</h3>
                   <p className="text-xs text-muted mt-0.5">
-                    Paiement direct par Mobile Money sans carte bancaire.
+                    Activation instantanée en ligne ou virement manuel Mobile Money.
                   </p>
                 </div>
 
-                {state?.error && (
-                  <div className="flex items-center gap-2 rounded-2xl border border-danger-200 bg-danger-50 p-3 text-xs text-danger-700">
-                    <AlertCircle className="size-4 shrink-0" />
-                    <span>{state.error}</span>
-                  </div>
-                )}
+                {/* Sélecteur de mode de paiement */}
+                <div className="grid grid-cols-2 gap-2 rounded-2xl bg-sand/40 p-1.5 border border-line/60">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPayMode("online");
+                      setOnlineError(null);
+                    }}
+                    className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all ${
+                      payMode === "online"
+                        ? "bg-white text-brand-700 shadow-xs border border-line"
+                        : "text-muted hover:text-ink"
+                    }`}
+                  >
+                    <CreditCard className="size-3.5" />
+                    <span>En ligne (SasPay)</span>
+                    <span className="text-[10px] bg-brand-100 text-brand-800 font-extrabold px-1.5 py-0.2 rounded-md">
+                      Instantané
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPayMode("manual");
+                      setState(null);
+                    }}
+                    className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all ${
+                      payMode === "manual"
+                        ? "bg-white text-brand-700 shadow-xs border border-line"
+                        : "text-muted hover:text-ink"
+                    }`}
+                  >
+                    <Smartphone className="size-3.5" />
+                    <span>Virement manuel</span>
+                  </button>
+                </div>
 
                 {/* 1. Choix du plan */}
                 <div>
@@ -195,80 +260,133 @@ export function UpgradeModal({ shop, plans, currentPlanId, isExpired }: UpgradeM
                   </div>
                 </div>
 
-                {/* 3. Moyen de paiement & Instructions */}
-                <div>
-                  <label className="text-xs font-bold text-ink block mb-2">3. Moyen de paiement Mobile Money</label>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
-                    {MOBILE_MONEY_PAYMENT_CONFIG.accounts.map((acc) => (
-                      <button
-                        key={acc.provider}
-                        type="button"
-                        onClick={() => setPaymentMethod(acc.provider)}
-                        className={`py-2 px-2 rounded-xl text-xs font-bold border truncate transition-colors ${
-                          paymentMethod === acc.provider
-                            ? "border-brand-600 bg-brand-50 text-brand-700"
-                            : "border-line bg-white text-ink hover:bg-sand"
-                        }`}
-                      >
-                        {acc.label}
-                      </button>
-                    ))}
-                  </div>
+                {/* MODE EN LIGNE (SASPAY) */}
+                {payMode === "online" && (
+                  <div className="space-y-4">
+                    {onlineError && (
+                      <div className="flex items-center gap-2 rounded-2xl border border-danger-200 bg-danger-50 p-3 text-xs text-danger-700">
+                        <AlertCircle className="size-4 shrink-0" />
+                        <span>{onlineError}</span>
+                      </div>
+                    )}
 
-                  <div className="rounded-2xl border border-brand-200 bg-brand-50/60 p-3.5 text-xs">
-                    <p className="font-bold text-brand-800">Numéro de transfert officiel ({currentProvider.label}) :</p>
-                    <p className="text-sm font-black text-ink mt-0.5 tracking-wider">{currentProvider.number}</p>
-                    <p className="text-muted text-[11px] mt-0.5">Bénéficiaire : {currentProvider.recipient}</p>
-                    <div className="mt-2 pt-2 border-t border-brand-200/60 flex items-center justify-between font-bold">
-                      <span className="text-brand-900">Total à transférer :</span>
-                      <span className="text-base text-brand-700 font-black">{formatFCFA(totalAmount)}</span>
+                    <div className="rounded-2xl border border-brand-200 bg-brand-50/50 p-4 text-xs space-y-2">
+                      <div className="flex items-center gap-2 text-brand-800 font-bold">
+                        <ShieldCheck className="size-4 text-brand-600" />
+                        <span>Paiement sécurisé par SasPay</span>
+                      </div>
+                      <p className="text-muted text-[11px] leading-relaxed">
+                        Payez avec votre compte <strong>Mobile Money</strong> (MTN Bénin, Moov, Orange, Wave, Djamo) ou par <strong>Carte Bancaire</strong>. Votre compte est activé automatiquement dès confirmation.
+                      </p>
+                      <div className="mt-2 pt-2 border-t border-brand-200/60 flex items-center justify-between font-bold">
+                        <span className="text-brand-900">Montant total :</span>
+                        <span className="text-lg text-brand-700 font-black">{formatFCFA(totalAmount)}</span>
+                      </div>
+                    </div>
+
+                    <div className="pt-1">
+                      <button
+                        type="button"
+                        onClick={handleOnlineSaspayPay}
+                        disabled={onlinePending}
+                        className="w-full flex h-12 items-center justify-center gap-2 rounded-2xl bg-brand-600 text-xs sm:text-sm font-bold text-white shadow-md hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                      >
+                        <span>{onlinePending ? "Redirection vers SasPay…" : `Payer en ligne (${formatFCFA(totalAmount)})`}</span>
+                        <ArrowRight className="size-4" />
+                      </button>
+                      <p className="text-[10px] text-center text-muted mt-2">
+                        Redirection sécurisée vers la page de paiement officielle SasPay.
+                      </p>
                     </div>
                   </div>
-                </div>
+                )}
 
-                {/* 4. Coordonnées de transaction */}
-                <div className="space-y-3">
-                  <div>
-                    <label htmlFor="sender-phone" className="text-xs font-bold text-ink block mb-1">
-                      Votre numéro émetteur (ayant envoyé l&apos;argent) *
-                    </label>
-                    <input
-                      id="sender-phone"
-                      type="tel"
-                      required
-                      value={senderPhone}
-                      onChange={(e) => setSenderPhone(e.target.value)}
-                      placeholder="+225 07 00 00 00 00"
-                      className="w-full rounded-xl border border-line bg-white px-3 py-2.5 text-xs text-ink focus:border-brand-600 focus:outline-none"
-                    />
-                  </div>
+                {/* MODE MANUEL */}
+                {payMode === "manual" && (
+                  <form onSubmit={handleManualSubmit} className="space-y-4">
+                    {state?.error && (
+                      <div className="flex items-center gap-2 rounded-2xl border border-danger-200 bg-danger-50 p-3 text-xs text-danger-700">
+                        <AlertCircle className="size-4 shrink-0" />
+                        <span>{state.error}</span>
+                      </div>
+                    )}
 
-                  <div>
-                    <label htmlFor="tx-ref" className="text-xs font-bold text-ink block mb-1">
-                      Référence de transaction SMS (optionnel)
-                    </label>
-                    <input
-                      id="tx-ref"
-                      type="text"
-                      value={txRef}
-                      onChange={(e) => setTxRef(e.target.value)}
-                      placeholder="Ex: TX-984214 ou code SMS"
-                      className="w-full rounded-xl border border-line bg-white px-3 py-2.5 text-xs text-ink focus:border-brand-600 focus:outline-none"
-                    />
-                  </div>
-                </div>
+                    {/* Moyen de paiement & Instructions */}
+                    <div>
+                      <label className="text-xs font-bold text-ink block mb-2">3. Moyen de paiement Mobile Money</label>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+                        {MOBILE_MONEY_PAYMENT_CONFIG.accounts.map((acc) => (
+                          <button
+                            key={acc.provider}
+                            type="button"
+                            onClick={() => setPaymentMethod(acc.provider)}
+                            className={`py-2 px-2 rounded-xl text-xs font-bold border truncate transition-colors ${
+                              paymentMethod === acc.provider
+                                ? "border-brand-600 bg-brand-50 text-brand-700"
+                                : "border-line bg-white text-ink hover:bg-sand"
+                            }`}
+                          >
+                            {acc.label}
+                          </button>
+                        ))}
+                      </div>
 
-                <div className="pt-2">
-                  <button
-                    type="submit"
-                    disabled={pending || !senderPhone.trim()}
-                    className="w-full flex h-12 items-center justify-center gap-2 rounded-2xl bg-brand-600 text-xs sm:text-sm font-bold text-white shadow-md hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                  >
-                    <span>{pending ? "Enregistrement…" : `Confirmer ma demande (${formatFCFA(totalAmount)})`}</span>
-                    <ArrowRight className="size-4" />
-                  </button>
-                </div>
-              </form>
+                      <div className="rounded-2xl border border-brand-200 bg-brand-50/60 p-3.5 text-xs">
+                        <p className="font-bold text-brand-800">Numéro de transfert officiel ({currentProvider.label}) :</p>
+                        <p className="text-sm font-black text-ink mt-0.5 tracking-wider">{currentProvider.number}</p>
+                        <p className="text-muted text-[11px] mt-0.5">Bénéficiaire : {currentProvider.recipient}</p>
+                        <div className="mt-2 pt-2 border-t border-brand-200/60 flex items-center justify-between font-bold">
+                          <span className="text-brand-900">Total à transférer :</span>
+                          <span className="text-base text-brand-700 font-black">{formatFCFA(totalAmount)}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Coordonnées de transaction */}
+                    <div className="space-y-3">
+                      <div>
+                        <label htmlFor="sender-phone" className="text-xs font-bold text-ink block mb-1">
+                          Votre numéro émetteur (ayant envoyé l&apos;argent) *
+                        </label>
+                        <input
+                          id="sender-phone"
+                          type="tel"
+                          required
+                          value={senderPhone}
+                          onChange={(e) => setSenderPhone(e.target.value)}
+                          placeholder="+225 07 00 00 00 00"
+                          className="w-full rounded-xl border border-line bg-white px-3 py-2.5 text-xs text-ink focus:border-brand-600 focus:outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label htmlFor="tx-ref" className="text-xs font-bold text-ink block mb-1">
+                          Référence de transaction SMS (optionnel)
+                        </label>
+                        <input
+                          id="tx-ref"
+                          type="text"
+                          value={txRef}
+                          onChange={(e) => setTxRef(e.target.value)}
+                          placeholder="Ex: TX-984214 ou code SMS"
+                          className="w-full rounded-xl border border-line bg-white px-3 py-2.5 text-xs text-ink focus:border-brand-600 focus:outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="pt-2">
+                      <button
+                        type="submit"
+                        disabled={pending || !senderPhone.trim()}
+                        className="w-full flex h-12 items-center justify-center gap-2 rounded-2xl bg-brand-600 text-xs sm:text-sm font-bold text-white shadow-md hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                      >
+                        <span>{pending ? "Enregistrement…" : `Confirmer ma demande (${formatFCFA(totalAmount)})`}</span>
+                        <ArrowRight className="size-4" />
+                      </button>
+                    </div>
+                  </form>
+                )}
+              </div>
             )}
           </div>
         </div>
