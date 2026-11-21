@@ -1,11 +1,11 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Trash2 } from "lucide-react";
 import { Input, Textarea, Select } from "@/components/ui/field";
 import { Toggle } from "@/components/ui/toggle";
-import { SubmitButton } from "@/components/ui/submit-button";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { ImagePicker } from "./image-picker";
@@ -20,25 +20,61 @@ type Props = {
 };
 
 export function ProductForm({ product, categories, action, onDelete }: Props) {
-  const [state, formAction] = useActionState(action, initialActionState);
-  
+  const router = useRouter();
+  const [state, setState] = useState<ActionState>(initialActionState);
+  const [pending, setPending] = useState(false);
+
   const [images, setImages] = useState<string[]>(product?.images ?? []);
   const [hasStock, setHasStock] = useState(product ? product.stock !== null : false);
   const [isAvailable, setIsAvailable] = useState(product ? product.is_available : true);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
 
+  useEffect(() => {
+    if (state.ok) {
+      router.replace("/tableau-de-bord/produits");
+      router.refresh();
+    }
+  }, [state.ok, router]);
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (pending || deleting) return;
+
+    setPending(true);
+    setState(initialActionState);
+    const formData = new FormData(e.currentTarget);
+    try {
+      const res = await action(initialActionState, formData);
+      setState(res);
+      if (!res.ok) setPending(false);
+    } catch {
+      setState({ error: "Connexion impossible. Vérifiez votre réseau puis réessayez." });
+      setPending(false);
+    }
+  }
+
   async function handleDelete() {
     if (!onDelete || !confirm("Voulez-vous vraiment supprimer définitivement ce produit ?")) return;
     setDeleting(true);
     setDeleteError("");
-    const res = await onDelete();
-    setDeleting(false);
-    if (res.error) setDeleteError(res.error);
+    try {
+      const res = await onDelete();
+      if (res.error) {
+        setDeleteError(res.error);
+        setDeleting(false);
+      } else {
+        router.replace("/tableau-de-bord/produits");
+        router.refresh();
+      }
+    } catch {
+      setDeleteError("Suppression impossible. Vérifiez votre réseau puis réessayez.");
+      setDeleting(false);
+    }
   }
 
   return (
-    <form action={formAction} className="flex flex-col gap-6" noValidate>
+    <form onSubmit={handleSubmit} className="flex flex-col gap-6" noValidate>
       <div className="flex items-center justify-between">
         <Link
           href="/tableau-de-bord/produits"
@@ -179,9 +215,13 @@ export function ProductForm({ product, categories, action, onDelete }: Props) {
       </section>
 
       <div className="sticky bottom-20 md:bottom-6 z-10 pt-2">
-        <SubmitButton block pendingText="Enregistrement…">
-          {product ? "Mettre à jour le produit" : "Ajouter le produit"}
-        </SubmitButton>
+        <Button type="submit" block loading={pending}>
+          {pending
+            ? "Enregistrement…"
+            : product
+              ? "Mettre à jour le produit"
+              : "Ajouter le produit"}
+        </Button>
       </div>
     </form>
   );

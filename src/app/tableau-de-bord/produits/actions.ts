@@ -56,7 +56,8 @@ export async function createProduct(_prev: ActionState, formData: FormData): Pro
   }
 
   revalidatePath("/tableau-de-bord/produits");
-  redirect("/tableau-de-bord/produits");
+  revalidatePath(`/${shop.slug}`);
+  return { ok: true };
 }
 
 export async function updateProduct(
@@ -101,7 +102,8 @@ export async function updateProduct(
   }
 
   revalidatePath("/tableau-de-bord/produits");
-  redirect("/tableau-de-bord/produits");
+  revalidatePath(`/${shop.slug}`);
+  return { ok: true };
 }
 
 export async function deleteProduct(productId: string): Promise<{ error?: string }> {

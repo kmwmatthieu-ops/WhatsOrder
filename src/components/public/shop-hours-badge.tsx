@@ -33,7 +33,7 @@ export function ShopHoursBadge({ openingHours }: Props) {
           }`}
           aria-hidden
         />
-        <span>{status.isOpen ? "Ouvert" : "Fermé"}</span>
+        <span suppressHydrationWarning>{status.isOpen ? "Ouvert" : "Fermé"}</span>
         <ChevronDown className="size-3 opacity-60" />
       </button>
 

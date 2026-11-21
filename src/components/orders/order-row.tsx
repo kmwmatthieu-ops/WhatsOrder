@@ -41,7 +41,7 @@ export function OrderRow({ order }: { order: OrderRowData }) {
         </p>
 
         <div className="flex items-center gap-2 text-[11px] text-muted">
-          <span>{dateFormatted}</span>
+          <span suppressHydrationWarning>{dateFormatted}</span>
           <span>•</span>
           <span className="inline-flex items-center gap-1">
             {order.fulfillment === "delivery" ? (

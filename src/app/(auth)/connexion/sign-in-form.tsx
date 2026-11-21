@@ -1,24 +1,60 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useEffect } from "react";
-import { signIn } from "../actions";
-import { initialActionState } from "@/lib/action-state";
+import { useEffect, useState } from "react";
+import { signIn, checkAuthenticated } from "../actions";
+import { initialActionState, type ActionState } from "@/lib/action-state";
 import { Input } from "@/components/ui/field";
 import { PasswordInput } from "@/components/ui/password-input";
-import { SubmitButton } from "@/components/ui/submit-button";
+import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 
 export function SignInForm({ linkError }: { linkError?: string }) {
-  const [state, action] = useActionState(signIn, initialActionState);
+  const [state, setState] = useState<ActionState>(initialActionState);
+  const [pending, setPending] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
 
+  // Si l'utilisateur possède déjà une session active (ex: navigation depuis le cache),
+  // on bascule directement vers le panneau de ses boutiques.
   useEffect(() => {
-    if (state.ok) {
-      window.location.replace("/boutiques");
-    }
-  }, [state.ok]);
+    let active = true;
+    checkAuthenticated()
+      .then((res) => {
+        if (active && res.authenticated) {
+          setRedirecting(true);
+          window.location.replace("/boutiques");
+        }
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
 
-  if (state.ok) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (pending || redirecting) return;
+
+    setPending(true);
+    setState(initialActionState);
+
+    const formData = new FormData(e.currentTarget);
+    try {
+      const res = await signIn(initialActionState, formData);
+      if (res.ok) {
+        setRedirecting(true);
+        window.location.replace("/boutiques");
+        return;
+      }
+      setState(res);
+      setPending(false);
+    } catch {
+      setState({ error: "Connexion impossible. Vérifiez votre réseau puis réessayez." });
+      setPending(false);
+    }
+  }
+
+  if (redirecting) {
     return (
       <div className="flex flex-col items-center justify-center gap-3 rounded-3xl border border-line bg-white p-8 text-center shadow-xs">
         <div className="size-8 animate-spin rounded-full border-3 border-brand-600 border-t-transparent" />
@@ -29,7 +65,7 @@ export function SignInForm({ linkError }: { linkError?: string }) {
   }
 
   return (
-    <form action={action} className="flex flex-col gap-4" noValidate>
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
       {linkError && !state.error && <Alert tone="error">{linkError}</Alert>}
       {state.error && <Alert tone="error">{state.error}</Alert>}
       <Input
@@ -55,9 +91,9 @@ export function SignInForm({ linkError }: { linkError?: string }) {
       >
         Mot de passe oublié ?
       </Link>
-      <SubmitButton block pendingText="Connexion…">
-        Se connecter
-      </SubmitButton>
+      <Button type="submit" block loading={pending}>
+        {pending ? "Connexion…" : "Se connecter"}
+      </Button>
     </form>
   );
 }

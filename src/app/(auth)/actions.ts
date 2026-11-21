@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getUser } from "@/lib/supabase/server";
 import { isSupabaseConfigured, siteUrl } from "@/lib/constants";
 import { authErrorMessage } from "@/lib/errors";
 import { toFieldErrors, type ActionState } from "@/lib/action-state";
@@ -9,6 +9,15 @@ import { forgotSchema, newPasswordSchema, signInSchema, signUpSchema } from "@/l
 
 const NOT_CONFIGURED_MSG =
   "Configuration Supabase requise : Le fichier .env.local n'est pas encore configuré avec vos clés Supabase. Consultez le guide ci-dessous pour l'activer.";
+
+export async function checkAuthenticated(): Promise<{ authenticated: boolean }> {
+  try {
+    const user = await getUser();
+    return { authenticated: Boolean(user) };
+  } catch {
+    return { authenticated: false };
+  }
+}
 
 export async function signIn(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const parsed = signInSchema.safeParse({
@@ -25,8 +34,6 @@ export async function signIn(_prev: ActionState, formData: FormData): Promise<Ac
   const { error } = await supabase.auth.signInWithPassword(parsed.data);
   if (error) return { error: authErrorMessage(error) };
 
-  // Retourne ok: true pour que le navigateur engage une navigation franche vers /boutiques
-  // avec les cookies de session garantis dans l'en-tête HTTP.
   return { ok: true };
 }
 
@@ -44,7 +51,7 @@ export async function signUp(_prev: ActionState, formData: FormData): Promise<Ac
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signUp({
     ...parsed.data,
-    options: { emailRedirectTo: `${siteUrl()}/auth/confirmer?next=/onboarding` },
+    options: { emailRedirectTo: `${siteUrl()}/auth/confirmer?next=/boutiques` },
   });
   if (error) return { error: authErrorMessage(error) };
 
@@ -92,7 +99,7 @@ export async function updatePassword(_prev: ActionState, formData: FormData): Pr
   const { error } = await supabase.auth.updateUser({ password: parsed.data.password });
   if (error) return { error: authErrorMessage(error) };
 
-  redirect("/tableau-de-bord");
+  return { ok: true };
 }
 
 export async function signOut() {
