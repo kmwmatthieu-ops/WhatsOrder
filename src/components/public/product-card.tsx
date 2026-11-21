@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { ImageIcon, Plus } from "lucide-react";
-import { formatFCFA } from "@/lib/format";
+import { applyDiscount, formatFCFA } from "@/lib/format";
 import type { ProductWithVariants } from "@/types/database";
 
 export function ProductCard({
@@ -18,6 +18,7 @@ export function ProductCard({
 }) {
   const variants = product.product_variants ?? [];
   const hasVariants = variants.length > 0;
+  const discountPct = product.discount_percent ?? 0;
 
   const availableVariants = variants.filter((v) => v.is_available && (v.stock === null || v.stock > 0));
 
@@ -42,13 +43,15 @@ export function ProductCard({
     }
   }
 
-  // Prix affiché (si variantes avec prix différents, on affiche le prix minimum)
-  const prices = hasVariants
+  // Prix affiché (avec réduction éventuelle)
+  const basePrices = hasVariants
     ? variants.map((v) => v.price_override ?? product.price)
     : [product.price];
-  const minPrice = Math.min(...prices);
-  const maxPrice = Math.max(...prices);
-  const hasMultiplePrices = minPrice !== maxPrice;
+  const minBasePrice = Math.min(...basePrices);
+  const maxBasePrice = Math.max(...basePrices);
+  const hasMultiplePrices = minBasePrice !== maxBasePrice;
+
+  const minFinalPrice = applyDiscount(minBasePrice, discountPct);
 
   const variantSummary = hasVariants
     ? variants.map((v) => v.label).join(" • ")
@@ -83,6 +86,13 @@ export function ProductCard({
           </div>
         )}
 
+        {/* Badge de réduction visible par le client */}
+        {discountPct > 0 && !isOutOfStock && (
+          <span className="absolute right-2 top-2 rounded-lg bg-danger-600 px-2 py-0.5 text-[11px] font-black text-white shadow-sm">
+            -{discountPct}%
+          </span>
+        )}
+
         {isOutOfStock ? (
           <div className="absolute inset-0 grid place-items-center bg-black/40 backdrop-blur-xs">
             <span className="rounded-lg bg-danger-600 px-2 py-1 text-[11px] font-extrabold uppercase tracking-wider text-white shadow-sm">
@@ -109,9 +119,16 @@ export function ProductCard({
         )}
 
         <div className="mt-auto pt-2.5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <span className="font-extrabold text-sm sm:text-base text-ink leading-tight truncate">
-            {hasMultiplePrices ? `Dès ${formatFCFA(minPrice)}` : formatFCFA(minPrice)}
-          </span>
+          <div className="flex flex-col min-w-0">
+            <span className="font-extrabold text-sm sm:text-base text-ink leading-tight truncate">
+              {hasMultiplePrices ? `Dès ${formatFCFA(minFinalPrice)}` : formatFCFA(minFinalPrice)}
+            </span>
+            {discountPct > 0 && (
+              <span className="text-[11px] text-muted line-through leading-tight truncate">
+                {formatFCFA(minBasePrice)}
+              </span>
+            )}
+          </div>
 
           <span
             className="inline-flex w-full sm:w-auto items-center justify-center gap-1 rounded-xl px-3 py-1.5 text-xs font-bold text-white whitespace-nowrap shadow-xs transition-transform active:scale-95"

@@ -1,16 +1,17 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import {
   CheckCircle2,
   Truck,
   PackageCheck,
   XCircle,
-  MessageCircle,
   Check,
 } from "lucide-react";
 import { updateOrderStatus } from "@/app/tableau-de-bord/commandes/actions";
 import { Spinner } from "@/components/ui/spinner";
+import { WhatsAppIcon } from "@/components/ui/whatsapp-icon";
 
 type SimpleAction = {
   value: "confirmed" | "delivering" | "delivered" | "cancelled";
@@ -25,11 +26,11 @@ const SIMPLE_STATUS_ACTIONS: SimpleAction[] = [
   {
     value: "confirmed",
     label: "Confirmée",
-    sublabel: "Commande validée",
+    sublabel: "Validée & payée",
     icon: CheckCircle2,
     activeClass: "border-brand-600 bg-brand-50 text-brand-800 ring-2 ring-brand-100",
     waTemplate: (name, code, shop) =>
-      `Bonjour ${name}, votre commande *${code}* chez *${shop}* est bien *confirmée* ✅. Nous nous en occupons !`,
+      `Bonjour ${name}, votre commande *${code}* chez *${shop}* est bien *confirmée* ✅. Merci pour votre confiance !`,
   },
   {
     value: "delivering",
@@ -47,12 +48,12 @@ const SIMPLE_STATUS_ACTIONS: SimpleAction[] = [
     icon: PackageCheck,
     activeClass: "border-success-600 bg-success-50 text-success-800 ring-2 ring-success-100",
     waTemplate: (name, code, shop) =>
-      `Bonjour ${name}, votre commande *${code}* chez *${shop}* a été marquée comme *livrée* 🎉. Merci pour votre confiance !`,
+      `Bonjour ${name}, votre commande *${code}* chez *${shop}* a été marquée comme *livrée* 🎉. À très bientôt !`,
   },
   {
     value: "cancelled",
     label: "Annulée",
-    sublabel: "Non honorée",
+    sublabel: "Commande annulée",
     icon: XCircle,
     activeClass: "border-danger-600 bg-danger-50 text-danger-700 ring-2 ring-danger-100",
     waTemplate: (name, code, shop) =>
@@ -81,10 +82,15 @@ export function OrderStatusSelect({
   customerName?: string;
   customerPhone?: string;
 }) {
+  const router = useRouter();
   const [status, setStatus] = useState(() => normalizeToSimple(currentStatus));
   const [isPending, startTransition] = useTransition();
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    setStatus(normalizeToSimple(currentStatus));
+  }, [currentStatus]);
 
   function handleSelect(newStatus: string) {
     if (newStatus === status || isPending) return;
@@ -98,6 +104,7 @@ export function OrderStatusSelect({
       } else {
         setStatus(newStatus);
         setSuccess(true);
+        router.refresh();
         setTimeout(() => setSuccess(false), 2500);
       }
     });
@@ -131,7 +138,7 @@ export function OrderStatusSelect({
         )}
       </div>
 
-      {/* Grille 2x2 de boutons directs en 1 clic (plus de menu déroulant compliqué) */}
+      {/* Grille 2x2 de boutons directs en 1 clic */}
       <div className="grid grid-cols-2 gap-2">
         {SIMPLE_STATUS_ACTIONS.map((item) => {
           const Icon = item.icon;
@@ -170,7 +177,7 @@ export function OrderStatusSelect({
         })}
       </div>
 
-      {/* Bouton utile : Prévenir le client sur WhatsApp avec le message correspondant au statut */}
+      {/* Bouton WhatsApp avec l'icône officielle */}
       {waNotifyUrl && activeAction && (
         <a
           href={waNotifyUrl}
@@ -178,8 +185,8 @@ export function OrderStatusSelect({
           rel="noopener noreferrer"
           className="mt-1 flex items-center justify-center gap-2 rounded-2xl border border-[#25D366]/40 bg-[#25D366]/10 px-3.5 py-2.5 text-xs font-bold text-[#128C7E] hover:bg-[#25D366]/20 transition-colors"
         >
-          <MessageCircle className="size-4 shrink-0 text-[#25D366]" />
-          <span>
+          <WhatsAppIcon className="size-4 text-[#25D366]" />
+          <span className="truncate">
             Prévenir le client sur WhatsApp : &laquo;&nbsp;{activeAction.label}&nbsp;&raquo;
           </span>
         </a>

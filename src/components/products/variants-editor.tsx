@@ -318,7 +318,7 @@ export function VariantsEditor({ initialVariants = [], basePrice, onChange }: Pr
                           <input
                             type="number"
                             min={1}
-                            step={50}
+                            step={1}
                             value={variant.price_override === null ? "" : variant.price_override}
                             onChange={(e) => {
                               const raw = e.target.value;

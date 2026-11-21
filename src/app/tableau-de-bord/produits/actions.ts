@@ -47,6 +47,7 @@ export async function createProduct(_prev: ActionState, formData: FormData): Pro
   const rawData = {
     name: formData.get("name"),
     price: formData.get("price"),
+    discount_percent: formData.get("discount_percent") || 0,
     category_id: formData.get("category_id"),
     description: formData.get("description"),
     options_text: null,
@@ -117,6 +118,7 @@ export async function updateProduct(
   const rawData = {
     name: formData.get("name"),
     price: formData.get("price"),
+    discount_percent: formData.get("discount_percent") || 0,
     category_id: formData.get("category_id"),
     description: formData.get("description"),
     options_text: null,

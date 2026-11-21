@@ -180,7 +180,7 @@ export function SettingsForm({ shop, initialZones }: Props) {
                 name="delivery_fee"
                 type="number"
                 min={0}
-                step={100}
+                step={1}
                 defaultValue={shop.delivery_fee}
                 hint="Utilisé si aucune zone personnalisée n'est configurée ci-dessous. 0 si gratuit."
                 error={state.fieldErrors?.delivery_fee}

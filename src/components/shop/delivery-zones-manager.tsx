@@ -129,7 +129,7 @@ export function DeliveryZonesManager({ initialZones }: Props) {
                       <input
                         type="number"
                         min="0"
-                        step="100"
+                        step="1"
                         value={editFee}
                         onChange={(e) => setEditFee(e.target.value === "" ? "" : Number(e.target.value))}
                         placeholder="Frais"
@@ -209,7 +209,7 @@ export function DeliveryZonesManager({ initialZones }: Props) {
             <input
               type="number"
               min="0"
-              step="100"
+              step="1"
               placeholder="0"
               value={newFee}
               onChange={(e) => setNewFee(e.target.value === "" ? "" : Number(e.target.value))}

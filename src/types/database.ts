@@ -126,6 +126,7 @@ export type Database = {
           name: string;
           description: string | null;
           price: number;
+          discount_percent: number;
           images: string[];
           options_text: string | null;
           stock: number | null;
@@ -140,6 +141,7 @@ export type Database = {
           name: string;
           description?: string | null;
           price: number;
+          discount_percent?: number;
           images?: string[];
           options_text?: string | null;
           stock?: number | null;

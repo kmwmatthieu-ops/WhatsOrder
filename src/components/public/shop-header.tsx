@@ -1,5 +1,6 @@
 import Image from "next/image";
-import { MessageCircle, MapPin, Truck, Store as StoreIcon } from "lucide-react";
+import { MapPin, Truck, Store as StoreIcon } from "lucide-react";
+import { WhatsAppIcon } from "@/components/ui/whatsapp-icon";
 import { ShopHoursBadge } from "./shop-hours-badge";
 import type { Shop } from "@/types/database";
 
@@ -97,7 +98,7 @@ export function ShopHeader({ shop }: { shop: Shop }) {
               rel="noopener noreferrer"
               className="ml-auto inline-flex h-10 items-center gap-2 rounded-xl bg-[#25D366] px-3.5 text-xs font-bold text-white shadow-xs hover:bg-[#20ba59] transition-colors"
             >
-              <MessageCircle className="size-4" aria-hidden />
+              <WhatsAppIcon className="size-4" />
               <span>Discuter</span>
             </a>
           </div>

@@ -29,6 +29,19 @@ export async function updateOrderStatus(
     return { error: "Statut invalide." };
   }
 
+  // 1. Récupérer le montant total et le mode de règlement de la commande
+  const { data: orderData } = await supabase
+    .from("orders")
+    .select("id, total, amount_paid, payment_method")
+    .eq("id", orderId)
+    .eq("shop_id", shop.id)
+    .maybeSingle();
+
+  if (!orderData) {
+    return { error: "Commande introuvable." };
+  }
+
+  // 2. Mettre à jour le statut de la commande
   const { error } = await supabase
     .from("orders")
     .update({ status: newStatus as OrderStatus })
@@ -37,6 +50,37 @@ export async function updateOrderStatus(
 
   if (error) {
     return { error: dbErrorMessage(error, "Impossible de modifier le statut.") };
+  }
+
+  // 3. Synchronisation automatique du règlement selon le statut choisi :
+  // - Si la commande est Confirmée ou Livrée, on valide automatiquement le solde restant comme payé.
+  // - Si la commande est Annulée, on purge les règlements enregistrés sur cette commande.
+  if (newStatus === "confirmed" || newStatus === "delivered") {
+    const { data: existingPayments } = await supabase
+      .from("order_payments")
+      .select("amount")
+      .eq("order_id", orderId)
+      .eq("shop_id", shop.id);
+
+    const paidSum = (existingPayments ?? []).reduce((acc, p) => acc + p.amount, 0);
+    const remaining = Math.max(0, orderData.total - paidSum);
+
+    if (remaining > 0) {
+      await supabase.from("order_payments").insert({
+        order_id: orderId,
+        shop_id: shop.id,
+        amount: remaining,
+        method: (orderData.payment_method as PaymentMethod) || "cash",
+        note: "Règlement validé à la confirmation de la commande",
+        idempotency_key: `auto-confirm-${orderId}-${Date.now()}`,
+      });
+    }
+  } else if (newStatus === "cancelled") {
+    await supabase
+      .from("order_payments")
+      .delete()
+      .eq("order_id", orderId)
+      .eq("shop_id", shop.id);
   }
 
   revalidatePath("/tableau-de-bord");

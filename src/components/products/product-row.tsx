@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ImageIcon, Layers } from "lucide-react";
-import { formatFCFA } from "@/lib/format";
+import { applyDiscount, formatFCFA } from "@/lib/format";
 import { Toggle } from "@/components/ui/toggle";
 import { toggleProductAvailability } from "@/app/tableau-de-bord/produits/actions";
 import type { ProductWithVariants } from "@/types/database";
@@ -15,6 +15,8 @@ export function ProductRow({ product }: { product: ProductWithVariants }) {
 
   const coverImage = product.images?.[0];
   const variants = product.product_variants ?? [];
+  const discountPct = product.discount_percent ?? 0;
+  const finalPrice = applyDiscount(product.price, discountPct);
 
   function handleToggle(checked: boolean) {
     setIsAvailable(checked);
@@ -58,12 +60,31 @@ export function ProductRow({ product }: { product: ProductWithVariants }) {
             <ImageIcon className="size-6" aria-hidden />
           </div>
         )}
+        {discountPct > 0 && (
+          <span className="absolute right-1 top-1 rounded-md bg-accent-500 px-1.5 py-0.5 text-[9px] font-black text-white shadow-2xs">
+            -{discountPct}%
+          </span>
+        )}
       </Link>
 
       {/* Informations produit */}
       <Link href={`/tableau-de-bord/produits/${product.id}`} className="min-w-0 flex-1">
         <p className="truncate text-sm font-bold text-ink">{product.name}</p>
-        <p className="font-semibold text-brand-600 text-sm">{formatFCFA(product.price)}</p>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="font-extrabold text-brand-600 text-sm">
+            {formatFCFA(finalPrice)}
+          </span>
+          {discountPct > 0 && (
+            <>
+              <span className="text-xs text-muted line-through">
+                {formatFCFA(product.price)}
+              </span>
+              <span className="rounded-md bg-accent-500/15 px-1.5 py-0.5 text-[10px] font-extrabold text-accent-600">
+                -{discountPct}%
+              </span>
+            </>
+          )}
+        </div>
         <p className="text-xs text-muted inline-flex items-center gap-1">
           {variants.length > 0 && <Layers className="size-3 text-brand-600 shrink-0" />}
           <span>{stockText}</span>

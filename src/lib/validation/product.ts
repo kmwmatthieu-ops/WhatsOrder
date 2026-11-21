@@ -61,6 +61,13 @@ export const productSchema = z.object({
     .int({ message: "Prix entier uniquement (FCFA)." })
     .min(1, { message: "Le prix doit être supérieur à 0." })
     .max(100_000_000, { message: "Prix trop élevé." }),
+  discount_percent: z.coerce
+    .number({ message: "Réduction invalide." })
+    .int({ message: "Pourcentage entier uniquement." })
+    .min(0, { message: "La réduction ne peut pas être négative." })
+    .max(90, { message: "Réduction maximale : 90%." })
+    .optional()
+    .default(0),
   category_id: z
     .string()
     .transform((v) => (v === "" ? null : v))

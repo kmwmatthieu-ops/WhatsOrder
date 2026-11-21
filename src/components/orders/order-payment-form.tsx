@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useTransition, type SyntheticEvent } from "react";
+import { useEffect, useState, useTransition, type SyntheticEvent } from "react";
+import { useRouter } from "next/navigation";
 import { addOrderPayment, deleteOrderPayment } from "@/app/tableau-de-bord/commandes/actions";
 import { Button } from "@/components/ui/button";
 import { formatFCFA } from "@/lib/format";
@@ -13,19 +14,33 @@ const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
   mobile_money: "Mobile Money",
 };
 
+const QUICK_PERCENTAGES = [30, 50, 75] as const;
+
 export function OrderPaymentForm({
   orderId,
   total,
+  orderStatus,
   initialPayments = [],
 }: {
   orderId: string;
   total: number;
+  orderStatus: string;
   initialPayments?: OrderPayment[];
 }) {
+  const router = useRouter();
   const [payments, setPayments] = useState<OrderPayment[]>(initialPayments);
   const [method, setMethod] = useState<PaymentMethod>("cash");
+  const [customPercent, setCustomPercent] = useState<string>("");
 
-  const totalPaid = payments.reduce((acc, p) => acc + p.amount, 0);
+  useEffect(() => {
+    setPayments(initialPayments);
+  }, [initialPayments]);
+
+  const isOrderConfirmedOrDelivered =
+    orderStatus === "confirmed" || orderStatus === "delivered" || orderStatus === "preparing";
+
+  const rawPaid = payments.reduce((acc, p) => acc + p.amount, 0);
+  const totalPaid = isOrderConfirmedOrDelivered ? Math.max(rawPaid, total) : rawPaid;
   const remaining = Math.max(0, total - totalPaid);
   const computedStatus: "unpaid" | "partial" | "paid" =
     totalPaid <= 0 ? "unpaid" : totalPaid < total ? "partial" : "paid";
@@ -42,11 +57,30 @@ export function OrderPaymentForm({
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
 
+  useEffect(() => {
+    if (remaining > 0) {
+      setAmountInput(String(remaining));
+    } else {
+      setAmountInput("");
+    }
+  }, [remaining]);
+
+  function applyPercentage(pct: number) {
+    if (pct <= 0 || pct > 100) return;
+    // Le pourcentage s'applique sur le total de la commande (ex: 50% de 10 000 = 5 000 FCFA),
+    // plafonné au solde restant si un acompte a déjà été versé.
+    const computed = Math.max(1, Math.round((total * pct) / 100));
+    const target = remaining > 0 ? Math.min(remaining, computed) : computed;
+    setAmountInput(String(target));
+    setCustomPercent(String(pct));
+    setError("");
+  }
+
   function handleAddPayment(e: SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     const numericAmount = Math.round(Number(amountInput));
     if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
-      setError("Saisissez un montant valide supérieur à 0 FCFA.");
+      setError("Veuillez saisir un montant supérieur à 0 FCFA.");
       return;
     }
 
@@ -72,8 +106,10 @@ export function OrderPaymentForm({
         const nextPaid = nextPayments.reduce((acc, p) => acc + p.amount, 0);
         const nextRem = Math.max(0, total - nextPaid);
         setAmountInput(nextRem > 0 ? String(nextRem) : "");
+        setCustomPercent("");
         setNoteInput("");
         setSuccess(true);
+        router.refresh();
         setTimeout(() => setSuccess(false), 2500);
       }
     });
@@ -93,9 +129,13 @@ export function OrderPaymentForm({
         const nextPaid = nextPayments.reduce((acc, p) => acc + p.amount, 0);
         const nextRem = Math.max(0, total - nextPaid);
         setAmountInput(nextRem > 0 ? String(nextRem) : "");
+        router.refresh();
       }
     });
   }
+
+  // Le formulaire d'ajout de versement est masqué dès que la commande est confirmée/livrée ou intégralement payée.
+  const showAddPaymentForm = !isOrderConfirmedOrDelivered && computedStatus !== "paid";
 
   return (
     <div className="flex flex-col gap-5">
@@ -106,7 +146,7 @@ export function OrderPaymentForm({
             <span className="text-xs font-bold text-muted">Statut calculé :</span>
             {computedStatus === "paid" ? (
               <span className="inline-flex items-center gap-1 rounded-full bg-success-50 border border-success-200 px-2.5 py-0.5 text-xs font-extrabold text-success-700">
-                <Check className="size-3.5" /> Payée intégralement
+                <Check className="size-3.5" /> Validé &amp; Payé intégralement
               </span>
             ) : computedStatus === "partial" ? (
               <span className="inline-flex items-center rounded-full bg-amber-50 border border-amber-200 px-2.5 py-0.5 text-xs font-extrabold text-amber-800">
@@ -114,7 +154,7 @@ export function OrderPaymentForm({
               </span>
             ) : (
               <span className="inline-flex items-center rounded-full bg-danger-50 border border-danger-200 px-2.5 py-0.5 text-xs font-extrabold text-danger-700">
-                Non payée
+                Non payé
               </span>
             )}
           </div>
@@ -156,111 +196,159 @@ export function OrderPaymentForm({
         </div>
       </div>
 
-      {/* 2. Formulaire d'ajout d'un versement (partiel ou solde) */}
-      <form onSubmit={handleAddPayment} className="flex flex-col gap-3.5 rounded-2xl border border-line bg-white p-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-xs font-extrabold uppercase tracking-wider text-ink flex items-center gap-1.5">
-            <Plus className="size-4 text-brand-600" />
-            <span>Enregistrer un versement</span>
-          </h3>
-          {remaining > 0 && (
-            <div className="flex items-center gap-1.5">
-              <button
-                type="button"
-                onClick={() => setAmountInput(String(Math.max(1, Math.round(remaining / 2))))}
-                className="rounded-lg border border-line bg-sand/50 px-2 py-0.5 text-[11px] font-bold text-ink hover:bg-sand"
-              >
-                50%
-              </button>
-              <button
-                type="button"
-                onClick={() => setAmountInput(String(remaining))}
-                className="rounded-lg border border-brand-200 bg-brand-50 px-2 py-0.5 text-[11px] font-bold text-brand-700 hover:bg-brand-100"
-              >
-                Tout solder ({formatFCFA(remaining)})
-              </button>
+      {/* 2. Formulaire d'ajout d'un versement (visible uniquement tant que la commande n'est ni confirmée ni soldée) */}
+      {showAddPaymentForm && (
+        <form
+          onSubmit={handleAddPayment}
+          noValidate
+          className="flex flex-col gap-3.5 rounded-2xl border border-line bg-white p-4"
+        >
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <h3 className="text-xs font-extrabold uppercase tracking-wider text-ink flex items-center gap-1.5">
+                <Plus className="size-4 text-brand-600" />
+                <span>Enregistrer un versement</span>
+              </h3>
+
+              {/* Choix du pourcentage de paiement partiel par le commerçant */}
+              {remaining > 0 && (
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {QUICK_PERCENTAGES.map((pct) => (
+                    <button
+                      key={pct}
+                      type="button"
+                      onClick={() => applyPercentage(pct)}
+                      className={`rounded-lg border px-2 py-0.5 text-[11px] font-bold transition-colors cursor-pointer ${
+                        customPercent === String(pct)
+                          ? "border-brand-600 bg-brand-600 text-white"
+                          : "border-line bg-sand/50 text-ink hover:bg-sand"
+                      }`}
+                    >
+                      {pct}%
+                    </button>
+                  ))}
+
+                  <div className="inline-flex items-center rounded-lg border border-line bg-white px-1.5 py-0.5">
+                    <input
+                      type="number"
+                      min={1}
+                      max={100}
+                      step={1}
+                      value={customPercent}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setCustomPercent(val);
+                        const num = parseInt(val, 10);
+                        if (num >= 1 && num <= 100) {
+                          const computed = Math.max(1, Math.round((total * num) / 100));
+                          setAmountInput(String(Math.min(remaining, computed)));
+                        }
+                      }}
+                      placeholder="% libre"
+                      aria-label="Pourcentage personnalisé"
+                      className="w-12 bg-transparent text-[11px] font-bold text-ink outline-none text-center"
+                    />
+                    <span className="text-[10px] font-bold text-muted">%</span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAmountInput(String(remaining));
+                      setCustomPercent("100");
+                    }}
+                    className="rounded-lg border border-brand-200 bg-brand-50 px-2 py-0.5 text-[11px] font-bold text-brand-700 hover:bg-brand-100 cursor-pointer"
+                  >
+                    Tout solder ({formatFCFA(remaining)})
+                  </button>
+                </div>
+              )}
             </div>
-          )}
-        </div>
+          </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-          {/* Montant */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+            {/* Montant exact sans contrainte de pas (step=1) */}
+            <div>
+              <label htmlFor="payment-amount" className="text-[11px] font-bold text-muted block mb-1">
+                Montant reçu (FCFA)
+              </label>
+              <input
+                id="payment-amount"
+                type="number"
+                inputMode="numeric"
+                min={1}
+                step={1}
+                value={amountInput}
+                onChange={(e) => {
+                  setAmountInput(e.target.value);
+                  setCustomPercent("");
+                }}
+                placeholder={remaining > 0 ? String(remaining) : "Ex: 5000"}
+                required
+                className="h-10 w-full rounded-xl border border-line bg-white px-3 text-xs sm:text-sm font-bold text-ink outline-none focus:border-brand-600"
+              />
+            </div>
+
+            {/* Mode */}
+            <div>
+              <label htmlFor="payment-method" className="text-[11px] font-bold text-muted block mb-1">
+                Mode de paiement
+              </label>
+              <select
+                id="payment-method"
+                value={method}
+                onChange={(e) => setMethod(e.target.value as PaymentMethod)}
+                className="h-10 w-full rounded-xl border border-line bg-white px-3 text-xs font-bold text-ink outline-none focus:border-brand-600"
+              >
+                <option value="cash">Espèces</option>
+                <option value="cash_on_delivery">À la livraison</option>
+                <option value="mobile_money">Mobile Money</option>
+              </select>
+            </div>
+
+            {/* Date */}
+            <div>
+              <label htmlFor="payment-date" className="text-[11px] font-bold text-muted block mb-1">
+                Date du versement
+              </label>
+              <input
+                id="payment-date"
+                type="date"
+                value={dateInput}
+                onChange={(e) => setDateInput(e.target.value)}
+                className="h-10 w-full rounded-xl border border-line bg-white px-3 text-xs font-bold text-ink outline-none focus:border-brand-600"
+              />
+            </div>
+          </div>
+
           <div>
-            <label htmlFor="payment-amount" className="text-[11px] font-bold text-muted block mb-1">
-              Montant reçu (FCFA)
-            </label>
             <input
-              id="payment-amount"
-              type="number"
-              min={1}
-              step={50}
-              value={amountInput}
-              onChange={(e) => setAmountInput(e.target.value)}
-              placeholder={remaining > 0 ? String(remaining) : "Ex: 5000"}
-              required
-              className="h-10 w-full rounded-xl border border-line bg-white px-3 text-xs sm:text-sm font-bold text-ink outline-none focus:border-brand-600"
+              type="text"
+              value={noteInput}
+              onChange={(e) => setNoteInput(e.target.value)}
+              maxLength={200}
+              placeholder="Note ou référence (facultatif, ex: Acompte 30% Airtel Money…)"
+              className="h-9 w-full rounded-xl border border-line bg-white px-3 text-xs text-ink outline-none focus:border-brand-600"
             />
           </div>
 
-          {/* Mode */}
-          <div>
-            <label htmlFor="payment-method" className="text-[11px] font-bold text-muted block mb-1">
-              Mode de paiement
-            </label>
-            <select
-              id="payment-method"
-              value={method}
-              onChange={(e) => setMethod(e.target.value as PaymentMethod)}
-              className="h-10 w-full rounded-xl border border-line bg-white px-3 text-xs font-bold text-ink outline-none focus:border-brand-600"
-            >
-              <option value="cash">Espèces</option>
-              <option value="cash_on_delivery">À la livraison</option>
-              <option value="mobile_money">Mobile Money</option>
-            </select>
-          </div>
+          {error && <p className="text-xs text-danger-600 font-semibold">{error}</p>}
 
-          {/* Date */}
-          <div>
-            <label htmlFor="payment-date" className="text-[11px] font-bold text-muted block mb-1">
-              Date du versement
-            </label>
-            <input
-              id="payment-date"
-              type="date"
-              value={dateInput}
-              onChange={(e) => setDateInput(e.target.value)}
-              className="h-10 w-full rounded-xl border border-line bg-white px-3 text-xs font-bold text-ink outline-none focus:border-brand-600"
-            />
-          </div>
-        </div>
-
-        <div>
-          <input
-            type="text"
-            value={noteInput}
-            onChange={(e) => setNoteInput(e.target.value)}
-            maxLength={200}
-            placeholder="Note ou référence (facultatif, ex: Acompte Airtel Money / Wave…)"
-            className="h-9 w-full rounded-xl border border-line bg-white px-3 text-xs text-ink outline-none focus:border-brand-600"
-          />
-        </div>
-
-        {error && <p className="text-xs text-danger-600 font-semibold">{error}</p>}
-
-        <Button type="submit" size="sm" loading={isPending}>
-          {success ? (
-            <>
-              <Check className="size-4 text-white" />
-              <span>Versement ajouté !</span>
-            </>
-          ) : (
-            <>
-              <CreditCard className="size-4" />
-              <span>Ajouter ce paiement</span>
-            </>
-          )}
-        </Button>
-      </form>
+          <Button type="submit" size="sm" loading={isPending}>
+            {success ? (
+              <>
+                <Check className="size-4 text-white" />
+                <span>Versement ajouté !</span>
+              </>
+            ) : (
+              <>
+                <CreditCard className="size-4" />
+                <span>Ajouter ce paiement</span>
+              </>
+            )}
+          </Button>
+        </form>
+      )}
 
       {/* 3. Historique détaillé des transactions */}
       <div className="flex flex-col gap-2">
@@ -271,7 +359,9 @@ export function OrderPaymentForm({
 
         {payments.length === 0 ? (
           <p className="rounded-2xl border border-dashed border-line bg-sand/20 p-4 text-center text-xs text-muted">
-            Aucun paiement enregistré sur cette commande pour le moment.
+            {isOrderConfirmedOrDelivered
+              ? "Commande confirmée et réglée dans son intégralité."
+              : "Aucun paiement enregistré sur cette commande pour le moment."}
           </p>
         ) : (
           <div className="divide-y divide-line rounded-2xl border border-line bg-white overflow-hidden">
@@ -305,16 +395,18 @@ export function OrderPaymentForm({
                     )}
                   </div>
 
-                  <button
-                    type="button"
-                    disabled={isPending}
-                    onClick={() => handleRemovePayment(p.id)}
-                    className="grid size-8 shrink-0 place-items-center rounded-xl text-muted hover:bg-danger-50 hover:text-danger-600 transition-colors disabled:opacity-40"
-                    title="Supprimer ce versement"
-                    aria-label="Supprimer ce versement"
-                  >
-                    <Trash2 className="size-3.5" />
-                  </button>
+                  {!isOrderConfirmedOrDelivered && (
+                    <button
+                      type="button"
+                      disabled={isPending}
+                      onClick={() => handleRemovePayment(p.id)}
+                      className="grid size-8 shrink-0 place-items-center rounded-xl text-muted hover:bg-danger-50 hover:text-danger-600 transition-colors disabled:opacity-40"
+                      title="Supprimer ce versement"
+                      aria-label="Supprimer ce versement"
+                    >
+                      <Trash2 className="size-3.5" />
+                    </button>
+                  )}
                 </div>
               );
             })}

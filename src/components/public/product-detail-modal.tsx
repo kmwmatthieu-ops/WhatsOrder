@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { X, Minus, Plus, ShoppingBag, ImageIcon, Clock, Check } from "lucide-react";
-import { formatFCFA } from "@/lib/format";
+import { applyDiscount, formatFCFA } from "@/lib/format";
 import { useCart } from "@/lib/cart/cart-context";
 import type { ProductWithVariants } from "@/types/database";
 
@@ -26,6 +26,7 @@ export function ProductDetailModal({
 
   const variants = product?.product_variants ?? [];
   const hasVariants = variants.length > 0;
+  const discountPct = product?.discount_percent ?? 0;
 
   // À chaque ouverture d'un produit, pré-sélectionner la première variante disponible
   useEffect(() => {
@@ -58,7 +59,8 @@ export function ProductDetailModal({
     ? !product.is_available || variants.every(isVariantExhausted)
     : !product.is_available || product.stock === 0;
 
-  const activePrice = selectedVariant?.price_override ?? product.price;
+  const basePrice = selectedVariant?.price_override ?? product.price;
+  const activePrice = applyDiscount(basePrice, discountPct);
   const activeStock = hasVariants ? (selectedVariant ? selectedVariant.stock : 0) : product.stock;
   const maxAvailable = activeStock ?? 999;
 
@@ -104,7 +106,7 @@ export function ProductDetailModal({
         productId: product.id,
         variantId: null,
         name: product.name,
-        price: product.price,
+        price: activePrice,
         imageUrl: images[0] ?? null,
         maxStock: product.stock,
         selectedOptions: optionsNote.trim() ? optionsNote.trim() : null,
@@ -145,6 +147,12 @@ export function ProductDetailModal({
               </div>
             )}
 
+            {discountPct > 0 && !isOutOfStock && (
+              <span className="absolute left-3.5 top-3.5 rounded-xl bg-danger-600 px-3 py-1 text-xs font-black text-white shadow-md">
+                Réduction -{discountPct}%
+              </span>
+            )}
+
             {isOutOfStock && (
               <div className="absolute inset-0 grid place-items-center bg-black/50 backdrop-blur-xs">
                 <span className="rounded-xl bg-danger-600 px-3 py-1.5 text-xs font-black uppercase tracking-wider text-white">
@@ -176,9 +184,21 @@ export function ProductDetailModal({
           <div className="p-5 flex flex-col gap-4">
             <div>
               <h2 className="text-lg sm:text-xl font-extrabold text-ink">{product.name}</h2>
-              <p className="mt-1 font-extrabold text-xl" style={{ color: primaryColor }}>
-                {formatFCFA(activePrice)}
-              </p>
+              <div className="mt-1 flex flex-wrap items-center gap-2">
+                <p className="font-extrabold text-xl" style={{ color: primaryColor }}>
+                  {formatFCFA(activePrice)}
+                </p>
+                {discountPct > 0 && (
+                  <>
+                    <span className="text-sm font-semibold text-muted line-through">
+                      {formatFCFA(basePrice)}
+                    </span>
+                    <span className="rounded-lg bg-danger-50 border border-danger-200 px-2 py-0.5 text-xs font-extrabold text-danger-700">
+                      -{discountPct}%
+                    </span>
+                  </>
+                )}
+              </div>
               {activeStock !== null && (
                 <p className="text-xs text-muted mt-1">
                   {activeStock > 0 ? `${activeStock} disponible${activeStock > 1 ? "s" : ""} en stock` : "Rupture de stock"}
@@ -213,7 +233,8 @@ export function ProductDetailModal({
                   {variants.map((v) => {
                     const exhausted = isVariantExhausted(v);
                     const isSelected = selectedVariantId === v.id && !exhausted;
-                    const vPrice = v.price_override ?? product.price;
+                    const vBasePrice = v.price_override ?? product.price;
+                    const vFinalPrice = applyDiscount(vBasePrice, discountPct);
                     const hasCustomPrice = v.price_override !== null && v.price_override !== product.price;
 
                     return (
@@ -239,7 +260,7 @@ export function ProductDetailModal({
                         <span>{v.label}</span>
                         {hasCustomPrice && !exhausted && (
                           <span className={`text-[11px] ${isSelected ? "opacity-90" : "text-muted"}`}>
-                            ({formatFCFA(vPrice)})
+                            ({formatFCFA(vFinalPrice)})
                           </span>
                         )}
                         {exhausted && (

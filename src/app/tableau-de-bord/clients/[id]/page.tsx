@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, MessageCircle, ShoppingBag, CreditCard, Calendar } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
+import { WhatsAppIcon } from "@/components/ui/whatsapp-icon";
 import { requireShop } from "@/lib/supabase/server";
 import { formatFCFA } from "@/lib/format";
 import { formatPhone } from "@/lib/phone";
@@ -71,7 +72,7 @@ export default async function CustomerDetailPage({ params }: Props) {
           rel="noopener noreferrer"
           className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-[#25D366] px-4 text-xs font-bold text-white shadow-xs hover:bg-[#20ba59] transition-colors"
         >
-          <MessageCircle className="size-4" />
+          <WhatsAppIcon className="size-4" />
           <span>Contacter sur WhatsApp</span>
         </a>
       </div>

@@ -3,7 +3,7 @@
 import { useEffect, useState, type SyntheticEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Trash2 } from "lucide-react";
+import { ArrowLeft, Trash2, Percent } from "lucide-react";
 import { Input, Textarea, Select } from "@/components/ui/field";
 import { Toggle } from "@/components/ui/toggle";
 import { Button } from "@/components/ui/button";
@@ -11,8 +11,11 @@ import { Alert } from "@/components/ui/alert";
 import { ImagePicker } from "./image-picker";
 import { VariantsEditor } from "./variants-editor";
 import { initialActionState, type ActionState } from "@/lib/action-state";
+import { applyDiscount, formatFCFA } from "@/lib/format";
 import type { Category, ProductWithVariants } from "@/types/database";
 import type { ProductVariantInput } from "@/lib/validation/product";
+
+const DISCOUNT_PRESETS = [0, 10, 15, 20, 30, 50] as const;
 
 type Props = {
   product?: ProductWithVariants;
@@ -29,6 +32,7 @@ export function ProductForm({ product, categories, action, onDelete }: Props) {
   const initialVariants = product?.product_variants ?? [];
   const [images, setImages] = useState<string[]>(product?.images ?? []);
   const [basePrice, setBasePrice] = useState<number>(product?.price ?? 0);
+  const [discountPercent, setDiscountPercent] = useState<number>(product?.discount_percent ?? 0);
   const [variantsEnabled, setVariantsEnabled] = useState<boolean>(initialVariants.length > 0);
   const [variants, setVariants] = useState<ProductVariantInput[]>(() =>
     initialVariants.map((v) => ({
@@ -88,6 +92,8 @@ export function ProductForm({ product, categories, action, onDelete }: Props) {
     }
   }
 
+  const finalPricePreview = basePrice > 0 ? applyDiscount(basePrice, discountPercent) : 0;
+
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-6" noValidate>
       <div className="flex items-center justify-between">
@@ -146,7 +152,7 @@ export function ProductForm({ product, categories, action, onDelete }: Props) {
             name="price"
             type="number"
             min={1}
-            step={50}
+            step={1}
             defaultValue={product?.price ?? ""}
             onChange={(e) => setBasePrice(Number(e.target.value) || 0)}
             placeholder="Ex. 15000"
@@ -169,6 +175,72 @@ export function ProductForm({ product, categories, action, onDelete }: Props) {
               </option>
             ))}
           </Select>
+        </div>
+
+        {/* Réduction / Promotion en % au choix du commerçant */}
+        <div className="rounded-2xl border border-line bg-sand/30 p-4 flex flex-col gap-3">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-1.5">
+              <Percent className="size-4 text-accent-500 shrink-0" />
+              <span className="text-xs sm:text-sm font-bold text-ink">
+                Offrir une réduction sur ce produit
+              </span>
+            </div>
+            {discountPercent > 0 && (
+              <span className="rounded-full bg-accent-500 px-2.5 py-0.5 text-xs font-extrabold text-white">
+                -{discountPercent}% appliqué
+              </span>
+            )}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-1.5">
+            {DISCOUNT_PRESETS.map((pct) => {
+              const active = discountPercent === pct;
+              return (
+                <button
+                  key={pct}
+                  type="button"
+                  onClick={() => setDiscountPercent(pct)}
+                  className={`rounded-xl border px-3 py-1.5 text-xs font-bold transition-colors cursor-pointer ${
+                    active
+                      ? "border-brand-600 bg-brand-600 text-white shadow-2xs"
+                      : "border-line bg-white text-ink hover:bg-sand"
+                  }`}
+                >
+                  {pct === 0 ? "Aucune (0%)" : `-${pct}%`}
+                </button>
+              );
+            })}
+
+            <div className="inline-flex items-center gap-1 rounded-xl border border-line bg-white px-2.5 py-1">
+              <span className="text-xs text-muted font-semibold">Autre :</span>
+              <input
+                type="number"
+                name="discount_percent"
+                min={0}
+                max={90}
+                step={1}
+                value={discountPercent}
+                onChange={(e) => {
+                  const val = Math.min(90, Math.max(0, parseInt(e.target.value, 10) || 0));
+                  setDiscountPercent(val);
+                }}
+                className="w-12 bg-transparent text-center text-xs font-extrabold text-ink outline-none"
+                aria-label="Pourcentage de réduction personnalisé"
+              />
+              <span className="text-xs font-bold text-muted">%</span>
+            </div>
+          </div>
+
+          {discountPercent > 0 && basePrice > 0 && (
+            <div className="flex flex-wrap items-center gap-2 rounded-xl bg-white border border-line px-3 py-2 text-xs">
+              <span className="text-muted font-medium">Tarif affiché aux clients :</span>
+              <span className="font-black text-sm text-brand-700">
+                {formatFCFA(finalPricePreview)}
+              </span>
+              <span className="line-through text-muted">{formatFCFA(basePrice)}</span>
+            </div>
+          )}
         </div>
 
         <Textarea
@@ -233,6 +305,7 @@ export function ProductForm({ product, categories, action, onDelete }: Props) {
                   name="stock"
                   type="number"
                   min={0}
+                  step={1}
                   defaultValue={product?.stock ?? 1}
                   required
                   error={state.fieldErrors?.stock}

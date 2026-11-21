@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { formatFCFA } from "@/lib/format";
 import { formatPhone } from "@/lib/phone";
-import { ShoppingBag, ChevronRight, MessageCircle } from "lucide-react";
+import { ShoppingBag, ChevronRight } from "lucide-react";
+import { WhatsAppIcon } from "@/components/ui/whatsapp-icon";
 
 export type CustomerRowData = {
   id: string;
@@ -38,7 +39,7 @@ export function CustomerRow({ customer }: { customer: CustomerRowData }) {
           className="grid size-9 place-items-center rounded-xl bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366] hover:text-white transition-colors"
           title="Discuter sur WhatsApp"
         >
-          <MessageCircle className="size-4.5" />
+          <WhatsAppIcon className="size-4.5" />
         </a>
         <Link href={`/tableau-de-bord/clients/${customer.id}`} className="p-1 text-muted hover:text-ink">
           <ChevronRight className="size-5" />

@@ -3,13 +3,13 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft,
-  MessageCircle,
   Truck,
   Store as StoreIcon,
   Clock,
   User,
   MapPin,
   FileText,
+  XCircle,
 } from "lucide-react";
 import { requireShop } from "@/lib/supabase/server";
 import { formatFCFA } from "@/lib/format";
@@ -18,6 +18,7 @@ import { OrderStatusBadge, ORDER_STATUS_LABELS } from "@/components/orders/order
 import { OrderStatusSelect } from "@/components/orders/order-status-select";
 import { OrderPaymentForm } from "@/components/orders/order-payment-form";
 import { OrderShareButton } from "@/components/orders/order-share-button";
+import { WhatsAppIcon } from "@/components/ui/whatsapp-icon";
 import { buildWhatsAppOrderMessage } from "@/lib/whatsapp";
 
 type Props = {
@@ -72,6 +73,8 @@ export default async function OrderDetailPage({ params }: Props) {
 
   if (!order) notFound();
 
+  const isCancelled = order.status === "cancelled";
+
   type CustomerInfo = { id: string; name: string; phone: string; address: string | null };
   const customer = order.customer as unknown as CustomerInfo | null;
 
@@ -110,26 +113,41 @@ export default async function OrderDetailPage({ params }: Props) {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* En-tête de retour */}
-      <div className="flex items-center justify-between">
+      {/* En-tête de retour compact et responsif sur mobile */}
+      <div className="flex items-center justify-between gap-2">
         <Link
           href="/tableau-de-bord/commandes"
-          className="inline-flex items-center gap-1.5 text-sm font-semibold text-brand-700 hover:underline"
+          className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-brand-700 hover:underline truncate"
         >
-          <ArrowLeft className="size-4" />
-          Toutes les commandes
+          <ArrowLeft className="size-4 shrink-0" />
+          <span className="truncate">Toutes les commandes</span>
         </Link>
         <OrderShareButton summaryText={summaryText} />
       </div>
 
+      {/* Bandeau d'alerte si la commande a été annulée */}
+      {isCancelled && (
+        <div
+          role="alert"
+          className="flex items-center gap-3 rounded-2xl border border-danger-600/30 bg-danger-50 p-4 text-xs sm:text-sm font-bold text-danger-700 shadow-2xs"
+        >
+          <XCircle className="size-5 shrink-0 text-danger-600" />
+          <span>
+            Cette commande a été annulée. Les règlements sont désactivés et son montant n&apos;est pas comptabilisé dans votre chiffre d&apos;affaires.
+          </span>
+        </div>
+      )}
+
       {/* Titre & Statut */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-3xl border border-line bg-white p-5 shadow-xs">
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-xl sm:text-2xl font-black text-ink">{order.public_code}</h1>
             <OrderStatusBadge status={order.status} />
           </div>
-          <p className="text-xs text-muted mt-1 capitalize">{orderDate}</p>
+          <p className="text-xs text-muted mt-1 capitalize" suppressHydrationWarning>
+            {orderDate}
+          </p>
         </div>
 
         {customer?.phone && (
@@ -139,7 +157,7 @@ export default async function OrderDetailPage({ params }: Props) {
             rel="noopener noreferrer"
             className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-[#25D366] px-4 text-xs font-bold text-white shadow-xs hover:bg-[#20ba59] transition-colors"
           >
-            <MessageCircle className="size-4" />
+            <WhatsAppIcon className="size-4" />
             <span>Contacter le client sur WhatsApp</span>
           </a>
         )}
@@ -148,9 +166,18 @@ export default async function OrderDetailPage({ params }: Props) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {/* 1. Client & Coordonnées */}
         <section className="rounded-3xl border border-line bg-white p-5 shadow-xs flex flex-col gap-3">
-          <div className="flex items-center gap-2">
-            <User className="size-4 text-brand-600" />
-            <h2 className="text-xs font-bold uppercase tracking-wider text-muted">Coordonnées du client</h2>
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <User className="size-4 text-brand-600" />
+              <h2 className="text-xs font-bold uppercase tracking-wider text-muted">
+                Coordonnées du client
+              </h2>
+            </div>
+            {isCancelled && (
+              <span className="rounded-lg bg-danger-50 border border-danger-200 px-2 py-0.5 text-[10px] font-extrabold text-danger-700">
+                Commande annulée
+              </span>
+            )}
           </div>
 
           <div>
@@ -223,7 +250,7 @@ export default async function OrderDetailPage({ params }: Props) {
                   <span className="font-semibold text-ink">
                     {ORDER_STATUS_LABELS[h.status] ?? h.status}
                   </span>
-                  <span className="text-muted text-[11px]">
+                  <span className="text-muted text-[11px]" suppressHydrationWarning>
                     {new Date(h.changed_at).toLocaleTimeString("fr-FR", {
                       hour: "2-digit",
                       minute: "2-digit",
@@ -239,21 +266,38 @@ export default async function OrderDetailPage({ params }: Props) {
       </div>
 
       {/* 3. Articles & Tarifs */}
-      <section className="rounded-3xl border border-line bg-white p-5 shadow-xs flex flex-col gap-3">
-        <h2 className="text-xs font-bold uppercase tracking-wider text-muted">Articles commandés</h2>
+      <section
+        className={`rounded-3xl border bg-white p-5 shadow-xs flex flex-col gap-3 ${
+          isCancelled ? "border-danger-200 bg-danger-50/10" : "border-line"
+        }`}
+      >
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-xs font-bold uppercase tracking-wider text-muted">
+            Articles commandés
+          </h2>
+          {isCancelled && (
+            <span className="inline-flex items-center gap-1 rounded-lg bg-danger-50 border border-danger-200 px-2.5 py-0.5 text-xs font-extrabold text-danger-700">
+              <XCircle className="size-3.5" /> Commande annulée
+            </span>
+          )}
+        </div>
 
         <div className="divide-y divide-line">
           {(items ?? []).map((item) => (
             <div key={item.id} className="py-2.5 flex items-center justify-between text-xs sm:text-sm">
               <div className="min-w-0 pr-2">
-                <p className="font-bold text-ink">
+                <p className={`font-bold ${isCancelled ? "line-through text-muted" : "text-ink"}`}>
                   {item.quantity}x {item.product_name}
                 </p>
                 {item.selected_options && (
                   <p className="text-[11px] text-muted italic">{item.selected_options}</p>
                 )}
               </div>
-              <span className="font-extrabold text-ink shrink-0">
+              <span
+                className={`font-extrabold shrink-0 ${
+                  isCancelled ? "line-through text-muted" : "text-ink"
+                }`}
+              >
                 {formatFCFA(item.unit_price * item.quantity)}
               </span>
             </div>
@@ -263,30 +307,44 @@ export default async function OrderDetailPage({ params }: Props) {
         <div className="border-t border-line pt-3 flex flex-col gap-1.5 text-xs sm:text-sm">
           <div className="flex justify-between text-muted">
             <span>Sous-total</span>
-            <span>{formatFCFA(order.subtotal)}</span>
+            <span className={isCancelled ? "line-through" : ""}>{formatFCFA(order.subtotal)}</span>
           </div>
           <div className="flex justify-between text-muted">
             <span>Frais de livraison</span>
-            <span>{order.delivery_fee > 0 ? formatFCFA(order.delivery_fee) : "Gratuit"}</span>
+            <span className={isCancelled ? "line-through" : ""}>
+              {order.delivery_fee > 0 ? formatFCFA(order.delivery_fee) : "Gratuit"}
+            </span>
           </div>
-          <div className="flex justify-between text-base font-extrabold text-ink pt-2 border-t border-line">
+          <div className="flex justify-between items-center text-base font-extrabold text-ink pt-2 border-t border-line">
             <span>Total</span>
-            <span className="text-brand-700">{formatFCFA(order.total)}</span>
+            <div className="flex items-center gap-2">
+              {isCancelled && (
+                <span className="rounded-lg bg-danger-50 border border-danger-200 px-2 py-0.5 text-xs font-extrabold text-danger-700">
+                  Annulée
+                </span>
+              )}
+              <span className={isCancelled ? "line-through text-muted" : "text-brand-700"}>
+                {formatFCFA(order.total)}
+              </span>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* 4. Enregistrement des Paiements & Historique des transactions (V2-D) */}
-      <section className="rounded-3xl border border-line bg-white p-5 shadow-xs flex flex-col gap-3">
-        <h2 className="text-xs font-bold uppercase tracking-wider text-muted">
-          Règlements & Historique des transactions
-        </h2>
-        <OrderPaymentForm
-          orderId={order.id}
-          total={order.total}
-          initialPayments={payments ?? []}
-        />
-      </section>
+      {/* 4. Règlements & Historique des transactions (masqué si la commande est annulée) */}
+      {!isCancelled && (
+        <section className="rounded-3xl border border-line bg-white p-5 shadow-xs flex flex-col gap-3">
+          <h2 className="text-xs font-bold uppercase tracking-wider text-muted">
+            Règlements &amp; Historique des transactions
+          </h2>
+          <OrderPaymentForm
+            orderId={order.id}
+            total={order.total}
+            orderStatus={order.status}
+            initialPayments={payments ?? []}
+          />
+        </section>
+      )}
     </div>
   );
 }
