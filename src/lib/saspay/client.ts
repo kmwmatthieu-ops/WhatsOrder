@@ -162,8 +162,11 @@ async function saspayRequest<T>(endpoint: string, options: RequestOptions = {}):
     return {} as T;
   }
 
-  const json = await response.json();
-  return json as T;
+  const json = (await response.json()) as Record<string, unknown>;
+  if (json && typeof json === "object" && "data" in json && json.data !== undefined) {
+    return json.data as T;
+  }
+  return json as unknown as T;
 }
 
 /**

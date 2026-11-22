@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Compass, Sparkles, Store, User, ShoppingBag } from "lucide-react";
+import { Compass, Sparkles, Store, User } from "lucide-react";
 import { createClient, getUser } from "@/lib/supabase/server";
 import { Logo } from "@/components/ui/logo";
-import { ExplorerSearch } from "./explorer-search";
-import { ExplorerCard } from "./explorer-card";
+import { ExplorerCatalog } from "./explorer-catalog";
 import type { ExplorerProduct } from "@/types/database";
 
 export const metadata: Metadata = {
@@ -33,21 +32,21 @@ export default async function ExplorerPage({ searchParams }: ExplorerPageProps) 
     .select("name, shops!inner(status, is_listed_in_explorer)")
     .eq("shops.status", "active")
     .eq("shops.is_listed_in_explorer", true)
-    .limit(40);
+    .limit(50);
 
   const uniqueCategoryNames = Array.from(
     new Set((catRows ?? []).map((c) => c.name.trim()).filter(Boolean))
   )
     .sort()
-    .slice(0, 15);
+    .slice(0, 20);
 
   const categories = uniqueCategoryNames.map((name) => ({ name }));
 
-  // 2. Appel RPC pour obtenir le fil Explorer filtré côté serveur
+  // 2. Appel RPC pour obtenir le fil Explorer (chargé pour un filtrage instantané côté client à 0ms)
   const { data: rawProducts } = await supabase.rpc("get_explorer_products", {
-    p_search: query || null,
-    p_category: category || null,
-    p_limit: 60,
+    p_search: null,
+    p_category: null,
+    p_limit: 150,
     p_offset: 0,
   });
 
@@ -109,58 +108,26 @@ export default async function ExplorerPage({ searchParams }: ExplorerPageProps) 
             <span>Catalogue Multi-Boutiques</span>
           </div>
           <h1 className="text-xl sm:text-2xl font-black text-ink">
-            {query
-              ? `Résultats pour « ${query} »`
-              : category
-              ? `Catégorie « ${category} »`
-              : "Explorer les pépites du moment"}
+            Explorer les pépites du moment
           </h1>
           <p className="text-xs sm:text-sm text-muted">
             Commandez directement auprès de vos commerçants locaux via WhatsApp.
           </p>
         </div>
 
-        {/* Barre de recherche et catégories */}
-        <ExplorerSearch
+        {/* Catalogue dynamique instantané (0ms de latence au clic sur les filtres) */}
+        <ExplorerCatalog
+          initialProducts={products}
           categories={categories}
-          currentQuery={query}
-          currentCategory={category}
+          initialCategory={category}
+          initialQuery={query}
         />
-
-        {/* Grille de Produits */}
-        {products.length > 0 ? (
-          <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
-            {products.map((prod) => (
-              <ExplorerCard key={prod.product_id} product={prod} />
-            ))}
-          </div>
-        ) : (
-          <div className="my-12 flex flex-col items-center justify-center rounded-3xl border border-line bg-white p-8 text-center shadow-xs">
-            <span className="grid size-14 place-items-center rounded-full bg-sand text-muted mb-3">
-              <ShoppingBag className="size-7" />
-            </span>
-            <h2 className="text-base font-bold text-ink">Aucun produit trouvé</h2>
-            <p className="text-xs text-muted max-w-xs mt-1 leading-relaxed">
-              {query || category
-                ? "Essayez de modifier votre recherche ou de sélectionner une autre catégorie."
-                : "Les commerçants sont en train d'ajouter leurs premiers articles dans Explorer."}
-            </p>
-            {(query || category) && (
-              <Link
-                href="/explorer"
-                className="mt-4 inline-flex items-center rounded-2xl bg-brand-50 px-4 py-2 text-xs font-semibold text-brand-700 hover:bg-brand-100 transition-colors"
-              >
-                Réinitialiser les filtres
-              </Link>
-            )}
-          </div>
-        )}
       </main>
 
       {/* Pied de page */}
       <footer className="border-t border-line bg-white py-6 px-4 mt-auto">
         <div className="mx-auto flex max-w-6xl flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted">
-          <p>© {new Date().getFullYear()} Bon Waz à Dealer — Place de marché & Boutiques WhatsApp.</p>
+          <p>© {new Date().getFullYear()} Bon Waz à Dealer · By Wens Matthieu · Tous droits réservés.</p>
           <div className="flex items-center gap-4">
             <Link href="/cgu" className="hover:underline">CGU</Link>
             <Link href="/confidentialite" className="hover:underline">Confidentialité</Link>

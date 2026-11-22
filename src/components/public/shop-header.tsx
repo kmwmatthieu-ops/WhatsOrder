@@ -1,5 +1,6 @@
 import Image from "next/image";
-import { MapPin, Truck, Store as StoreIcon } from "lucide-react";
+import Link from "next/link";
+import { MapPin, Truck, Store as StoreIcon, ArrowLeft } from "lucide-react";
 import { WhatsAppIcon } from "@/components/ui/whatsapp-icon";
 import { ShopHoursBadge } from "./shop-hours-badge";
 import type { Shop } from "@/types/database";
@@ -12,6 +13,25 @@ export function ShopHeader({ shop }: { shop: Shop }) {
 
   return (
     <header className="relative border-b border-line bg-white shadow-xs overflow-hidden">
+      {/* Barre de navigation marketplace Explorer */}
+      <div className="bg-sand/70 border-b border-line/70 px-4 py-2 text-xs">
+        <div className="mx-auto max-w-4xl flex items-center justify-between">
+          <Link
+            href="/explorer"
+            className="inline-flex items-center gap-1.5 font-bold text-muted hover:text-brand-700 transition-colors"
+          >
+            <ArrowLeft className="size-3.5" />
+            <span>← Retour à Explorer</span>
+          </Link>
+          <Link
+            href="/"
+            className="text-[11px] font-semibold text-muted hover:text-ink transition-colors hidden sm:inline"
+          >
+            Bon Waz à Dealer
+          </Link>
+        </div>
+      </div>
+
       {/* Bannière de la boutique */}
       {shop.banner_url && (
         <div className="relative h-32 sm:h-48 md:h-56 w-full bg-sand/80 overflow-hidden">

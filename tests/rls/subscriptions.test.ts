@@ -170,11 +170,11 @@ describe("V2-E — Abonnements et limites configurables (RLS, déclencheurs et r
     const { data: prodLimit } = await ctx.admin.rpc("shop_product_limit", {
       p_shop_id: ctx.userA.shopId,
     });
-    expect(prodLimit).toBe(20);
+    expect(prodLimit).toBe(5);
 
     const { data: orderLimit } = await ctx.admin.rpc("shop_monthly_orders_limit", {
       p_shop_id: ctx.userA.shopId,
     });
-    expect(orderLimit).toBe(50);
+    expect(orderLimit).toBe(10);
   });
 });

@@ -67,7 +67,7 @@ export function SubscriptionView({ shop, metrics, plans }: SubscriptionViewProps
               <h2 className="text-base font-bold">Votre abonnement {actualPlan.name} a expiré</h2>
               <p className="text-xs sm:text-sm text-amber-800 leading-relaxed">
                 <strong>Rassurez-vous : toutes vos données et vos produits sont précieusement conservés.</strong>{" "}
-                Votre boutique fonctionne actuellement sous les limites du plan Gratuit (20 produits, 50 commandes/mois).
+                Votre boutique fonctionne actuellement sous les limites du plan Gratuit (5 produits, 10 commandes/mois).
                 Renouvelez votre abonnement pour débloquer immédiatement vos fonctionnalités avancées.
               </p>
               <div className="pt-2">

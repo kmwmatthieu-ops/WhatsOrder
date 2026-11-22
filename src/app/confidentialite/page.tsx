@@ -39,7 +39,7 @@ export default function ConfidentialitePage() {
           <section className="space-y-3 text-xs sm:text-sm text-muted leading-relaxed">
             <h2 className="text-base sm:text-lg font-bold text-ink">1. Responsable du Traitement</h2>
             <p>
-              Le responsable du traitement des données collectées sur la plateforme <strong>{APP_NAME}</strong> est <strong>[NOM DE L&apos;ENTREPRISE OU DU PROPRIÉTAIRE]</strong>, joignable à l&apos;adresse e-mail : <strong>[E-MAIL DE CONTACT]</strong>.
+              Le responsable du traitement des données collectées sur la plateforme <strong>{APP_NAME}</strong> est <strong>KUKU MOUNGUENGUI MBULU Wences Matthieu Wissy</strong> (Entrepreneur individuel, Libreville), joignable à l&apos;adresse e-mail : <strong>jamstarck68@gmail.com</strong> ou par téléphone au <strong>+241 77 74 55 97 / +241 77 02 18 28</strong>.
             </p>
           </section>
 
@@ -88,7 +88,7 @@ export default function ConfidentialitePage() {
               Les données sont conservées tant que le compte commerçant demeure actif. Conformément aux réglementations sur la protection des données, vous disposez d&apos;un droit d&apos;accès, de rectification et de suppression de vos données.
             </p>
             <p>
-              Pour exercer vos droits ou demander la suppression définitive de vos données personnelles, écrivez à : <strong>[E-MAIL DE CONTACT]</strong>.
+              Pour exercer vos droits ou demander la suppression définitive de vos données personnelles, écrivez à : <strong>jamstarck68@gmail.com</strong>.
             </p>
           </section>
         </div>

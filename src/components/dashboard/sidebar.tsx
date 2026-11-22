@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Package, ShoppingBag, Users, Settings, ExternalLink, LogOut, CreditCard } from "lucide-react";
+import { Home, Package, ShoppingBag, Users, Settings, ExternalLink, LogOut, CreditCard, User, ArrowRight } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 import { signOut } from "@/app/(auth)/actions";
 import { shopUrl } from "@/lib/constants";
@@ -69,7 +69,27 @@ export function Sidebar({ shop }: { shop: Shop }) {
         })}
       </nav>
 
-      <form action={signOut} className="pt-4 border-t border-line">
+      {/* Bascule vers Espace Client & Explorer */}
+      <div className="pt-3 pb-3 border-t border-line">
+        <Link
+          href="/compte/parametres"
+          className="flex items-center justify-between gap-2 rounded-2xl border border-line bg-sand/30 p-3 hover:bg-sand/70 hover:border-brand-600/40 transition-all text-left group"
+          title="Accéder à l'espace client & préférences"
+        >
+          <div className="flex items-center gap-2.5 min-w-0">
+            <span className="grid size-8 place-items-center rounded-xl bg-brand-50 text-brand-700 shrink-0 group-hover:bg-brand-600 group-hover:text-white transition-colors">
+              <User className="size-4" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-bold text-ink truncate">Espace Client</p>
+              <p className="text-[10px] text-muted truncate">Explorer & Paramètres</p>
+            </div>
+          </div>
+          <ArrowRight className="size-3.5 text-muted group-hover:text-brand-700 group-hover:translate-x-0.5 transition-all shrink-0" />
+        </Link>
+      </div>
+
+      <form action={signOut} className="pt-2 border-t border-line">
         <button
           type="submit"
           className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-muted hover:bg-danger-50 hover:text-danger-600 transition-colors"

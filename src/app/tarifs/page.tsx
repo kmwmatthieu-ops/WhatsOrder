@@ -143,6 +143,7 @@ export default async function TarifsPage() {
                       <span>Boutique publique WhatsApp & QR code</span>
                     </li>
 
+                    {/* Statistiques avancées */}
                     <li className="flex items-center gap-2.5">
                       <span
                         className={`grid size-5 shrink-0 place-items-center rounded-full ${
@@ -158,6 +159,7 @@ export default async function TarifsPage() {
                       </span>
                     </li>
 
+                    {/* Export CSV */}
                     <li className="flex items-center gap-2.5">
                       <span
                         className={`grid size-5 shrink-0 place-items-center rounded-full ${
@@ -173,6 +175,37 @@ export default async function TarifsPage() {
                       </span>
                     </li>
 
+                    {/* Visibilité Explorer */}
+                    <li className="flex items-center gap-2.5">
+                      <span
+                        className={`grid size-5 shrink-0 place-items-center rounded-full ${
+                          isPremium || isPopular
+                            ? "bg-brand-50 text-brand-600"
+                            : "bg-sand text-muted/60"
+                        }`}
+                      >
+                        <Check className="size-3.5 font-bold" />
+                      </span>
+                      <span className={isPremium ? "font-bold text-brand-700" : isPopular ? "" : "text-muted line-through"}>
+                        {isPremium
+                          ? "Visibilité maximale sur Explorer"
+                          : isPopular
+                          ? "Visibilité accrue sur Explorer"
+                          : "Présence standard sur Explorer"}
+                      </span>
+                    </li>
+
+                    {/* Badge commerçant certifié */}
+                    {isPremium && (
+                      <li className="flex items-center gap-2.5">
+                        <span className="grid size-5 shrink-0 place-items-center rounded-full bg-purple-50 text-purple-600">
+                          <Check className="size-3.5 font-bold" />
+                        </span>
+                        <span className="font-bold text-purple-700">Badge de commerçant certifié</span>
+                      </li>
+                    )}
+
+                    {/* Support */}
                     <li className="flex items-center gap-2.5">
                       <span className="grid size-5 shrink-0 place-items-center rounded-full bg-brand-50 text-brand-600">
                         <Check className="size-3.5 font-bold" />
@@ -180,6 +213,14 @@ export default async function TarifsPage() {
                       <span>
                         {isPremium ? "Support WhatsApp VIP dédié" : "Support client réactif"}
                       </span>
+                    </li>
+
+                    {/* Communauté WhatsApp pour tous */}
+                    <li className="flex items-center gap-2.5">
+                      <span className="grid size-5 shrink-0 place-items-center rounded-full bg-brand-50 text-brand-600">
+                        <Check className="size-3.5 font-bold" />
+                      </span>
+                      <span>Accès à la communauté WhatsApp</span>
                     </li>
                   </ul>
 
@@ -211,19 +252,14 @@ export default async function TarifsPage() {
               Comment s&apos;effectuent les paiements d&apos;abonnement ?
             </h3>
             <p className="text-xs sm:text-sm text-muted max-w-xl mx-auto mb-6">
-              Pas besoin de carte bancaire internationale. Tous les règlements s&apos;effectuent par transfert Mobile Money direct, validé rapidement par notre équipe :
+              Pas besoin de carte bancaire internationale. Tous les règlements s&apos;effectuent de façon instantanée et sécurisée via notre passerelle agréée :
             </p>
 
             <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6">
-              {MOBILE_MONEY_PAYMENT_CONFIG.accounts.map((acc) => (
-                <div
-                  key={acc.provider}
-                  className="flex items-center gap-2.5 rounded-2xl border border-line bg-sand/40 px-4 py-2.5"
-                >
-                  <Smartphone className="size-4 text-brand-600" />
-                  <span className="text-xs sm:text-sm font-bold text-ink">{acc.label}</span>
-                </div>
-              ))}
+              <div className="flex items-center gap-3 rounded-2xl border border-line bg-sand/40 px-6 py-3.5 shadow-xs">
+                <Smartphone className="size-5 text-brand-600" />
+                <span className="text-sm sm:text-base font-bold text-ink">Mobile Money (Afrique)</span>
+              </div>
             </div>
           </div>
         </section>
@@ -244,7 +280,7 @@ export default async function TarifsPage() {
                 Que se passe-t-il si mon abonnement payant arrive à expiration ?
               </h4>
               <p className="mt-2 text-xs sm:text-sm text-muted leading-relaxed">
-                <strong>Aucune donnée n&apos;est jamais supprimée.</strong> Vos produits, clients et commandes restent intacts. Votre boutique continue de fonctionner et bascule simplement sous les limites du plan Gratuit (20 produits et 50 commandes/mois). Vous pouvez renouveler à tout moment pour débloquer à nouveau vos fonctionnalités.
+                <strong>Aucune donnée n&apos;est jamais supprimée.</strong> Vos produits, clients et commandes restent intacts. Votre boutique continue de fonctionner et bascule simplement sous les limites du plan Gratuit (5 produits et 10 commandes/mois). Vous pouvez renouveler à tout moment pour débloquer à nouveau vos fonctionnalités.
               </p>
             </div>
 
@@ -254,7 +290,7 @@ export default async function TarifsPage() {
                 Comment activer mon plan après un paiement Mobile Money ?
               </h4>
               <p className="mt-2 text-xs sm:text-sm text-muted leading-relaxed">
-                Depuis votre tableau de bord, onglet « Abonnement », choisissez votre formule. Vous effectuez votre transfert sur notre numéro officiel (Wave, Orange, MTN ou Moov) et saisissez votre référence. Vous pouvez également cliquer sur « Notifier le support sur WhatsApp » pour une validation en quelques minutes !
+                Depuis votre tableau de bord, onglet « Abonnement », choisissez votre formule. Le paiement s&apos;effectue de manière instantanée et sécurisée par Mobile Money (Afrique) via SasPay. Votre compte et vos quotas sont activés automatiquement à la seconde même où la transaction est confirmée !
               </p>
             </div>
 
@@ -290,7 +326,7 @@ export default async function TarifsPage() {
             Mentions Légales
           </Link>
         </div>
-        <p>© {new Date().getFullYear()} Bon Waz à Dealer • Vente en ligne simplifiée sur WhatsApp</p>
+        <p>© {new Date().getFullYear()} Bon Waz à Dealer · By Wens Matthieu · Tous droits réservés.</p>
       </footer>
     </div>
   );

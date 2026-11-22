@@ -201,7 +201,7 @@ export default async function HomePage() {
             Mentions Légales
           </Link>
         </div>
-        <p>© {new Date().getFullYear()} {APP_NAME} · Tous droits réservés.</p>
+        <p>© {new Date().getFullYear()} {APP_NAME} · By Wens Matthieu · Tous droits réservés.</p>
       </footer>
     </div>
   );

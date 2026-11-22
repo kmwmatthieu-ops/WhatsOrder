@@ -101,11 +101,11 @@ describe("RLS — Catalogue (catégories, produits et limite 20)", () => {
     expect(error).not.toBeNull();
   });
 
-  it("bloque l'insertion du 21ème produit (limite plan gratuit de 20 produits)", async () => {
+  it("bloque l'insertion du 6ème produit (limite plan gratuit de 5 produits)", async () => {
     if (!isConfigured) return;
 
-    // Remplir jusqu'à 20 produits
-    const prods = Array.from({ length: 20 }, (_, i) => ({
+    // Remplir jusqu'à 5 produits
+    const prods = Array.from({ length: 5 }, (_, i) => ({
       shop_id: ctx.userA.shopId,
       name: `Produit quota ${i + 1}`,
       price: 1000,
@@ -113,10 +113,10 @@ describe("RLS — Catalogue (catégories, produits et limite 20)", () => {
 
     await ctx.userA.client.from("products").insert(prods);
 
-    // Tentative d'insertion du 21ème
+    // Tentative d'insertion du 6ème
     const { error } = await ctx.userA.client.from("products").insert({
       shop_id: ctx.userA.shopId,
-      name: "Produit 21 (doit échouer)",
+      name: "Produit 6 (doit échouer)",
       price: 5000,
     });
 

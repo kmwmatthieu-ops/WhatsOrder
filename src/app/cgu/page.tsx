@@ -39,7 +39,7 @@ export default function CGUPage() {
           <section className="space-y-3 text-xs sm:text-sm text-muted leading-relaxed">
             <h2 className="text-base sm:text-lg font-bold text-ink">1. Présentation de la Plateforme</h2>
             <p>
-              La plateforme <strong>{APP_NAME}</strong>, éditée par <strong>[NOM DE L&apos;ENTREPRISE OU DU PROPRIÉTAIRE]</strong>, est un service logiciel (SaaS) permettant à des commerçants indépendants de créer leur boutique en ligne, d&apos;exposer leurs produits et de réceptionner des commandes finalisées par WhatsApp.
+              La plateforme <strong>{APP_NAME}</strong>, éditée par <strong>KUKU MOUNGUENGUI MBULU Wences Matthieu Wissy</strong> (Entrepreneur individuel, Libreville), est un service logiciel (SaaS) permettant à des commerçants indépendants de créer leur boutique en ligne, d&apos;exposer leurs produits et de réceptionner des commandes finalisées par WhatsApp.
             </p>
           </section>
 
@@ -97,11 +97,11 @@ export default function CGUPage() {
             <p>
               Pour toute question relative aux présentes conditions, contactez notre équipe :
               <br />
-              <strong>E-mail :</strong> [E-MAIL DE CONTACT]
+              <strong>E-mail :</strong> jamstarck68@gmail.com
               <br />
-              <strong>Téléphone / WhatsApp :</strong> [NUMÉRO DE TÉLÉPHONE]
+              <strong>Téléphone / WhatsApp :</strong> +241 77 74 55 97 / +241 77 02 18 28
               <br />
-              <strong>Adresse :</strong> [ADRESSE DU SIÈGE]
+              <strong>Siège :</strong> Libreville, Gabon
             </p>
           </section>
         </div>
