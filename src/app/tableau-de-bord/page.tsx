@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import {
   ArrowRight,
+  BadgeCheck,
   Package,
   ShoppingBag,
   Store,
@@ -115,7 +116,18 @@ export default async function DashboardHomePage() {
             <Store className="size-6" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="truncate font-bold text-ink">{shop.name}</p>
+            <div className="flex items-center gap-1.5 min-w-0">
+              <p className="truncate font-bold text-ink">{shop.name}</p>
+              {shop.is_certified && (
+                <span
+                  className="inline-flex items-center gap-1 rounded-full bg-blue-50 border border-blue-200 px-2 py-0.5 text-[10px] font-black uppercase text-blue-700 shrink-0"
+                  title="Boutique vérifiée et certifiée"
+                >
+                  <BadgeCheck className="size-3.5 fill-blue-600 text-white" />
+                  <span>Certifié</span>
+                </span>
+              )}
+            </div>
             <p className="truncate text-xs text-muted">{url}</p>
           </div>
         </div>

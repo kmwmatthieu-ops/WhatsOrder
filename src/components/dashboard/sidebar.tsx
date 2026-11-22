@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Package, ShoppingBag, Users, Settings, ExternalLink, LogOut, CreditCard, User, ArrowRight } from "lucide-react";
+import { Home, Package, ShoppingBag, Users, Settings, ExternalLink, LogOut, CreditCard, User, ArrowRight, BadgeCheck } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 import { signOut } from "@/app/(auth)/actions";
 import { shopUrl } from "@/lib/constants";
@@ -37,7 +37,18 @@ export function Sidebar({ shop }: { shop: Shop }) {
             Changer
           </Link>
         </div>
-        <p className="mt-1 truncate font-bold text-ink">{shop.name}</p>
+        <div className="mt-1 flex items-center gap-1.5 min-w-0">
+          <p className="truncate font-bold text-ink">{shop.name}</p>
+          {shop.is_certified && (
+            <span
+              className="inline-flex items-center gap-1 rounded-full bg-blue-50 border border-blue-200 px-1.5 py-0.5 text-[9px] font-black uppercase text-blue-700 shrink-0"
+              title="Boutique vérifiée et certifiée"
+            >
+              <BadgeCheck className="size-3 fill-blue-600 text-white" />
+              <span>Certifié</span>
+            </span>
+          )}
+        </div>
         <a
           href={shopUrl(shop.slug)}
           target="_blank"

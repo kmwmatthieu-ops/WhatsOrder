@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ExternalLink, User } from "lucide-react";
+import { BadgeCheck, ExternalLink, User } from "lucide-react";
 import { shopUrl } from "@/lib/constants";
 import type { Shop } from "@/types/database";
 
@@ -8,6 +8,11 @@ export function DashboardHeader({ shop }: { shop: Shop }) {
     <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-line bg-white/95 px-4 backdrop-blur-md md:hidden">
       <Link href="/boutiques" className="flex items-center gap-1.5 min-w-0 max-w-[55%] hover:opacity-85 transition-opacity">
         <span className="truncate font-bold text-ink">{shop.name}</span>
+        {shop.is_certified && (
+          <span title="Boutique certifiée" className="shrink-0 inline-flex items-center">
+            <BadgeCheck className="size-3.5 fill-blue-600 text-white" />
+          </span>
+        )}
         <span className="shrink-0 rounded-md bg-sand px-1.5 py-0.5 text-[10px] font-semibold text-muted">Boutiques</span>
       </Link>
       <div className="flex items-center gap-2 shrink-0">

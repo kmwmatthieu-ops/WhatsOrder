@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowRight, ExternalLink, LogOut, Plus, Store, User } from "lucide-react";
+import { ArrowRight, BadgeCheck, ExternalLink, LogOut, Plus, Store, User } from "lucide-react";
 import { getUser, getMyShops } from "@/lib/supabase/server";
 import { signOut } from "@/app/(auth)/actions";
 import { Logo } from "@/components/ui/logo";
@@ -109,10 +109,19 @@ export default async function BoutiquesPage() {
                   )}
 
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <h2 className="truncate text-lg sm:text-xl font-black text-ink group-hover:text-brand-700 transition-colors">
                         {shop.name}
                       </h2>
+                      {shop.is_certified && (
+                        <span
+                          className="inline-flex items-center gap-1 rounded-full bg-blue-50 border border-blue-200 px-2 py-0.5 text-[10px] font-black uppercase text-blue-700 shrink-0"
+                          title="Boutique vérifiée et certifiée"
+                        >
+                          <BadgeCheck className="size-3.5 fill-blue-600 text-white" />
+                          <span>Certifié</span>
+                        </span>
+                      )}
                       <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-700">
                         Active
                       </span>
