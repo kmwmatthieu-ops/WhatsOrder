@@ -16,9 +16,9 @@ export function ClientSignInForm() {
 
   useEffect(() => {
     if (state.ok && state.message === "REDIRECT_EXPLORER") {
-      router.push("/explorer");
+      window.location.href = "/explorer";
     }
-  }, [state.ok, state.message, router]);
+  }, [state.ok, state.message]);
 
   return (
     <form action={formAction} className="flex flex-col gap-4">

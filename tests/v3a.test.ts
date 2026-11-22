@@ -81,6 +81,38 @@ describe("V3-A — Explorer, Visibilité des Boutiques, Profils Clients & Modér
       expect(error).toBeNull();
       expect(data?.length ?? 0).toBe(0);
     });
+
+    it("initialise automatiquement le profil client pour un commerçant se connectant à l'espace client", async () => {
+      if (!isConfigured) return;
+
+      // User B n'a pas encore de customer_profile
+      const { data: initCheck } = await ctx.admin
+        .from("customer_profiles")
+        .select("id")
+        .eq("id", ctx.userB.id)
+        .maybeSingle();
+
+      expect(initCheck).toBeNull();
+
+      // Insertion du profil comme le fait clientSignIn ou la page paramètres
+      const { error: upsertErr } = await ctx.userB.client
+        .from("customer_profiles")
+        .upsert({
+          id: ctx.userB.id,
+          full_name: "Commerçant B Client",
+          personalization_enabled: true,
+        });
+
+      expect(upsertErr).toBeNull();
+
+      const { data: createdProfile } = await ctx.userB.client
+        .from("customer_profiles")
+        .select("full_name")
+        .eq("id", ctx.userB.id)
+        .single();
+
+      expect(createdProfile?.full_name).toBe("Commerçant B Client");
+    });
   });
 
   // 2. Visibilité Explorer & modération des produits

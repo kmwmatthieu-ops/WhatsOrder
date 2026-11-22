@@ -16,7 +16,7 @@ export interface ClientActionState {
 
 const clientSignUpSchema = z.object({
   fullName: z.string().trim().min(2, "Au moins 2 caractères.").max(80, "80 caractères maximum."),
-  email: z.string().trim().email("Adresse e-mail invalide."),
+  email: z.string().trim().toLowerCase().email("Adresse e-mail invalide."),
   password: z.string().min(8, "Au moins 8 caractères."),
   activityConsent: z.boolean().default(false),
   terms: z.literal(true, {
@@ -25,7 +25,7 @@ const clientSignUpSchema = z.object({
 });
 
 const clientSignInSchema = z.object({
-  email: z.string().trim().email("Adresse e-mail invalide."),
+  email: z.string().trim().toLowerCase().email("Adresse e-mail invalide."),
   password: z.string().min(1, "Mot de passe requis."),
 });
 
@@ -124,14 +124,44 @@ export async function clientSignIn(
     return { fieldErrors: parsed.error.flatten().fieldErrors };
   }
 
+  const cleanEmail = parsed.data.email.trim().toLowerCase();
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({
-    email: parsed.data.email,
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email: cleanEmail,
     password: parsed.data.password,
   });
 
   if (error) {
     return { error: authErrorMessage(error) };
+  }
+
+  // Si l'e-mail n'a pas encore été confirmé
+  if (data.user && !data.user.email_confirmed_at) {
+    await supabase.auth.signOut();
+    return {
+      error:
+        "Votre adresse e-mail n'a pas encore été vérifiée. Cliquez d'abord sur le lien de confirmation reçu dans votre boîte mail.",
+    };
+  }
+
+  // S'assurer que le profil client (customer_profiles) existe pour ce compte
+  if (data.user) {
+    try {
+      await supabase.from("customer_profiles").upsert(
+        {
+          id: data.user.id,
+          full_name:
+            data.user.user_metadata?.full_name ||
+            data.user.email?.split("@")[0] ||
+            "Client",
+          personalization_enabled: true,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "id" }
+      );
+    } catch (e) {
+      console.warn("Could not upsert customer profile on clientSignIn:", e);
+    }
   }
 
   return { ok: true, message: "REDIRECT_EXPLORER" };

@@ -18,11 +18,26 @@ export default async function ClientSettingsPage() {
   }
 
   const supabase = await createClient();
-  const { data: profile } = await supabase
+  let { data: profile } = await supabase
     .from("customer_profiles")
     .select("*")
     .eq("id", user.id)
     .maybeSingle();
+
+  // Si le profil n'existe pas encore (compte créé initialement comme commerçant), on l'initialise
+  if (!profile) {
+    const { data: newProfile } = await supabase
+      .from("customer_profiles")
+      .insert({
+        id: user.id,
+        full_name: user.user_metadata?.full_name || user.email?.split("@")[0] || "Client",
+        personalization_enabled: true,
+        updated_at: new Date().toISOString(),
+      })
+      .select()
+      .maybeSingle();
+    profile = newProfile;
+  }
 
   return (
     <div className="min-h-dvh bg-sand/30 text-ink flex flex-col">

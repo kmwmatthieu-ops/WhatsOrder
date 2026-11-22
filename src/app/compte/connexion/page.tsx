@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Compass, ShoppingBag } from "lucide-react";
+import { getUser } from "@/lib/supabase/server";
 import { Logo } from "@/components/ui/logo";
 import { ClientSignInForm } from "./client-signin-form";
 
@@ -9,7 +11,12 @@ export const metadata: Metadata = {
   description: "Connectez-vous à votre compte client pour retrouver vos boutiques suivies.",
 };
 
-export default function ClientSignInPage() {
+export default async function ClientSignInPage() {
+  const user = await getUser();
+  if (user) {
+    redirect("/explorer");
+  }
+
   return (
     <div className="min-h-dvh bg-sand/30 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md px-4">
