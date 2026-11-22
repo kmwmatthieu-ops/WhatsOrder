@@ -15,12 +15,12 @@ export default async function TarifsPage() {
   const plans = await getActiveSubscriptionPlans();
 
   return (
-    <div className="min-h-dvh bg-cream text-ink flex flex-col">
+    <div className="min-h-dvh bg-cream text-ink flex flex-col overflow-x-hidden">
       {/* Navigation publique */}
       <header className="border-b border-line bg-white/90 backdrop-blur-md sticky top-0 z-30">
         <div className="mx-auto flex h-14 sm:h-16 max-w-5xl items-center justify-between px-3 sm:px-6">
           <Logo />
-          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
             <Link
               href="/"
               className="text-xs sm:text-sm font-semibold text-muted hover:text-ink px-2 sm:px-3 py-1.5 rounded-xl transition-colors shrink-0"
@@ -28,16 +28,24 @@ export default async function TarifsPage() {
               Accueil
             </Link>
             <Link
+              href="/explorer"
+              className="text-xs sm:text-sm font-semibold text-muted hover:text-ink px-2 sm:px-3 py-1.5 rounded-xl transition-colors shrink-0"
+            >
+              Explorer
+            </Link>
+            <Link
               href="/connexion"
               className="text-xs sm:text-sm font-semibold text-muted hover:text-ink px-2 sm:px-3 py-1.5 rounded-xl transition-colors shrink-0"
             >
-              Connexion
+              <span className="sm:hidden">Connexion</span>
+              <span className="hidden sm:inline">Connexion / Inscription</span>
             </Link>
             <Link
               href="/inscription"
-              className="rounded-xl sm:rounded-2xl bg-brand-600 px-3.5 py-2 sm:px-4 sm:py-2.5 text-xs sm:text-sm font-bold text-white shadow-xs hover:bg-brand-700 active:scale-98 transition-all shrink-0"
+              className="rounded-xl sm:rounded-2xl bg-brand-600 px-3 py-1.5 sm:px-4 sm:py-2.5 text-xs sm:text-sm font-bold text-white shadow-xs hover:bg-brand-700 active:scale-98 transition-all shrink-0"
             >
-              Créer ma boutique
+              <span>Créer</span>
+              <span className="hidden sm:inline">&nbsp;ma boutique</span>
             </Link>
           </div>
         </div>
@@ -69,9 +77,9 @@ export default async function TarifsPage() {
               return (
                 <div
                   key={plan.id}
-                  className={`flex flex-col rounded-3xl p-6 sm:p-7 transition-all relative ${
+                  className={`flex flex-col rounded-3xl p-6 sm:p-7 transition-all relative overflow-hidden ${
                     isPopular
-                      ? "bg-white border-2 border-brand-600 shadow-xl ring-4 ring-brand-50"
+                      ? "bg-white border-2 border-brand-600 shadow-xl"
                       : "bg-white border border-line shadow-xs hover:shadow-md"
                   }`}
                 >
@@ -330,26 +338,32 @@ export default async function TarifsPage() {
         </section>
       </main>
 
-      {/* Pied de page */}
-      <footer className="border-t border-line bg-white py-8 px-4 text-center text-xs text-muted space-y-3">
-        <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 font-semibold text-ink">
+      {/* Pied de page responsive et centré */}
+      <footer className="border-t border-line bg-white py-8 px-4 mt-auto text-center text-xs text-muted space-y-3">
+        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-center gap-3 sm:gap-6 font-medium text-ink">
           <Link href="/" className="hover:text-brand-600 transition-colors">
             Accueil
           </Link>
-          <span className="text-line">•</span>
-          <Link href="/cgu" className="hover:text-brand-600 transition-colors">
-            Conditions Générales d&apos;Utilisation
+          <span className="text-line hidden sm:inline">•</span>
+          <Link href="/explorer" className="hover:text-brand-600 transition-colors">
+            Explorer
           </Link>
-          <span className="text-line">•</span>
+          <span className="text-line hidden sm:inline">•</span>
+          <Link href="/cgu" className="hover:text-brand-600 transition-colors">
+            CGU
+          </Link>
+          <span className="text-line hidden sm:inline">•</span>
           <Link href="/confidentialite" className="hover:text-brand-600 transition-colors">
             Confidentialité
           </Link>
-          <span className="text-line">•</span>
+          <span className="text-line hidden sm:inline">•</span>
           <Link href="/mentions-legales" className="hover:text-brand-600 transition-colors">
-            Mentions Légales
+            Mentions légales
           </Link>
         </div>
-        <p>© {new Date().getFullYear()} Bon Waz à Dealer · By Wens Matthieu · Tous droits réservés.</p>
+        <p className="text-[11px] sm:text-xs text-muted max-w-md sm:max-w-none mx-auto leading-relaxed">
+          © {new Date().getFullYear()} Bon Waz à Dealer · By Wens Matthieu · Tous droits réservés.
+        </p>
       </footer>
     </div>
   );

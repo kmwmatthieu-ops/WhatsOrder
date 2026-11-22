@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   Store,
   Zap,
+  Compass,
 } from "lucide-react";
 import { APP_NAME } from "@/lib/constants";
 import { Logo } from "@/components/ui/logo";
@@ -21,19 +22,12 @@ export default async function HomePage() {
   }
 
   return (
-    <div className="min-h-dvh bg-cream text-ink flex flex-col">
+    <div className="min-h-dvh bg-cream text-ink flex flex-col overflow-x-hidden">
       {/* Navigation publique */}
       <header className="border-b border-line bg-white/90 backdrop-blur-md sticky top-0 z-30">
         <div className="mx-auto flex h-14 sm:h-16 max-w-5xl items-center justify-between px-3 sm:px-6">
           <Logo />
-          <div className="flex items-center gap-1 sm:gap-3 shrink-0">
-            <Link
-              href="/explorer"
-              prefetch={false}
-              className="whitespace-nowrap text-xs sm:text-sm font-semibold text-brand-700 hover:text-brand-800 px-2 sm:px-3 py-1.5 rounded-xl transition-colors shrink-0"
-            >
-              Explorer
-            </Link>
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
             <Link
               href="/tarifs"
               prefetch={false}
@@ -55,16 +49,15 @@ export default async function HomePage() {
                 prefetch={false}
                 className="whitespace-nowrap text-xs sm:text-sm font-semibold text-muted hover:text-ink px-2 sm:px-3 py-1.5 rounded-xl transition-colors shrink-0"
               >
-                Connexion
+                Connexion / Inscription
               </Link>
             )}
             <Link
               href="/inscription"
               prefetch={false}
-              className="whitespace-nowrap rounded-xl sm:rounded-2xl bg-brand-600 px-3 py-2 sm:px-4 sm:py-2.5 text-xs sm:text-sm font-bold text-white shadow-xs hover:bg-brand-700 active:scale-98 transition-all shrink-0"
+              className="hidden sm:inline-flex whitespace-nowrap rounded-2xl bg-brand-600 px-4 py-2.5 text-xs sm:text-sm font-bold text-white shadow-xs hover:bg-brand-700 active:scale-98 transition-all shrink-0"
             >
-              <span>Créer</span>
-              <span className="hidden sm:inline">&nbsp;ma boutique</span>
+              <span>Créer ma boutique</span>
             </Link>
           </div>
         </div>
@@ -92,7 +85,7 @@ export default async function HomePage() {
               <Link
                 href="/boutiques"
                 prefetch={false}
-                className="flex h-13 w-full sm:w-auto items-center justify-center gap-2 rounded-2xl bg-brand-600 px-8 text-base font-bold text-white shadow-md hover:bg-brand-700 active:scale-98 transition-all"
+                className="flex h-12 sm:h-13 w-full sm:w-auto items-center justify-center gap-2 rounded-2xl bg-brand-600 px-8 text-base font-bold text-white shadow-md hover:bg-brand-700 active:scale-98 transition-all"
               >
                 <span>Retourner au tableau de bord</span>
                 <ArrowRight className="size-5" />
@@ -102,17 +95,18 @@ export default async function HomePage() {
                 <Link
                   href="/inscription"
                   prefetch={false}
-                  className="flex h-13 w-full sm:w-auto items-center justify-center gap-2 rounded-2xl bg-brand-600 px-8 text-base font-bold text-white shadow-md hover:bg-brand-700 active:scale-98 transition-all"
+                  className="flex h-12 sm:h-13 w-full sm:w-auto items-center justify-center gap-2 rounded-2xl bg-brand-600 px-6 sm:px-8 text-sm sm:text-base font-bold text-white shadow-md hover:bg-brand-700 active:scale-98 transition-all"
                 >
                   <span>Créer ma boutique gratuitement</span>
-                  <ArrowRight className="size-5" />
+                  <ArrowRight className="size-4 sm:size-5" />
                 </Link>
                 <Link
-                  href="/connexion"
+                  href="/explorer"
                   prefetch={false}
-                  className="flex h-13 w-full sm:w-auto items-center justify-center rounded-2xl border border-line bg-white px-6 text-sm font-bold text-ink hover:bg-sand transition-colors"
+                  className="flex h-12 sm:h-13 w-full sm:w-auto items-center justify-center gap-2 rounded-2xl border border-line bg-white px-6 sm:px-8 text-sm sm:text-base font-bold text-ink hover:bg-sand transition-colors shadow-xs"
                 >
-                  J&apos;ai déjà un compte
+                  <Compass className="size-4 sm:size-5 text-brand-600" />
+                  <span>Explorer</span>
                 </Link>
               </>
             )}
@@ -202,30 +196,32 @@ export default async function HomePage() {
         </section>
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-line bg-white py-8 px-4 text-center text-xs text-muted space-y-3">
-        <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 font-semibold text-ink">
+      {/* Pied de page responsive et centré */}
+      <footer className="border-t border-line bg-white py-8 px-4 mt-auto text-center text-xs text-muted space-y-3">
+        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-center gap-3 sm:gap-6 font-medium text-ink">
           <Link href="/explorer" className="hover:text-brand-600 transition-colors">
             Explorer
           </Link>
-          <span className="text-line">•</span>
+          <span className="text-line hidden sm:inline">•</span>
           <Link href="/tarifs" className="hover:text-brand-600 transition-colors">
             Tarifs
           </Link>
-          <span className="text-line">•</span>
+          <span className="text-line hidden sm:inline">•</span>
           <Link href="/cgu" className="hover:text-brand-600 transition-colors">
-            Conditions Générales d&apos;Utilisation
+            CGU
           </Link>
-          <span className="text-line">•</span>
+          <span className="text-line hidden sm:inline">•</span>
           <Link href="/confidentialite" className="hover:text-brand-600 transition-colors">
             Confidentialité
           </Link>
-          <span className="text-line">•</span>
+          <span className="text-line hidden sm:inline">•</span>
           <Link href="/mentions-legales" className="hover:text-brand-600 transition-colors">
-            Mentions Légales
+            Mentions légales
           </Link>
         </div>
-        <p>© {new Date().getFullYear()} {APP_NAME} · By Wens Matthieu · Tous droits réservés.</p>
+        <p className="text-[11px] sm:text-xs text-muted max-w-md sm:max-w-none mx-auto leading-relaxed">
+          © {new Date().getFullYear()} {APP_NAME} · By Wens Matthieu · Tous droits réservés.
+        </p>
       </footer>
     </div>
   );
