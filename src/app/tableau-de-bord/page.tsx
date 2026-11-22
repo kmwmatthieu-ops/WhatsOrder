@@ -192,38 +192,36 @@ export default async function DashboardHomePage() {
 
         <Link
           href="/tableau-de-bord/clients"
-          className="flex items-center justify-between rounded-2xl border border-line bg-white p-4 shadow-xs hover:border-brand-500 transition-colors"
+          className="flex items-center justify-between gap-2.5 rounded-2xl border border-line bg-white p-3.5 sm:p-4 shadow-xs hover:border-brand-500 transition-colors min-w-0"
         >
-          <div className="flex items-center gap-3">
-            <div className="grid size-10 place-items-center rounded-xl bg-sand text-ink">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+            <div className="grid size-10 place-items-center rounded-xl bg-sand text-ink shrink-0">
               <Users className="size-5" />
             </div>
-            <div>
-              <p className="font-bold text-sm text-ink">Clients</p>
-              <p className="text-xs text-muted">
-                Répertoire & {subscription.effectivePlan.has_csv_export ? "Export CSV" : "Historique"}
-              </p>
+            <div className="min-w-0">
+              <p className="font-bold text-sm text-ink truncate">Clients</p>
+              <p className="text-xs text-muted truncate">Répertoire clients</p>
             </div>
           </div>
-          <ArrowRight className="size-4 text-muted" />
+          <ArrowRight className="size-4 text-muted shrink-0" />
         </Link>
 
-        {/* Abonnés Explorer (Affichage strictement anonyme du compteur) */}
-        <div className="flex items-center justify-between rounded-2xl border border-line bg-white p-4 shadow-xs">
-          <div className="flex items-center gap-3">
-            <div className="grid size-10 place-items-center rounded-xl bg-sand text-ink">
+        {/* Abonnés de la boutique (Affichage strictement anonyme du compteur) */}
+        <div className="flex items-center justify-between gap-2 rounded-2xl border border-line bg-white p-3.5 sm:p-4 shadow-xs min-w-0">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+            <div className="grid size-10 place-items-center rounded-xl bg-sand text-ink shrink-0">
               <Heart className="size-5 text-brand-600 fill-brand-600" />
             </div>
-            <div>
-              <p className="font-bold text-sm text-ink">Abonnés Explorer</p>
-              <p className="text-xs text-muted">
+            <div className="min-w-0">
+              <p className="font-bold text-sm text-ink truncate">Abonnés</p>
+              <p className="text-xs text-muted truncate">
                 {shop.followers_count ?? 0} abonné{(shop.followers_count ?? 0) > 1 ? "s" : ""}
               </p>
             </div>
           </div>
           <span
-            className="rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-bold text-brand-700"
-            title="Clients suivant votre vitrine sur Explorer (données strictement anonymisées)"
+            className="shrink-0 rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-bold text-brand-700"
+            title="Clients suivant votre vitrine (données strictement anonymisées)"
           >
             Actifs
           </span>

@@ -4,7 +4,12 @@ import { getSupabaseCredentials } from "@/lib/constants";
 import type { Database } from "@/types/database";
 
 const PRIVATE_PREFIXES = ["/tableau-de-bord", "/onboarding", "/boutiques"];
-const GUEST_ONLY = ["/connexion", "/inscription"];
+const GUEST_ONLY = [
+  "/connexion",
+  "/inscription",
+  "/compte/connexion",
+  "/compte/inscription",
+];
 
 /**
  * Rafraîchit la session Supabase à chaque requête et protège les routes privées.
@@ -19,6 +24,11 @@ export async function updateSession(request: NextRequest) {
     url,
     anonKey,
     {
+      cookieOptions: {
+        maxAge: 60 * 60 * 24 * 365,
+        path: "/",
+        sameSite: "lax",
+      },
       cookies: {
         getAll() {
           return request.cookies.getAll();
@@ -26,7 +36,14 @@ export async function updateSession(request: NextRequest) {
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
           response = NextResponse.next({ request });
-          cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
+          cookiesToSet.forEach(({ name, value, options }) =>
+            response.cookies.set(name, value, {
+              ...options,
+              maxAge: options?.maxAge ?? 60 * 60 * 24 * 365,
+              path: options?.path ?? "/",
+              sameSite: options?.sameSite ?? "lax",
+            })
+          );
         },
       },
     },
@@ -60,7 +77,12 @@ export async function updateSession(request: NextRequest) {
     redirectUrl.search = "";
     const redirectResponse = NextResponse.redirect(redirectUrl);
     response.cookies.getAll().forEach((cookie) => {
-      redirectResponse.cookies.set(cookie);
+      redirectResponse.cookies.set(cookie.name, cookie.value, {
+        maxAge: 60 * 60 * 24 * 365,
+        path: "/",
+        sameSite: "lax",
+        httpOnly: true,
+      });
     });
     return redirectResponse;
   }
@@ -70,7 +92,7 @@ export async function updateSession(request: NextRequest) {
   }
 
   // Sur une navigation document directe (hors requête RSC/prefetch qui casserait l'arbre
-  // du layout (auth) dans Next.js 16), on redirige immédiatement vers /boutiques.
+  // du layout (auth) dans Next.js 16), on redirige immédiatement l'utilisateur connecté.
   if (user && request.method === "GET" && !isRscOrPrefetch && GUEST_ONLY.includes(path)) {
     return redirectWithCookies("/boutiques");
   }

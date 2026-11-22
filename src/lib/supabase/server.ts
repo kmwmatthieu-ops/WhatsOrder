@@ -18,13 +18,25 @@ export async function createClient() {
     url,
     key,
     {
+      cookieOptions: {
+        maxAge: 60 * 60 * 24 * 365, // 1 an
+        path: "/",
+        sameSite: "lax",
+      },
       cookies: {
         getAll() {
           return cookieStore.getAll();
         },
         setAll(cookiesToSet) {
           try {
-            cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options));
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, {
+                ...options,
+                maxAge: options?.maxAge ?? 60 * 60 * 24 * 365,
+                path: options?.path ?? "/",
+                sameSite: options?.sameSite ?? "lax",
+              })
+            );
           } catch {
             // Appelé depuis un Server Component : écriture impossible, le proxy s'en charge.
           }

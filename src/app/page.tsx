@@ -17,6 +17,7 @@ export default async function HomePage() {
   if (user) {
     const shop = await getMyShop();
     if (shop) redirect("/boutiques");
+    redirect("/explorer");
   }
 
   return (
@@ -40,13 +41,23 @@ export default async function HomePage() {
             >
               Tarifs
             </Link>
-            <Link
-              href="/connexion"
-              prefetch={false}
-              className="whitespace-nowrap text-xs sm:text-sm font-semibold text-muted hover:text-ink px-2 sm:px-3 py-1.5 rounded-xl transition-colors shrink-0"
-            >
-              Connexion
-            </Link>
+            {user ? (
+              <Link
+                href="/boutiques"
+                prefetch={false}
+                className="whitespace-nowrap text-xs sm:text-sm font-bold text-brand-700 hover:text-brand-800 px-2 sm:px-3 py-1.5 rounded-xl transition-colors shrink-0"
+              >
+                Mon Tableau de bord
+              </Link>
+            ) : (
+              <Link
+                href="/connexion"
+                prefetch={false}
+                className="whitespace-nowrap text-xs sm:text-sm font-semibold text-muted hover:text-ink px-2 sm:px-3 py-1.5 rounded-xl transition-colors shrink-0"
+              >
+                Connexion
+              </Link>
+            )}
             <Link
               href="/inscription"
               prefetch={false}
@@ -77,21 +88,34 @@ export default async function HomePage() {
           </p>
 
           <div className="mt-8 flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
-            <Link
-              href="/inscription"
-              prefetch={false}
-              className="flex h-13 w-full sm:w-auto items-center justify-center gap-2 rounded-2xl bg-brand-600 px-8 text-base font-bold text-white shadow-md hover:bg-brand-700 active:scale-98 transition-all"
-            >
-              <span>Créer ma boutique gratuitement</span>
-              <ArrowRight className="size-5" />
-            </Link>
-            <Link
-              href="/connexion"
-              prefetch={false}
-              className="flex h-13 w-full sm:w-auto items-center justify-center rounded-2xl border border-line bg-white px-6 text-sm font-bold text-ink hover:bg-sand transition-colors"
-            >
-              J&apos;ai déjà un compte
-            </Link>
+            {user ? (
+              <Link
+                href="/boutiques"
+                prefetch={false}
+                className="flex h-13 w-full sm:w-auto items-center justify-center gap-2 rounded-2xl bg-brand-600 px-8 text-base font-bold text-white shadow-md hover:bg-brand-700 active:scale-98 transition-all"
+              >
+                <span>Retourner au tableau de bord</span>
+                <ArrowRight className="size-5" />
+              </Link>
+            ) : (
+              <>
+                <Link
+                  href="/inscription"
+                  prefetch={false}
+                  className="flex h-13 w-full sm:w-auto items-center justify-center gap-2 rounded-2xl bg-brand-600 px-8 text-base font-bold text-white shadow-md hover:bg-brand-700 active:scale-98 transition-all"
+                >
+                  <span>Créer ma boutique gratuitement</span>
+                  <ArrowRight className="size-5" />
+                </Link>
+                <Link
+                  href="/connexion"
+                  prefetch={false}
+                  className="flex h-13 w-full sm:w-auto items-center justify-center rounded-2xl border border-line bg-white px-6 text-sm font-bold text-ink hover:bg-sand transition-colors"
+                >
+                  J&apos;ai déjà un compte
+                </Link>
+              </>
+            )}
           </div>
 
           <div className="mt-6 flex flex-wrap items-center justify-center gap-4 text-xs text-muted">

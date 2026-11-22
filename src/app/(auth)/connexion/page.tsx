@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { getUser, getMyShop } from "@/lib/supabase/server";
 import { SignInForm } from "./sign-in-form";
 import { SupabaseNotice } from "@/components/ui/supabase-notice";
 
@@ -10,6 +12,13 @@ export default async function ConnexionPage({
 }: {
   searchParams: Promise<{ erreur?: string }>;
 }) {
+  const user = await getUser();
+  if (user) {
+    const shop = await getMyShop();
+    if (shop) redirect("/boutiques");
+    redirect("/explorer");
+  }
+
   const { erreur } = await searchParams;
   return (
     <div className="flex flex-col gap-6">

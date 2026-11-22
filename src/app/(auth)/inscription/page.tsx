@@ -1,11 +1,20 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { getUser, getMyShop } from "@/lib/supabase/server";
 import { SignUpForm } from "./sign-up-form";
 import { SupabaseNotice } from "@/components/ui/supabase-notice";
 
 export const metadata: Metadata = { title: "Créer ma boutique" };
 
-export default function InscriptionPage() {
+export default async function InscriptionPage() {
+  const user = await getUser();
+  if (user) {
+    const shop = await getMyShop();
+    if (shop) redirect("/boutiques");
+    redirect("/explorer");
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <div>

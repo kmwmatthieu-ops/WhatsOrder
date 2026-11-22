@@ -107,22 +107,22 @@ export function Sidebar({
         </Link>
       </div>
 
-      {/* Bouton Communauté WhatsApp (Phase V3-C) - Masqué si vide */}
-      {communityWhatsappUrl?.trim() && (
-        <div className="pt-2 pb-2">
-          <a
-            href={communityWhatsappUrl.trim()}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2.5 rounded-2xl border border-emerald-200 bg-emerald-50/70 p-2.5 text-xs font-bold text-emerald-800 hover:bg-emerald-100 hover:border-emerald-300 transition-colors shadow-2xs group"
-            title="Rejoindre la communauté WhatsApp officielle"
-          >
-            <WhatsAppIcon className="size-4 shrink-0 fill-emerald-600 text-white" />
-            <span className="truncate">Communauté WhatsApp</span>
-            <ExternalLink className="size-3.5 ml-auto text-emerald-600 group-hover:translate-x-0.5 transition-transform shrink-0" />
-          </a>
-        </div>
-      )}
+      {/* Bouton Communauté WhatsApp - Directement au-dessus de Déconnexion */}
+      <div className="pt-2 pb-2">
+        <a
+          href={communityWhatsappUrl?.trim() || "https://chat.whatsapp.com/InviteBonWazPlatform"}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2.5 rounded-2xl border border-emerald-300 bg-emerald-50/90 p-2.5 text-xs font-bold text-emerald-800 hover:bg-emerald-100 hover:border-emerald-400 transition-colors shadow-2xs group"
+          title="Rejoindre la communauté WhatsApp officielle"
+        >
+          <span className="grid size-7 place-items-center rounded-xl bg-emerald-600 text-white shrink-0 group-hover:scale-105 transition-transform">
+            <WhatsAppIcon className="size-4 fill-white text-white" />
+          </span>
+          <span className="truncate">Communauté WhatsApp</span>
+          <ExternalLink className="size-3.5 ml-auto text-emerald-600 group-hover:translate-x-0.5 transition-transform shrink-0" />
+        </a>
+      </div>
 
       <form action={signOut} className="pt-2 border-t border-line">
         <button

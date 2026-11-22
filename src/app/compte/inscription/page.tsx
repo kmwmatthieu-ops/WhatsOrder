@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Compass, ShoppingBag } from "lucide-react";
-import { getUser } from "@/lib/supabase/server";
+import { getUser, getMyShop } from "@/lib/supabase/server";
 import { Logo } from "@/components/ui/logo";
 import { ClientSignUpForm } from "./client-signup-form";
 
@@ -14,6 +14,8 @@ export const metadata: Metadata = {
 export default async function ClientSignUpPage() {
   const user = await getUser();
   if (user) {
+    const shop = await getMyShop();
+    if (shop) redirect("/boutiques");
     redirect("/explorer");
   }
 

@@ -23,18 +23,16 @@ export function DashboardHeader({
         <span className="shrink-0 rounded-md bg-sand px-1 py-0.5 text-[9px] font-semibold text-muted">Boutiques</span>
       </Link>
       <div className="flex items-center gap-1.5 shrink-0">
-        {communityWhatsappUrl?.trim() && (
-          <a
-            href={communityWhatsappUrl.trim()}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-1 rounded-lg hover:bg-emerald-100 transition-colors"
-            title="Rejoindre la communauté WhatsApp officielle"
-          >
-            <WhatsAppIcon className="size-3.5 shrink-0 fill-emerald-600 text-white" />
-            <span className="hidden xs:inline">Communauté</span>
-          </a>
-        )}
+        <a
+          href={communityWhatsappUrl?.trim() || "https://chat.whatsapp.com/InviteBonWazPlatform"}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-300 px-2.5 py-1 rounded-lg hover:bg-emerald-100 transition-colors shadow-2xs"
+          title="Rejoindre la communauté WhatsApp officielle"
+        >
+          <WhatsAppIcon className="size-3.5 shrink-0 fill-emerald-600 text-white" />
+          <span>WhatsApp</span>
+        </a>
         <Link
           href="/compte/parametres"
           className="flex items-center gap-1 text-xs font-semibold text-muted hover:text-ink px-2 py-1 rounded-lg border border-line bg-sand/40"
