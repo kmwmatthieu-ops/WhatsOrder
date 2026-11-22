@@ -56,6 +56,7 @@ export type Database = {
           status: ShopStatus;
           opening_hours: OpeningHours;
           order_notifications_enabled: boolean;
+          is_listed_in_explorer: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -76,6 +77,7 @@ export type Database = {
           status?: ShopStatus;
           opening_hours?: OpeningHours;
           order_notifications_enabled?: boolean;
+          is_listed_in_explorer?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -135,6 +137,7 @@ export type Database = {
           options_text: string | null;
           stock: number | null;
           is_available: boolean;
+          is_hidden: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -150,6 +153,7 @@ export type Database = {
           options_text?: string | null;
           stock?: number | null;
           is_available?: boolean;
+          is_hidden?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -550,6 +554,73 @@ export type Database = {
           },
         ];
       };
+      customer_profiles: {
+        Row: {
+          id: string;
+          full_name: string | null;
+          phone: string | null;
+          activity_consent: boolean;
+          personalization_enabled: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id: string;
+          full_name?: string | null;
+          phone?: string | null;
+          activity_consent?: boolean;
+          personalization_enabled?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["customer_profiles"]["Insert"]>;
+        Relationships: [];
+      };
+      reports: {
+        Row: {
+          id: string;
+          reporter_id: string | null;
+          target_type: "product" | "shop";
+          product_id: string | null;
+          shop_id: string | null;
+          reason: string;
+          details: string | null;
+          status: "pending" | "resolved_hidden" | "dismissed";
+          reviewed_by: string | null;
+          reviewed_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          reporter_id?: string | null;
+          target_type: "product" | "shop";
+          product_id?: string | null;
+          shop_id?: string | null;
+          reason: string;
+          details?: string | null;
+          status?: "pending" | "resolved_hidden" | "dismissed";
+          reviewed_by?: string | null;
+          reviewed_at?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["reports"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "reports_product_id_fkey";
+            columns: ["product_id"];
+            isOneToOne: false;
+            referencedRelation: "products";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "reports_shop_id_fkey";
+            columns: ["shop_id"];
+            isOneToOne: false;
+            referencedRelation: "shops";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: { [_ in never]: never };
     Functions: {
@@ -623,6 +694,58 @@ export type Database = {
         Args: Record<PropertyKey, never>;
         Returns: { success: boolean };
       };
+      get_explorer_products: {
+        Args: {
+          p_search?: string | null;
+          p_category?: string | null;
+          p_limit?: number | null;
+          p_offset?: number | null;
+        };
+        Returns: Array<{
+          product_id: string;
+          product_name: string;
+          product_description: string | null;
+          product_price: number;
+          product_discount_percent: number;
+          product_image_url: string;
+          product_stock: number | null;
+          product_created_at: string;
+          category_id: string | null;
+          category_name: string | null;
+          shop_id: string;
+          shop_name: string;
+          shop_slug: string;
+          shop_logo_url: string | null;
+          shop_primary_color: string | null;
+        }>;
+      };
+      admin_list_reports: {
+        Args: { p_status?: string | null };
+        Returns: Array<{
+          id: string;
+          reporter_id: string | null;
+          target_type: string;
+          product_id: string | null;
+          product_name: string | null;
+          shop_id: string | null;
+          shop_name: string | null;
+          shop_slug: string | null;
+          reason: string;
+          details: string | null;
+          status: string;
+          reviewed_by: string | null;
+          reviewed_at: string | null;
+          created_at: string;
+        }>;
+      };
+      admin_resolve_report: {
+        Args: {
+          p_report_id: string;
+          p_action: string;
+          p_notes?: string | null;
+        };
+        Returns: { ok: boolean; action: string };
+      };
     };
     Enums: {
       shop_status: ShopStatus;
@@ -654,3 +777,6 @@ export type SubscriptionPlan = Tables<"subscription_plans">;
 export type ShopSubscription = Tables<"shop_subscriptions">;
 export type SubscriptionRequest = Tables<"subscription_requests">;
 export type SaspayPayment = Tables<"saspay_payments">;
+export type CustomerProfile = Tables<"customer_profiles">;
+export type Report = Tables<"reports">;
+export type ExplorerProduct = Database["public"]["Functions"]["get_explorer_products"]["Returns"][number];

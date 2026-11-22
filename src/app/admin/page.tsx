@@ -6,6 +6,7 @@ import { createClient, getUser } from "@/lib/supabase/server";
 import { AdminShopsTable, type AdminShopRow } from "./admin-shops-table";
 import { AdminSubscriptionRequests, type AdminRequestRow } from "./admin-subscription-requests";
 import { AdminManagementCard, type AdminUserRow } from "./admin-management-card";
+import { AdminReportsTable, type AdminReportRow } from "./admin-reports-table";
 import { adminSignOut } from "./connexion/actions";
 import { Logo } from "@/components/ui/logo";
 import { formatFCFA } from "@/lib/format";
@@ -48,6 +49,25 @@ export default async function AdminPage() {
     user_id: a.user_id,
     email: a.email,
     created_at: a.created_at,
+  }));
+
+  // 1.ter Signalements Explorer (V3-A)
+  const { data: rawReports } = await supabase.rpc("admin_list_reports");
+  const reportsList: AdminReportRow[] = (rawReports ?? []).map((rep) => ({
+    id: rep.id,
+    reporter_id: rep.reporter_id,
+    target_type: rep.target_type,
+    product_id: rep.product_id,
+    product_name: rep.product_name,
+    shop_id: rep.shop_id,
+    shop_name: rep.shop_name,
+    shop_slug: rep.shop_slug,
+    reason: rep.reason,
+    details: rep.details,
+    status: rep.status,
+    reviewed_by: rep.reviewed_by,
+    reviewed_at: rep.reviewed_at,
+    created_at: rep.created_at,
   }));
 
   // 2. Commandes globales & volume d'affaires (GMV)
@@ -237,6 +257,11 @@ export default async function AdminPage() {
             <p className="text-xs text-muted">Consultez et suspendez ou réactivez les boutiques.</p>
           </div>
           <AdminShopsTable initialShops={shopsList} />
+        </section>
+
+        {/* Section 4 : Modération des Signalements (Explorer) */}
+        <section className="space-y-3">
+          <AdminReportsTable initialReports={reportsList} />
         </section>
       </main>
     </div>

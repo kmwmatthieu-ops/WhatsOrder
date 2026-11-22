@@ -244,3 +244,33 @@ export async function removeAdminAction(
   revalidatePath("/admin");
   return { ok: true };
 }
+
+/**
+ * Traite un signalement (masquer produit, suspendre boutique ou rejeter).
+ */
+export async function resolveReportAction(
+  reportId: string,
+  action: "hide_product" | "suspend_shop" | "dismiss",
+  notes?: string
+): Promise<{ ok: boolean; error?: string }> {
+  const supabase = await createClient();
+  const { data: isAdmin } = await supabase.rpc("is_admin");
+  if (!isAdmin) {
+    return { ok: false, error: "Accès refusé : privilèges administrateur requis." };
+  }
+
+  const { error } = await supabase.rpc("admin_resolve_report", {
+    p_report_id: reportId,
+    p_action: action,
+    p_notes: notes || null,
+  });
+
+  if (error) {
+    return { ok: false, error: dbErrorMessage(error, "Erreur lors du traitement du signalement.") };
+  }
+
+  revalidatePath("/admin");
+  revalidatePath("/explorer");
+  return { ok: true };
+}
+

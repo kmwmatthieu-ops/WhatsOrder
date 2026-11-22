@@ -68,6 +68,7 @@ export const updateShopSchema = z
       .max(1_000_000, { message: "Montant trop élevé." }),
     delivery_enabled: z.boolean(),
     pickup_enabled: z.boolean(),
+    is_listed_in_explorer: z.boolean().default(true),
     opening_hours: openingHoursSchema.optional(),
   })
   .refine((d) => d.delivery_enabled || d.pickup_enabled, {

@@ -27,6 +27,13 @@ export default async function HomePage() {
           <Logo />
           <div className="flex items-center gap-1 sm:gap-3 shrink-0">
             <Link
+              href="/explorer"
+              prefetch={false}
+              className="whitespace-nowrap text-xs sm:text-sm font-semibold text-brand-700 hover:text-brand-800 px-2 sm:px-3 py-1.5 rounded-xl transition-colors shrink-0"
+            >
+              Explorer
+            </Link>
+            <Link
               href="/tarifs"
               prefetch={false}
               className="whitespace-nowrap text-xs sm:text-sm font-semibold text-muted hover:text-ink px-2 sm:px-3 py-1.5 rounded-xl transition-colors shrink-0"
@@ -174,6 +181,10 @@ export default async function HomePage() {
       {/* Footer */}
       <footer className="border-t border-line bg-white py-8 px-4 text-center text-xs text-muted space-y-3">
         <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 font-semibold text-ink">
+          <Link href="/explorer" className="hover:text-brand-600 transition-colors">
+            Explorer
+          </Link>
+          <span className="text-line">•</span>
           <Link href="/tarifs" className="hover:text-brand-600 transition-colors">
             Tarifs
           </Link>

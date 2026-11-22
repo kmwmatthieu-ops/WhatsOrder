@@ -32,6 +32,7 @@ export function SettingsForm({ shop, initialZones }: Props) {
   const [color, setColor] = useState(shop.primary_color);
   const [deliveryEnabled, setDeliveryEnabled] = useState(shop.delivery_enabled);
   const [pickupEnabled, setPickupEnabled] = useState(shop.pickup_enabled);
+  const [isListedInExplorer, setIsListedInExplorer] = useState(shop.is_listed_in_explorer ?? true);
   const [openingHours, setOpeningHours] = useState<OpeningHours>(
     shop.opening_hours || DEFAULT_OPENING_HOURS
   );
@@ -103,6 +104,16 @@ export function SettingsForm({ shop, initialZones }: Props) {
             placeholder="Ex. Cocody Angré, Abidjan"
             error={state.fieldErrors?.address}
           />
+
+          <div className="pt-3 border-t border-line">
+            <Toggle
+              name="is_listed_in_explorer"
+              label="Visibilité sur Explorer (fil public)"
+              description="Permet aux visiteurs de découvrir vos produits sur la place de marché commune Explorer."
+              checked={isListedInExplorer}
+              onChange={setIsListedInExplorer}
+            />
+          </div>
         </section>
 
         {/* Section 2 : Horaires d'ouverture */}

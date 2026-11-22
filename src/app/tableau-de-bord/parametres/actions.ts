@@ -36,6 +36,7 @@ export async function updateShopSettings(
     delivery_fee: formData.get("delivery_fee"),
     delivery_enabled: formData.get("delivery_enabled") === "on",
     pickup_enabled: formData.get("pickup_enabled") === "on",
+    is_listed_in_explorer: formData.get("is_listed_in_explorer") === "on",
     ...(opening_hours ? { opening_hours } : {}),
   };
 
