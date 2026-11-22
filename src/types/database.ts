@@ -55,6 +55,7 @@ export type Database = {
           address: string | null;
           status: ShopStatus;
           opening_hours: OpeningHours;
+          order_notifications_enabled: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -74,6 +75,7 @@ export type Database = {
           address?: string | null;
           status?: ShopStatus;
           opening_hours?: OpeningHours;
+          order_notifications_enabled?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -373,6 +375,7 @@ export type Database = {
           max_orders_per_month: number | null;
           has_advanced_stats: boolean;
           has_csv_export: boolean;
+          has_order_email_notifications: boolean;
           badge: string | null;
           is_active: boolean;
           sort_order: number;
@@ -388,6 +391,7 @@ export type Database = {
           max_orders_per_month?: number | null;
           has_advanced_stats?: boolean;
           has_csv_export?: boolean;
+          has_order_email_notifications?: boolean;
           badge?: string | null;
           is_active?: boolean;
           sort_order?: number;
@@ -614,6 +618,10 @@ export type Database = {
       shop_monthly_orders_count: {
         Args: { p_shop_id: string };
         Returns: number;
+      };
+      delete_user_account: {
+        Args: Record<PropertyKey, never>;
+        Returns: { success: boolean };
       };
     };
     Enums: {

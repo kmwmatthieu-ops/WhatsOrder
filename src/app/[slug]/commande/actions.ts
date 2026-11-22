@@ -7,6 +7,7 @@ import { toFieldErrors, type ActionState } from "@/lib/action-state";
 import { dbErrorMessage } from "@/lib/errors";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { isShopCurrentlyOpen } from "@/lib/opening-hours";
+import { sendOrderNotificationEmail } from "@/lib/notifications/order-email";
 import type { OpeningHours } from "@/types/database";
 
 export type OrderPlacementResult = ActionState & {
@@ -120,6 +121,40 @@ export async function submitOrder(
   }
 
   const result = data as { public_code: string };
+
+  // Notification e-mail au commerçant (Point 3 - Non bloquant)
+  try {
+    const { data: fullOrder } = await supabase
+      .from("orders")
+      .select("id, total, order_items(product_name, quantity, unit_price, selected_options)")
+      .eq("public_code", result.public_code)
+      .maybeSingle();
+
+    if (fullOrder) {
+      sendOrderNotificationEmail({
+        shopSlug,
+        publicCode: result.public_code,
+        customerName: parsed.data.customer_name,
+        customerPhone: parsed.data.customer_phone,
+        fulfillment: parsed.data.fulfillment,
+        deliveryAddress: parsed.data.delivery_address,
+        total: fullOrder.total,
+        items: ((fullOrder.order_items as Array<{
+          product_name: string;
+          quantity: number;
+          unit_price: number;
+          selected_options: Record<string, string> | null;
+        }>) || []).map((oi) => ({
+          name: oi.product_name,
+          quantity: oi.quantity,
+          price: oi.unit_price,
+          options: oi.selected_options,
+        })),
+      }).catch((e) => console.error("Notification email error:", e));
+    }
+  } catch {
+    /* Échec non bloquant pour valider la commande */
+  }
 
   return {
     ok: true,

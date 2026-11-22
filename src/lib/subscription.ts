@@ -50,6 +50,7 @@ export async function getShopSubscription(shopId: string): Promise<ResolvedSubsc
     max_orders_per_month: 50,
     has_advanced_stats: false,
     has_csv_export: false,
+    has_order_email_notifications: false,
     badge: "Découverte",
     is_active: true,
     sort_order: 1,

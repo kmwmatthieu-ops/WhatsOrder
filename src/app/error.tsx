@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { AlertCircle, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { captureError } from "@/lib/monitoring/error-tracker";
 
 export default function ErrorPage({
   error,
@@ -13,7 +14,10 @@ export default function ErrorPage({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error(error);
+    captureError(error, {
+      location: "app-error-boundary",
+      digest: error.digest,
+    });
   }, [error]);
 
   return (

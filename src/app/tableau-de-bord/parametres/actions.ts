@@ -7,6 +7,7 @@ import { dbErrorMessage } from "@/lib/errors";
 import { toFieldErrors, type ActionState } from "@/lib/action-state";
 import { mediaPathFromUrl } from "@/lib/storage";
 import { MEDIA_BUCKET } from "@/lib/constants";
+import { getShopSubscription } from "@/lib/subscription";
 import type { DeliveryZone } from "@/types/database";
 
 export async function updateShopSettings(
@@ -246,5 +247,146 @@ export async function deleteShop(
   revalidatePath("/onboarding");
   revalidatePath(`/${shop.slug}`);
 
+  return { ok: true };
+}
+
+/**
+ * Modifie le mot de passe du commerçant connecté (avec vérification de l'actuel).
+ */
+export async function updateAccountPassword(
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const user = await getUser();
+  if (!user || !user.email) return { error: "Non authentifié." };
+
+  const currentPassword = String(formData.get("current_password") || "");
+  const newPassword = String(formData.get("new_password") || "");
+  const confirmPassword = String(formData.get("confirm_password") || "");
+
+  if (!currentPassword) return { error: "Veuillez saisir votre mot de passe actuel." };
+  if (!newPassword || newPassword.length < 8) {
+    return { error: "Le nouveau mot de passe doit comporter au moins 8 caractères." };
+  }
+  if (newPassword !== confirmPassword) {
+    return { error: "Les deux nouveaux mots de passe ne correspondent pas." };
+  }
+
+  const supabase = await createClient();
+
+  // 1. Vérification du mot de passe actuel
+  const { error: signInErr } = await supabase.auth.signInWithPassword({
+    email: user.email,
+    password: currentPassword,
+  });
+  if (signInErr) {
+    return { error: "Le mot de passe actuel est incorrect." };
+  }
+
+  // 2. Mise à jour
+  const { error: updateErr } = await supabase.auth.updateUser({ password: newPassword });
+  if (updateErr) {
+    return { error: "Impossible de modifier le mot de passe. Réessayez." };
+  }
+
+  return { ok: true, message: "Votre mot de passe a été modifié avec succès." };
+}
+
+/**
+ * Modifie l'adresse e-mail du commerçant (avec confirmation).
+ */
+export async function updateAccountEmail(
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const user = await getUser();
+  if (!user) return { error: "Non authentifié." };
+
+  const newEmail = String(formData.get("new_email") || "").trim().toLowerCase();
+  if (!newEmail || !newEmail.includes("@")) {
+    return { error: "Veuillez saisir une adresse e-mail valide." };
+  }
+  if (newEmail === user.email?.toLowerCase()) {
+    return { error: "Cette adresse e-mail est déjà celle de votre compte." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.updateUser({ email: newEmail });
+  if (error) {
+    return { error: "Impossible de modifier l'adresse e-mail. Vérifiez qu'elle n'est pas déjà utilisée." };
+  }
+
+  return {
+    ok: true,
+    message: `Un e-mail de confirmation a été envoyé à ${newEmail}. Veuillez cliquer sur le lien reçu pour valider la nouvelle adresse.`,
+  };
+}
+
+/**
+ * Supprime définitivement le compte du commerçant et toutes ses données en cascade.
+ */
+export async function deleteMyAccount(
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const user = await getUser();
+  if (!user || !user.email) return { error: "Non authentifié." };
+
+  const password = String(formData.get("password") || "");
+  if (!password) {
+    return { error: "Veuillez saisir votre mot de passe pour confirmer la suppression." };
+  }
+
+  const supabase = await createClient();
+
+  // 1. Vérification obligatoire du mot de passe
+  const { error: authErr } = await supabase.auth.signInWithPassword({
+    email: user.email,
+    password,
+  });
+  if (authErr) {
+    return { error: "Mot de passe incorrect. La suppression a été annulée." };
+  }
+
+  // 2. Appel de la fonction SQL sécurisée
+  const { error: rpcErr } = await supabase.rpc("delete_user_account");
+  if (rpcErr) {
+    console.error("Erreur delete_user_account:", rpcErr);
+    return { error: "Erreur lors de la suppression de votre compte." };
+  }
+
+  // 3. Déconnexion
+  await supabase.auth.signOut();
+
+  return { ok: true, message: "REDIRECT_LOGIN" };
+}
+
+/**
+ * Active ou désactive la réception d'e-mails à chaque nouvelle commande.
+ * Règle d) : Le droit est vérifié côté serveur (réservé aux forfaits avec has_order_email_notifications).
+ */
+export async function toggleOrderEmailNotificationPref(
+  enabled: boolean
+): Promise<{ ok?: boolean; error?: string }> {
+  const { shop, supabase } = await requireShop();
+
+  // Vérification stricte du droit de forfait côté serveur
+  const subscription = await getShopSubscription(shop.id);
+  if (!subscription.effectivePlan.has_order_email_notifications) {
+    return {
+      error: "Cette fonctionnalité est réservée aux forfaits Business et Premium. Mettez à niveau votre forfait pour l'activer.",
+    };
+  }
+
+  const { error } = await supabase
+    .from("shops")
+    .update({ order_notifications_enabled: enabled })
+    .eq("id", shop.id);
+
+  if (error) {
+    return { error: "Impossible d'enregistrer la préférence de notification." };
+  }
+
+  revalidatePath("/tableau-de-bord/parametres");
   return { ok: true };
 }

@@ -42,14 +42,12 @@ export default function MentionsLegalesPage() {
               Le site internet et le service <strong>{APP_NAME}</strong> sont édités et exploités par :
             </p>
             <ul className="list-none space-y-1 pl-2">
-              <li><strong>Raison sociale ou Nom :</strong> [NOM DE L&apos;ENTREPRISE OU DU PROPRIÉTAIRE]</li>
-              <li><strong>Forme juridique :</strong> [FORME JURIDIQUE]</li>
-              <li><strong>Capital social :</strong> [CAPITAL SOCIAL]</li>
-              <li><strong>Siège social :</strong> [ADRESSE DU SIÈGE]</li>
-              <li><strong>Numéro d&apos;immatriculation / RCCM :</strong> [NUMÉRO D&apos;ENREGISTREMENT / RCCM]</li>
-              <li><strong>Directeur de la publication :</strong> [NOM DU DIRECTEUR DE LA PUBLICATION]</li>
-              <li><strong>E-mail de contact :</strong> [E-MAIL DE CONTACT]</li>
-              <li><strong>Téléphone :</strong> [NUMÉRO DE TÉLÉPHONE]</li>
+              <li><strong>Raison sociale ou Nom :</strong> [KUKU MOUNGUENGUI MBULU Wences Matthieu Wissy]</li>
+              <li><strong>Forme juridique :</strong> [Entrepreneur individuel]</li>
+              <li><strong>Siège social :</strong> [Libreville]</li>
+              <li><strong>Directeur de la publication :</strong> [KUKU MOUNGUENGUI MBULU Wences Matthieu Wissy]</li>
+              <li><strong>E-mail de contact :</strong> [jamstarck68@gmail.com]</li>
+              <li><strong>Téléphone :</strong> [+241 77 74 55 97 / +241 77 02 18 28]</li>
             </ul>
           </section>
 
