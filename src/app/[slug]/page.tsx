@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getShopSubscription, isShopCertifiedBadgeEligible } from "@/lib/subscription";
 import { CartProvider } from "@/lib/cart/cart-context";
 import { ShopHeader } from "@/components/public/shop-header";
 import { PublicCatalog } from "@/components/public/public-catalog";
@@ -47,13 +48,18 @@ export default async function PublicShopPage({ params }: Props) {
   const supabase = await createClient();
 
   // Récupérer la boutique
-  const { data: shop } = await supabase
+  const { data: rawShop } = await supabase
     .from("shops")
     .select("*")
     .eq("slug", slug)
     .maybeSingle();
 
-  if (!shop) notFound();
+  if (!rawShop) notFound();
+
+  // Résoudre dynamiquement le statut certifié (V3-C : identité vérifiée + abonnement actif éligible)
+  const resolvedSub = await getShopSubscription(rawShop.id);
+  const isCertified = isShopCertifiedBadgeEligible(rawShop.identity_verified, resolvedSub);
+  const shop = { ...rawShop, is_certified: isCertified };
 
   // Boutique suspendue : affichage public sobre
   if (shop.status === "suspended") {

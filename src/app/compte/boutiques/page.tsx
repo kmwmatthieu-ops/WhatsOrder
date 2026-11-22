@@ -104,7 +104,7 @@ export default async function FollowedShopsPage() {
                           {shop.shop_name}
                         </h2>
                         {shop.is_certified && (
-                          <span title="Boutique certifiée">
+                          <span title="Boutique vérifiée">
                             <BadgeCheck className="size-3.5 fill-blue-600 text-white shrink-0" />
                           </span>
                         )}

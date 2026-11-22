@@ -58,6 +58,7 @@ export type Database = {
           order_notifications_enabled: boolean;
           is_listed_in_explorer: boolean;
           is_certified: boolean;
+          identity_verified: boolean;
           followers_count: number;
           created_at: string;
           updated_at: string;
@@ -81,6 +82,7 @@ export type Database = {
           order_notifications_enabled?: boolean;
           is_listed_in_explorer?: boolean;
           is_certified?: boolean;
+          identity_verified?: boolean;
           followers_count?: number;
           created_at?: string;
           updated_at?: string;
@@ -384,6 +386,8 @@ export type Database = {
           has_advanced_stats: boolean;
           has_csv_export: boolean;
           has_order_email_notifications: boolean;
+          visibility_multiplier: number;
+          has_certified_badge: boolean;
           badge: string | null;
           is_active: boolean;
           sort_order: number;
@@ -400,6 +404,8 @@ export type Database = {
           has_advanced_stats?: boolean;
           has_csv_export?: boolean;
           has_order_email_notifications?: boolean;
+          visibility_multiplier?: number;
+          has_certified_badge?: boolean;
           badge?: string | null;
           is_active?: boolean;
           sort_order?: number;
@@ -407,6 +413,22 @@ export type Database = {
           updated_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["subscription_plans"]["Insert"]>;
+        Relationships: [];
+      };
+      platform_settings: {
+        Row: {
+          key: string;
+          value: string | null;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        Insert: {
+          key: string;
+          value?: string | null;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["platform_settings"]["Insert"]>;
         Relationships: [];
       };
       shop_subscriptions: {
@@ -724,6 +746,7 @@ export type Database = {
           status: ShopStatus;
           created_at: string;
           orders_count: number;
+          identity_verified: boolean;
           is_certified: boolean;
           plan_id: string;
           plan_name: string;
@@ -731,6 +754,31 @@ export type Database = {
           subscription_expires_at: string | null;
           subscription_notes: string | null;
         }>;
+      };
+      admin_update_subscription_plan: {
+        Args: {
+          p_plan_id: string;
+          p_visibility_multiplier: number;
+          p_has_certified_badge: boolean;
+          p_price_monthly?: number | null;
+          p_max_products?: number | null;
+          p_max_orders_per_month?: number | null;
+        };
+        Returns: boolean;
+      };
+      admin_set_platform_setting: {
+        Args: {
+          p_key: string;
+          p_value: string;
+        };
+        Returns: boolean;
+      };
+      admin_toggle_identity_verified: {
+        Args: {
+          p_shop_id: string;
+          p_identity_verified: boolean;
+        };
+        Returns: boolean;
       };
       admin_assign_subscription: {
         Args: {
@@ -949,5 +997,6 @@ export type CustomerProfile = Tables<"customer_profiles">;
 export type Report = Tables<"reports">;
 export type ShopCertification = Tables<"shop_certifications">;
 export type ShopFollower = Tables<"shop_followers">;
+export type PlatformSetting = Tables<"platform_settings">;
 export type FollowedShop = Database["public"]["Functions"]["get_my_followed_shops"]["Returns"][number];
 export type ExplorerProduct = Database["public"]["Functions"]["get_explorer_products"]["Returns"][number];

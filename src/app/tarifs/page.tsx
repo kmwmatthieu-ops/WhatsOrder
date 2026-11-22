@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Check, ArrowRight, Zap, HelpCircle, ShieldCheck, Sparkles, Smartphone } from "lucide-react";
+import { Check, ArrowRight, Zap, HelpCircle, ShieldCheck, Sparkles, Smartphone, BadgeCheck } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 import { getActiveSubscriptionPlans } from "@/lib/subscription";
 import { formatFCFA } from "@/lib/format";
@@ -175,35 +175,58 @@ export default async function TarifsPage() {
                       </span>
                     </li>
 
-                    {/* Visibilité Explorer */}
+                    {/* Visibilité Explorer (dynamique selon plan.visibility_multiplier V3-C) */}
                     <li className="flex items-center gap-2.5">
                       <span
                         className={`grid size-5 shrink-0 place-items-center rounded-full ${
-                          isPremium || isPopular
+                          Number(plan.visibility_multiplier ?? 1.0) > 1.0
                             ? "bg-brand-50 text-brand-600"
                             : "bg-sand text-muted/60"
                         }`}
                       >
                         <Check className="size-3.5 font-bold" />
                       </span>
-                      <span className={isPremium ? "font-bold text-brand-700" : isPopular ? "" : "text-muted line-through"}>
-                        {isPremium
-                          ? "Visibilité maximale sur Explorer"
-                          : isPopular
-                          ? "Visibilité accrue sur Explorer"
-                          : "Présence standard sur Explorer"}
+                      <span
+                        className={
+                          Number(plan.visibility_multiplier ?? 1.0) > 1.0
+                            ? "font-semibold text-ink"
+                            : "text-muted"
+                        }
+                      >
+                        {Number(plan.visibility_multiplier ?? 1.0) > 1.0
+                          ? `Visibilité renforcée (×${Number(plan.visibility_multiplier).toFixed(1)}) sur Explorer`
+                          : "Visibilité standard (×1.0) sur Explorer"}
                       </span>
                     </li>
 
-                    {/* Badge commerçant certifié */}
-                    {isPremium && (
-                      <li className="flex items-center gap-2.5">
-                        <span className="grid size-5 shrink-0 place-items-center rounded-full bg-purple-50 text-purple-600">
+                    {/* Badge commerçant certifié (dynamique selon plan.has_certified_badge V3-C) */}
+                    <li className="flex items-center gap-2.5">
+                      <span
+                        className={`grid size-5 shrink-0 place-items-center rounded-full ${
+                          plan.has_certified_badge
+                            ? "bg-blue-50 text-blue-600"
+                            : "bg-sand text-muted/60"
+                        }`}
+                      >
+                        {plan.has_certified_badge ? (
                           <Check className="size-3.5 font-bold" />
-                        </span>
-                        <span className="font-bold text-purple-700">Badge de commerçant certifié</span>
-                      </li>
-                    )}
+                        ) : (
+                          <span className="text-xs text-muted/50 font-bold">•</span>
+                        )}
+                      </span>
+                      <span
+                        className={
+                          plan.has_certified_badge
+                            ? "font-bold text-blue-700 inline-flex items-center gap-1.5"
+                            : "text-muted line-through"
+                        }
+                      >
+                        <span>Badge de certification vérifié</span>
+                        {plan.has_certified_badge && (
+                          <BadgeCheck className="size-3.5 fill-blue-600 text-white" />
+                        )}
+                      </span>
+                    </li>
 
                     {/* Support */}
                     <li className="flex items-center gap-2.5">

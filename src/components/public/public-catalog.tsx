@@ -134,6 +134,8 @@ export function PublicCatalog({
         product={activeProduct}
         primaryColor={shop.primary_color}
         isShopOpen={isShopOpen}
+        shopName={shop.name}
+        shopIsCertified={shop.is_certified}
         onClose={() => setActiveProduct(null)}
       />
 

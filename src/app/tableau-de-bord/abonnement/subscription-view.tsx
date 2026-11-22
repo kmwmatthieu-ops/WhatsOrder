@@ -15,6 +15,8 @@ import {
   Download,
   MessageCircle,
   Sparkles,
+  BadgeCheck,
+  Compass,
 } from "lucide-react";
 import { formatFCFA } from "@/lib/format";
 import { MOBILE_MONEY_PAYMENT_CONFIG } from "@/lib/constants";
@@ -324,7 +326,35 @@ export function SubscriptionView({
           <span>Fonctionnalités de votre formule {effectivePlan.name}</span>
         </h3>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {/* Visibilité Explorer V3-C */}
+          <div className="rounded-2xl border border-line bg-sand/30 p-3.5">
+            <div className="flex items-center gap-2 text-xs font-bold text-ink">
+              <Compass className="size-4 text-brand-600" />
+              <span>
+                Visibilité Explorer (×{Number(effectivePlan.visibility_multiplier ?? 1.0).toFixed(1)})
+              </span>
+            </div>
+            <p className="text-[11px] text-muted mt-1">
+              {Number(effectivePlan.visibility_multiplier ?? 1.0) > 1.0
+                ? `Vos produits bénéficient d'un coefficient multiplicateur de ×${Number(effectivePlan.visibility_multiplier).toFixed(1)} sur le fil public Explorer.`
+                : "Visibilité standard (×1.0) dans le catalogue et sur le fil public Explorer."}
+            </p>
+          </div>
+
+          {/* Droit au Badge de Certification V3-C */}
+          <div className="rounded-2xl border border-line bg-sand/30 p-3.5">
+            <div className="flex items-center gap-2 text-xs font-bold text-ink">
+              <BadgeCheck className="size-4 text-blue-600" />
+              <span>Badge officiel vérifié</span>
+            </div>
+            <p className="text-[11px] text-muted mt-1">
+              {effectivePlan.has_certified_badge
+                ? "Inclus dans votre forfait. La coche bleue apparaît dès que votre identité est validée par l'administrateur."
+                : "Non inclus dans cette formule. Disponible avec la formule Premium."}
+            </p>
+          </div>
+
           <div className="rounded-2xl border border-line bg-sand/30 p-3.5">
             <div className="flex items-center gap-2 text-xs font-bold text-ink">
               <BarChart3 className="size-4 text-brand-600" />

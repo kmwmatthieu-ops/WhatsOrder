@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, Package, ShoppingBag, Users, Settings, ExternalLink, LogOut, CreditCard, User, ArrowRight, BadgeCheck } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
+import { WhatsAppIcon } from "@/components/ui/whatsapp-icon";
 import { signOut } from "@/app/(auth)/actions";
 import { shopUrl } from "@/lib/constants";
 import type { Shop } from "@/types/database";
@@ -17,7 +18,13 @@ const NAV_ITEMS = [
   { href: "/tableau-de-bord/parametres", label: "Paramètres", icon: Settings, exact: false },
 ];
 
-export function Sidebar({ shop }: { shop: Shop }) {
+export function Sidebar({
+  shop,
+  communityWhatsappUrl,
+}: {
+  shop: Shop;
+  communityWhatsappUrl?: string | null;
+}) {
   const pathname = usePathname();
 
   return (
@@ -99,6 +106,23 @@ export function Sidebar({ shop }: { shop: Shop }) {
           <ArrowRight className="size-3.5 text-muted group-hover:text-brand-700 group-hover:translate-x-0.5 transition-all shrink-0" />
         </Link>
       </div>
+
+      {/* Bouton Communauté WhatsApp (Phase V3-C) - Masqué si vide */}
+      {communityWhatsappUrl?.trim() && (
+        <div className="pt-2 pb-2">
+          <a
+            href={communityWhatsappUrl.trim()}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2.5 rounded-2xl border border-emerald-200 bg-emerald-50/70 p-2.5 text-xs font-bold text-emerald-800 hover:bg-emerald-100 hover:border-emerald-300 transition-colors shadow-2xs group"
+            title="Rejoindre la communauté WhatsApp officielle"
+          >
+            <WhatsAppIcon className="size-4 shrink-0 fill-emerald-600 text-white" />
+            <span className="truncate">Communauté WhatsApp</span>
+            <ExternalLink className="size-3.5 ml-auto text-emerald-600 group-hover:translate-x-0.5 transition-transform shrink-0" />
+          </a>
+        </div>
+      )}
 
       <form action={signOut} className="pt-2 border-t border-line">
         <button

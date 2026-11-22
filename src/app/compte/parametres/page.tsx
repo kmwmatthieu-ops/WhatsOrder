@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Compass, ArrowLeft, Store, ArrowRight, Heart } from "lucide-react";
+import { Compass, ArrowLeft, Store, ArrowRight, Heart, ExternalLink } from "lucide-react";
 import { createClient, getUser } from "@/lib/supabase/server";
+import { getPlatformSetting } from "@/lib/subscription";
 import { Logo } from "@/components/ui/logo";
+import { WhatsAppIcon } from "@/components/ui/whatsapp-icon";
 import { ClientSettingsForm } from "./client-settings-form";
 import type { CustomerProfile } from "@/types/database";
 
@@ -17,7 +19,10 @@ export default async function ClientSettingsPage() {
     redirect("/compte/connexion");
   }
 
-  const supabase = await createClient();
+  const [supabase, communityWhatsappUrl] = await Promise.all([
+    createClient(),
+    getPlatformSetting("community_whatsapp_url"),
+  ]);
   let { data: profile } = await supabase
     .from("customer_profiles")
     .select("*")
@@ -125,6 +130,32 @@ export default async function ClientSettingsPage() {
             <ArrowRight className="size-3.5" />
           </Link>
         </div>
+
+        {/* Passerelle Communauté WhatsApp officielle (Phase V3-C) */}
+        {communityWhatsappUrl?.trim() && (
+          <div className="rounded-3xl border border-emerald-200 bg-emerald-50/50 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+            <div className="flex items-center gap-3">
+              <span className="grid size-10 place-items-center rounded-2xl bg-emerald-600 text-white shrink-0">
+                <WhatsAppIcon className="size-5 fill-emerald-600 text-white" />
+              </span>
+              <div>
+                <p className="text-xs sm:text-sm font-bold text-ink">Rejoignez la Communauté WhatsApp</p>
+                <p className="text-[11px] text-muted">
+                  Bons plans, annonces de promotions et échanges directs avec la communauté.
+                </p>
+              </div>
+            </div>
+            <a
+              href={communityWhatsappUrl.trim()}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-1.5 rounded-2xl bg-emerald-600 text-white px-4 py-2 text-xs font-bold hover:bg-emerald-700 transition-colors shrink-0 shadow-2xs"
+            >
+              <span>Rejoindre le groupe</span>
+              <ExternalLink className="size-3.5" />
+            </a>
+          </div>
+        )}
 
         <ClientSettingsForm email={user.email ?? ""} profile={profile as CustomerProfile | null} />
       </main>

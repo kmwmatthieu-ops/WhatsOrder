@@ -8,6 +8,8 @@ import { AdminSubscriptionRequests, type AdminRequestRow } from "./admin-subscri
 import { AdminManagementCard, type AdminUserRow } from "./admin-management-card";
 import { AdminReportsTable, type AdminReportRow } from "./admin-reports-table";
 import { AdminCertificationsTable, type AdminCertificationRow } from "./admin-certifications-table";
+import { AdminPlansManagement } from "./admin-plans-management";
+import { AdminPlatformSettingsCard } from "./admin-platform-settings-card";
 import { adminSignOut } from "./connexion/actions";
 import { Logo } from "@/components/ui/logo";
 import { formatFCFA } from "@/lib/format";
@@ -39,6 +41,7 @@ export default async function AdminPage() {
     status: s.status,
     created_at: s.created_at,
     orders_count: Number(s.orders_count),
+    identity_verified: Boolean(s.identity_verified),
     is_certified: Boolean(s.is_certified),
     plan_id: s.plan_id ?? "gratuit",
     plan_name: s.plan_name ?? "Gratuit",
@@ -107,8 +110,8 @@ export default async function AdminPage() {
     .filter((o) => o.status !== "cancelled")
     .reduce((sum, o) => sum + (o.total || 0), 0);
 
-  // 3. Abonnements actifs et demandes en attente (V2-E)
-  const [subRes, reqRes] = await Promise.all([
+  // 3. Abonnements actifs, demandes en attente et réglages plateforme (V2-E / V3-C)
+  const [subRes, reqRes, plansRes, settingsRes] = await Promise.all([
     supabase
       .from("shop_subscriptions")
       .select("*, subscription_plans(price_monthly, name)"),
@@ -116,7 +119,19 @@ export default async function AdminPage() {
       .from("subscription_requests")
       .select("*, shops(name)")
       .order("created_at", { ascending: false }),
+    supabase
+      .from("subscription_plans")
+      .select("*")
+      .order("sort_order", { ascending: true }),
+    supabase
+      .from("platform_settings")
+      .select("value")
+      .eq("key", "community_whatsapp_url")
+      .maybeSingle(),
   ]);
+
+  const plansList = plansRes.data ?? [];
+  const whatsappCommunityUrl = settingsRes.data?.value ?? "";
 
   const subscriptions = subRes.data ?? [];
   const now = new Date();
@@ -293,6 +308,16 @@ export default async function AdminPage() {
         {/* Section 4 : Modération des Signalements (Explorer) */}
         <section className="space-y-3">
           <AdminReportsTable initialReports={reportsList} />
+        </section>
+
+        {/* Section 5 : Paramètres des Forfaits & Visibilité (Phase V3-C) */}
+        <section className="space-y-3">
+          <AdminPlansManagement initialPlans={plansList} />
+        </section>
+
+        {/* Section 6 : Réglages Globaux & Communauté WhatsApp (Phase V3-C) */}
+        <section className="space-y-3">
+          <AdminPlatformSettingsCard initialWhatsappUrl={whatsappCommunityUrl} />
         </section>
       </main>
     </div>

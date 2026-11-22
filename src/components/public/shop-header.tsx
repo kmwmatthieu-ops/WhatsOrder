@@ -68,10 +68,10 @@ export function ShopHeader({ shop, initialFollowing = false }: ShopHeaderProps) 
                   {shop.is_certified && (
                     <span
                       className="inline-flex items-center gap-1 rounded-full bg-blue-50 border border-blue-200 px-2 py-0.5 text-[10px] font-black uppercase text-blue-700 shrink-0"
-                      title="Boutique vérifiée et certifiée"
+                      title="Boutique vérifiée"
                     >
                       <BadgeCheck className="size-3.5 fill-blue-600 text-white" />
-                      <span>Certifié</span>
+                      <span>Boutique vérifiée</span>
                     </span>
                   )}
                 </div>

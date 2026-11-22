@@ -364,6 +364,104 @@ export async function resolveReportAction(
 }
 
 /**
+ * Met à jour les paramètres d'un forfait (coefficient de visibilité, badge de certification).
+ * Modifiable depuis l'admin sans toucher au code (Phase V3-C).
+ */
+export async function updateSubscriptionPlanAction(
+  planId: string,
+  visibilityMultiplier: number,
+  hasCertifiedBadge: boolean,
+  priceMonthly?: number | null,
+  maxProducts?: number | null,
+  maxOrdersPerMonth?: number | null
+): Promise<{ ok: boolean; error?: string }> {
+  const supabase = await createClient();
+  const { data: isAdmin } = await supabase.rpc("is_admin");
+  if (!isAdmin) {
+    return { ok: false, error: "Accès refusé : privilèges administrateur requis." };
+  }
+
+  const { error } = await supabase.rpc("admin_update_subscription_plan", {
+    p_plan_id: planId,
+    p_visibility_multiplier: visibilityMultiplier,
+    p_has_certified_badge: hasCertifiedBadge,
+    p_price_monthly: priceMonthly ?? null,
+    p_max_products: maxProducts ?? null,
+    p_max_orders_per_month: maxOrdersPerMonth ?? null,
+  });
+
+  if (error) {
+    return { ok: false, error: dbErrorMessage(error, "Erreur lors de la mise à jour du forfait.") };
+  }
+
+  revalidatePath("/admin");
+  revalidatePath("/tarifs");
+  revalidatePath("/tableau-de-bord/abonnement");
+  revalidatePath("/explorer");
+  return { ok: true };
+}
+
+/**
+ * Bascule la case « identité vérifiée » d'une boutique (Phase V3-C).
+ */
+export async function toggleShopIdentityVerifiedAction(
+  shopId: string,
+  identityVerified: boolean
+): Promise<{ ok: boolean; error?: string }> {
+  const supabase = await createClient();
+  const { data: isAdmin } = await supabase.rpc("is_admin");
+  if (!isAdmin) {
+    return { ok: false, error: "Accès refusé : privilèges administrateur requis." };
+  }
+
+  const { error } = await supabase.rpc("admin_toggle_identity_verified", {
+    p_shop_id: shopId,
+    p_identity_verified: identityVerified,
+  });
+
+  if (error) {
+    return { ok: false, error: dbErrorMessage(error, "Erreur lors de la modification de l'identité vérifiée.") };
+  }
+
+  revalidatePath("/admin");
+  revalidatePath("/explorer");
+  revalidatePath("/tableau-de-bord/abonnement");
+  return { ok: true };
+}
+
+/**
+ * Enregistre un réglage global de la plateforme (ex: lien communauté WhatsApp) (Phase V3-C).
+ */
+export async function setPlatformSettingAction(
+  key: string,
+  value: string
+): Promise<{ ok: boolean; error?: string }> {
+  const supabase = await createClient();
+  const { data: isAdmin } = await supabase.rpc("is_admin");
+  if (!isAdmin) {
+    return { ok: false, error: "Accès refusé : privilèges administrateur requis." };
+  }
+
+  const { error } = await supabase.rpc("admin_set_platform_setting", {
+    p_key: key,
+    p_value: value.trim(),
+  });
+
+  if (error) {
+    return { ok: false, error: dbErrorMessage(error, "Erreur lors de la mise à jour du réglage.") };
+  }
+
+  revalidatePath("/admin");
+  revalidatePath("/tableau-de-bord");
+  revalidatePath("/compte");
+  revalidatePath("/compte/parametres");
+  return { ok: true };
+}
+
+
+
+
+/**
  * Valide ou rejette une demande de certification commerçant.
  */
 export async function reviewCertificationAction(
@@ -391,5 +489,8 @@ export async function reviewCertificationAction(
   revalidatePath("/explorer");
   return { ok: true };
 }
+
+
+
 
 

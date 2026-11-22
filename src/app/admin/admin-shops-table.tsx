@@ -18,6 +18,7 @@ import {
   assignShopSubscriptionAction,
   cancelShopSubscriptionAction,
   toggleShopCertificationAction,
+  toggleShopIdentityVerifiedAction,
 } from "./actions";
 import { shopUrl } from "@/lib/constants";
 import { Spinner } from "@/components/ui/spinner";
@@ -31,6 +32,7 @@ export type AdminShopRow = {
   status: "active" | "suspended";
   created_at: string;
   orders_count: number;
+  identity_verified: boolean;
   is_certified: boolean;
   plan_id: string;
   plan_name: string;
@@ -108,6 +110,33 @@ export function AdminShopsTable({ initialShops }: { initialShops: AdminShopRow[]
         );
       } else {
         alert(res.error || "Impossible de modifier la certification.");
+      }
+    });
+  }
+
+  // Bascule de la case « Identité vérifiée » (Phase V3-C)
+  function handleToggleIdentityVerified(shop: AdminShopRow) {
+    const nextVerified = !shop.identity_verified;
+    setPendingId(shop.id);
+    startTransition(async () => {
+      const res = await toggleShopIdentityVerifiedAction(shop.id, nextVerified);
+      setPendingId(null);
+      if (res.ok) {
+        setShops((prev) =>
+          prev.map((s) => {
+            if (s.id !== shop.id) return s;
+            const isEligiblePlan = s.plan_id === "premium";
+            const notExpired = !s.subscription_expires_at || new Date(s.subscription_expires_at) > new Date();
+            const willBeCertified = nextVerified && isEligiblePlan && notExpired;
+            return {
+              ...s,
+              identity_verified: nextVerified,
+              is_certified: willBeCertified,
+            };
+          })
+        );
+      } else {
+        alert(res.error || "Impossible de modifier la vérification d'identité.");
       }
     });
   }
@@ -224,11 +253,24 @@ export function AdminShopsTable({ initialShops }: { initialShops: AdminShopRow[]
                     <div className="flex flex-wrap items-center gap-2">
                       <h3 className="font-extrabold text-base text-ink truncate">{shop.name}</h3>
 
-                      {/* Badge certifié */}
+                      {/* Badge certifié avec infobulle Boutique vérifiée */}
                       {isCert && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 border border-blue-200 px-2 py-0.5 text-[10px] font-black uppercase text-blue-700">
-                          <BadgeCheck className="size-3.5 text-blue-600" />
-                          Certifié
+                        <span
+                          className="inline-flex items-center gap-1 rounded-full bg-blue-50 border border-blue-200 px-2 py-0.5 text-[10px] font-black uppercase text-blue-700"
+                          title="Boutique vérifiée"
+                        >
+                          <BadgeCheck className="size-3.5 fill-blue-600 text-white" />
+                          <span>Boutique vérifiée</span>
+                        </span>
+                      )}
+
+                      {/* Indicateur identité vérifiée seule sans badge */}
+                      {!isCert && shop.identity_verified && (
+                        <span
+                          className="inline-flex items-center gap-1 rounded-full bg-slate-100 border border-slate-200 px-2 py-0.5 text-[10px] font-semibold text-slate-700"
+                          title="Identité vérifiée par l'admin (badge inactif car forfait Gratuit/Business ou expiré)"
+                        >
+                          Identité vérifiée
                         </span>
                       )}
 
@@ -288,6 +330,29 @@ export function AdminShopsTable({ initialShops }: { initialShops: AdminShopRow[]
 
                   {/* Actions d'administration */}
                   <div className="flex flex-wrap items-center gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-line shrink-0">
+                    {/* Case à cocher Identité vérifiée (Phase V3-C) */}
+                    <label
+                      className={`inline-flex h-9 items-center gap-2 rounded-xl border px-3 text-xs font-bold transition-colors cursor-pointer select-none ${
+                        shop.identity_verified
+                          ? "border-blue-200 bg-blue-50/70 text-blue-900"
+                          : "border-line bg-white text-ink hover:bg-sand"
+                      }`}
+                      title={
+                        shop.identity_verified
+                          ? "Identité de la boutique vérifiée par l'administrateur"
+                          : "Cocher pour valider l'identité de cette boutique"
+                      }
+                    >
+                      <input
+                        type="checkbox"
+                        checked={Boolean(shop.identity_verified)}
+                        disabled={pendingId === shop.id}
+                        onChange={() => handleToggleIdentityVerified(shop)}
+                        className="size-4 rounded text-blue-600 focus:ring-blue-500 cursor-pointer"
+                      />
+                      <span>Identité vérifiée</span>
+                    </label>
+
                     {/* Bouton Gérer le forfait */}
                     <button
                       type="button"
@@ -296,22 +361,6 @@ export function AdminShopsTable({ initialShops }: { initialShops: AdminShopRow[]
                     >
                       <CreditCard className="size-3.5 text-brand-600" />
                       <span>Gérer le forfait</span>
-                    </button>
-
-                    {/* Bouton Certification en 1 clic */}
-                    <button
-                      type="button"
-                      disabled={pendingId === shop.id}
-                      onClick={() => handleToggleCertification(shop)}
-                      className={`inline-flex h-9 items-center gap-1.5 rounded-xl px-3 text-xs font-bold transition-colors cursor-pointer disabled:opacity-60 ${
-                        isCert
-                          ? "border border-line bg-white text-muted hover:bg-danger-50 hover:text-danger-700 hover:border-danger-200"
-                          : "border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100"
-                      }`}
-                      title={isCert ? "Retirer le badge certifié" : "Attribuer directement le badge certifié"}
-                    >
-                      <BadgeCheck className="size-3.5" />
-                      <span>{isCert ? "Retirer certif." : "Certifier"}</span>
                     </button>
 
                     {/* Bouton Suspendre / Réactiver */}

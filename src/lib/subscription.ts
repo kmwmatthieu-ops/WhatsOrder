@@ -51,6 +51,8 @@ export async function getShopSubscription(shopId: string): Promise<ResolvedSubsc
     has_advanced_stats: false,
     has_csv_export: false,
     has_order_email_notifications: false,
+    visibility_multiplier: 1.0,
+    has_certified_badge: false,
     badge: "Découverte",
     is_active: true,
     sort_order: 1,
@@ -140,4 +142,32 @@ export async function getShopSubscriptionMetrics(shopId: string): Promise<ShopSu
     pendingRequest: (pendingRes.data as SubscriptionRequest | null) ?? null,
     historyRequests: (historyRes.data as SubscriptionRequest[]) ?? [],
   };
+}
+
+/**
+ * Règle V3-C d'éligibilité au badge certifié :
+ * 1. L'identité de la boutique doit être vérifiée par l'administrateur
+ * 2. Le forfait actif doit accorder le droit au badge (ex: Premium)
+ * 3. L'abonnement doit être actif et non expiré
+ */
+export function isShopCertifiedBadgeEligible(
+  identityVerified: boolean,
+  resolvedSub: ResolvedSubscription
+): boolean {
+  if (!identityVerified) return false;
+  if (resolvedSub.isExpired) return false;
+  return Boolean(resolvedSub.effectivePlan.has_certified_badge);
+}
+
+/**
+ * Récupère un réglage de la plateforme depuis public.platform_settings.
+ */
+export async function getPlatformSetting(key: string): Promise<string | null> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("platform_settings")
+    .select("value")
+    .eq("key", key)
+    .maybeSingle();
+  return data?.value ?? null;
 }

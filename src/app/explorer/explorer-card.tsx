@@ -76,7 +76,7 @@ export function ExplorerCard({ product, isFollowing = false }: ExplorerCardProps
                   {product.shop_name}
                 </span>
                 {product.shop_is_certified && (
-                  <span title="Boutique certifiée" className="shrink-0">
+                  <span title="Boutique vérifiée" className="shrink-0">
                     <BadgeCheck className="size-3.5 fill-blue-600 text-white" />
                   </span>
                 )}

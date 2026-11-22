@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { X, Minus, Plus, ShoppingBag, ImageIcon, Clock, Check } from "lucide-react";
+import { X, Minus, Plus, ShoppingBag, ImageIcon, Clock, Check, Store, BadgeCheck } from "lucide-react";
 import { applyDiscount, formatFCFA } from "@/lib/format";
 import { useCart } from "@/lib/cart/cart-context";
 import type { ProductWithVariants } from "@/types/database";
@@ -11,11 +11,15 @@ export function ProductDetailModal({
   product,
   primaryColor,
   isShopOpen = true,
+  shopName,
+  shopIsCertified = false,
   onClose,
 }: {
   product: ProductWithVariants | null;
   primaryColor: string;
   isShopOpen?: boolean;
+  shopName?: string;
+  shopIsCertified?: boolean;
   onClose: () => void;
 }) {
   const { addItem } = useCart();
@@ -183,6 +187,17 @@ export function ProductDetailModal({
           {/* Détails du produit */}
           <div className="p-5 flex flex-col gap-4">
             <div>
+              {shopName && (
+                <div className="flex items-center gap-1.5 text-xs text-muted mb-1.5">
+                  <Store className="size-3.5 text-brand-600 shrink-0" />
+                  <span className="font-semibold text-ink/90">{shopName}</span>
+                  {shopIsCertified && (
+                    <span title="Boutique vérifiée" className="inline-flex items-center shrink-0">
+                      <BadgeCheck className="size-3.5 fill-blue-600 text-white" />
+                    </span>
+                  )}
+                </div>
+              )}
               <h2 className="text-lg sm:text-xl font-extrabold text-ink">{product.name}</h2>
               <div className="mt-1 flex flex-wrap items-center gap-2">
                 <p className="font-extrabold text-xl" style={{ color: primaryColor }}>
