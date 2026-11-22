@@ -48,7 +48,8 @@ export function AnalyticsPanel({
   orderItems: AnalyticsOrderItem[];
   hasAdvancedStats?: boolean;
 }) {
-  const [period, setPeriod] = useState<PeriodKey>("30d");
+  // Par défaut sur "today" (Aujourd'hui) selon les souhaits du commerçant
+  const [period, setPeriod] = useState<PeriodKey>("today");
   const [selectedDayIdx, setSelectedDayIdx] = useState<number | null>(null);
 
   const periodStartIso = useMemo(() => {
@@ -175,49 +176,38 @@ export function AnalyticsPanel({
 
   return (
     <div className="flex flex-col gap-5">
-      {/* Filtres par période */}
+      {/* Filtres par période (Aujourd'hui par défaut, sélectionnable librement) */}
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-2">
           <span className="text-xs font-extrabold uppercase tracking-wider text-muted">
-            Statistiques & Performance
+            Statistiques &amp; Performance
           </span>
           {!hasAdvancedStats && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700 border border-amber-200">
-              <Lock className="size-2.5" />
-              Forfait Gratuit
+            <span className="inline-flex items-center gap-1 rounded-full bg-sand px-2 py-0.5 text-[10px] font-bold text-muted border border-line">
+              Vue standard
             </span>
           )}
         </div>
 
-        {hasAdvancedStats ? (
-          <div className="flex items-center gap-1 overflow-x-auto no-scrollbar rounded-2xl border border-line bg-white p-1 shadow-2xs">
-            {(Object.keys(PERIOD_LABELS) as PeriodKey[]).map((key) => {
-              const active = period === key;
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => setPeriod(key)}
-                  className={`rounded-xl px-2.5 py-1 text-xs font-bold transition-colors cursor-pointer ${
-                    active
-                      ? "bg-brand-600 text-white shadow-2xs"
-                      : "text-muted hover:text-ink hover:bg-sand/60"
-                  }`}
-                >
-                  {PERIOD_LABELS[key]}
-                </button>
-              );
-            })}
-          </div>
-        ) : (
-          <Link
-            href="/tableau-de-bord/abonnement"
-            className="inline-flex items-center gap-1.5 rounded-xl border border-line bg-white px-2.5 py-1 text-xs font-bold text-muted hover:text-brand-600 hover:border-brand-300 transition-colors"
-          >
-            <Lock className="size-3 text-amber-600" />
-            <span>Débloquer les filtres (Business)</span>
-          </Link>
-        )}
+        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar rounded-2xl border border-line bg-white p-1 shadow-2xs">
+          {(Object.keys(PERIOD_LABELS) as PeriodKey[]).map((key) => {
+            const active = period === key;
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setPeriod(key)}
+                className={`rounded-xl px-2.5 py-1 text-xs font-bold transition-colors cursor-pointer ${
+                  active
+                    ? "bg-brand-600 text-white shadow-2xs"
+                    : "text-muted hover:text-ink hover:bg-sand/60"
+                }`}
+              >
+                {PERIOD_LABELS[key]}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* 4 Cartes d'indicateurs clés */}
