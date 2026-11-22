@@ -3,6 +3,7 @@ import Link from "next/link";
 import {
   ArrowRight,
   BadgeCheck,
+  Heart,
   Package,
   ShoppingBag,
   Store,
@@ -116,7 +117,7 @@ export default async function DashboardHomePage() {
             <Store className="size-6" />
           </div>
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1.5 min-w-0">
+            <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
               <p className="truncate font-bold text-ink">{shop.name}</p>
               {shop.is_certified && (
                 <span
@@ -127,6 +128,13 @@ export default async function DashboardHomePage() {
                   <span>Certifié</span>
                 </span>
               )}
+              <span
+                className="inline-flex items-center gap-1 rounded-full bg-sand px-2 py-0.5 text-[10px] font-bold text-muted shrink-0"
+                title="Nombre d'abonnés suivant votre boutique sur Explorer"
+              >
+                <Heart className="size-3 text-brand-600 fill-brand-600" />
+                <span>{shop.followers_count ?? 0} abonné{(shop.followers_count ?? 0) > 1 ? "s" : ""}</span>
+              </span>
             </div>
             <p className="truncate text-xs text-muted">{url}</p>
           </div>
@@ -142,7 +150,7 @@ export default async function DashboardHomePage() {
       />
 
       {/* Raccourcis navigation */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <Link
           href="/tableau-de-bord/commandes"
           className="flex items-center justify-between rounded-2xl border border-line bg-white p-4 shadow-xs hover:border-brand-500 transition-colors"
@@ -199,6 +207,27 @@ export default async function DashboardHomePage() {
           </div>
           <ArrowRight className="size-4 text-muted" />
         </Link>
+
+        {/* Abonnés Explorer (Affichage strictement anonyme du compteur) */}
+        <div className="flex items-center justify-between rounded-2xl border border-line bg-white p-4 shadow-xs">
+          <div className="flex items-center gap-3">
+            <div className="grid size-10 place-items-center rounded-xl bg-sand text-ink">
+              <Heart className="size-5 text-brand-600 fill-brand-600" />
+            </div>
+            <div>
+              <p className="font-bold text-sm text-ink">Abonnés Explorer</p>
+              <p className="text-xs text-muted">
+                {shop.followers_count ?? 0} abonné{(shop.followers_count ?? 0) > 1 ? "s" : ""}
+              </p>
+            </div>
+          </div>
+          <span
+            className="rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-bold text-brand-700"
+            title="Clients suivant votre vitrine sur Explorer (données strictement anonymisées)"
+          >
+            Actifs
+          </span>
+        </div>
       </div>
 
       {/* Dernières commandes */}

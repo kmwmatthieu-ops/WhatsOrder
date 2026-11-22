@@ -15,6 +15,7 @@ interface ExplorerPageProps {
   searchParams: Promise<{
     q?: string;
     cat?: string;
+    tab?: string;
   }>;
 }
 
@@ -22,6 +23,7 @@ export default async function ExplorerPage({ searchParams }: ExplorerPageProps) 
   const resolvedParams = await searchParams;
   const query = resolvedParams.q?.trim() || "";
   const category = resolvedParams.cat?.trim() || "";
+  const initialTab = resolvedParams.tab === "followed" ? "followed" : "all";
 
   const supabase = await createClient();
   const user = await getUser();
@@ -42,15 +44,25 @@ export default async function ExplorerPage({ searchParams }: ExplorerPageProps) 
 
   const categories = uniqueCategoryNames.map((name) => ({ name }));
 
-  // 2. Appel RPC pour obtenir le fil Explorer (chargé pour un filtrage instantané côté client à 0ms)
-  const { data: rawProducts } = await supabase.rpc("get_explorer_products", {
-    p_search: null,
-    p_category: null,
-    p_limit: 150,
-    p_offset: 0,
-  });
+  // 2. Appel RPC pour obtenir le fil Explorer général et les boutiques suivies
+  const [{ data: rawProducts }, followRowsResult, followedProductsResult] = await Promise.all([
+    supabase.rpc("get_explorer_products", {
+      p_search: null,
+      p_category: null,
+      p_limit: 150,
+      p_offset: 0,
+    }),
+    user
+      ? supabase.from("shop_followers").select("shop_id").eq("user_id", user.id)
+      : Promise.resolve({ data: [] }),
+    user
+      ? supabase.rpc("get_followed_shops_products", { p_limit: 150, p_offset: 0 })
+      : Promise.resolve({ data: [] }),
+  ]);
 
   const products: ExplorerProduct[] = rawProducts ?? [];
+  const followedShopIds: string[] = (followRowsResult.data ?? []).map((f: { shop_id: string }) => f.shop_id);
+  const followedProducts: ExplorerProduct[] = followedProductsResult.data ?? [];
 
   return (
     <div className="min-h-dvh bg-sand/30 text-ink flex flex-col">
@@ -118,9 +130,13 @@ export default async function ExplorerPage({ searchParams }: ExplorerPageProps) 
         {/* Catalogue dynamique instantané (0ms de latence au clic sur les filtres) */}
         <ExplorerCatalog
           initialProducts={products}
+          followedProducts={followedProducts}
+          followedShopIds={followedShopIds}
+          isLoggedIn={Boolean(user)}
           categories={categories}
           initialCategory={category}
           initialQuery={query}
+          initialTab={initialTab}
         />
       </main>
 

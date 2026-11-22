@@ -85,10 +85,22 @@ export default async function PublicShopPage({ params }: Props) {
     product_variants: [...(p.product_variants ?? [])].sort((a, b) => a.position - b.position),
   }));
 
+  const { data: { user } } = await supabase.auth.getUser();
+  let initialFollowing = false;
+  if (user) {
+    const { data: follow } = await supabase
+      .from("shop_followers")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("shop_id", shop.id)
+      .maybeSingle();
+    initialFollowing = Boolean(follow);
+  }
+
   return (
     <CartProvider shopId={shop.id}>
       <div className="min-h-dvh bg-cream text-ink">
-        <ShopHeader shop={shop} />
+        <ShopHeader shop={shop} initialFollowing={initialFollowing} />
         <PublicCatalog
           shop={shop}
           categories={categories ?? []}

@@ -6,13 +6,15 @@ import Link from "next/link";
 import { Store, Flag, ArrowUpRight, BadgeCheck } from "lucide-react";
 import { formatFCFA } from "@/lib/format";
 import { ReportModal } from "@/components/shop/report-modal";
+import { FollowShopButton } from "@/components/shops/follow-shop-button";
 import type { ExplorerProduct } from "@/types/database";
 
 interface ExplorerCardProps {
   product: ExplorerProduct;
+  isFollowing?: boolean;
 }
 
-export function ExplorerCard({ product }: ExplorerCardProps) {
+export function ExplorerCard({ product, isFollowing = false }: ExplorerCardProps) {
   const [showReport, setShowReport] = useState(false);
 
   const hasDiscount = (product.product_discount_percent ?? 0) > 0;
@@ -63,11 +65,11 @@ export function ExplorerCard({ product }: ExplorerCardProps) {
         {/* Détails du produit */}
         <div className="flex flex-1 flex-col justify-between pt-3">
           <div>
-            {/* Boutique d'origine */}
+            {/* Boutique d'origine & Bouton Suivre */}
             <div className="flex items-center justify-between gap-1 text-[11px] text-muted mb-1">
               <Link
                 href={`/${product.shop_slug}`}
-                className="inline-flex items-center gap-1 hover:text-brand-700 truncate max-w-[140px]"
+                className="inline-flex items-center gap-1 hover:text-brand-700 truncate max-w-[110px] sm:max-w-[130px]"
                 title={product.shop_name}
               >
                 <Store className="size-3 shrink-0 text-brand-600" />
@@ -79,19 +81,27 @@ export function ExplorerCard({ product }: ExplorerCardProps) {
                 )}
               </Link>
 
-              {/* Bouton de signalement discret */}
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setShowReport(true);
-                }}
-                className="opacity-0 group-hover:opacity-100 hover:text-danger-600 text-muted p-1 transition-opacity"
-                title="Signaler ce produit"
-              >
-                <Flag className="size-3" />
-              </button>
+              <div className="flex items-center gap-1 shrink-0">
+                <FollowShopButton
+                  shopId={product.shop_id}
+                  shopName={product.shop_name}
+                  initialFollowing={isFollowing}
+                  variant="compact"
+                />
+                {/* Bouton de signalement discret */}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setShowReport(true);
+                  }}
+                  className="opacity-0 group-hover:opacity-100 hover:text-danger-600 text-muted p-0.5 transition-opacity cursor-pointer"
+                  title="Signaler ce produit"
+                >
+                  <Flag className="size-3" />
+                </button>
+              </div>
             </div>
 
             {/* Titre */}

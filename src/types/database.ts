@@ -58,6 +58,7 @@ export type Database = {
           order_notifications_enabled: boolean;
           is_listed_in_explorer: boolean;
           is_certified: boolean;
+          followers_count: number;
           created_at: string;
           updated_at: string;
         };
@@ -80,6 +81,7 @@ export type Database = {
           order_notifications_enabled?: boolean;
           is_listed_in_explorer?: boolean;
           is_certified?: boolean;
+          followers_count?: number;
           created_at?: string;
           updated_at?: string;
         };
@@ -661,6 +663,30 @@ export type Database = {
           },
         ];
       };
+      shop_followers: {
+        Row: {
+          id: string;
+          user_id: string;
+          shop_id: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          shop_id: string;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["shop_followers"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "shop_followers_shop_id_fkey";
+            columns: ["shop_id"];
+            isOneToOne: false;
+            referencedRelation: "shops";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: { [_ in never]: never };
     Functions: {
@@ -843,6 +869,49 @@ export type Database = {
         };
         Returns: { ok: boolean; action: string };
       };
+      toggle_follow_shop: {
+        Args: { p_shop_id: string };
+        Returns: { following: boolean; followers_count: number };
+      };
+      is_following_shop: {
+        Args: { p_shop_id: string };
+        Returns: boolean;
+      };
+      get_my_followed_shops: {
+        Args: Record<PropertyKey, never>;
+        Returns: Array<{
+          shop_id: string;
+          shop_name: string;
+          shop_slug: string;
+          shop_logo_url: string | null;
+          shop_primary_color: string;
+          is_certified: boolean;
+          followers_count: number;
+          products_count: number;
+          followed_at: string;
+        }>;
+      };
+      get_followed_shops_products: {
+        Args: { p_limit?: number; p_offset?: number };
+        Returns: Array<{
+          product_id: string;
+          product_name: string;
+          product_description: string | null;
+          product_price: number;
+          product_discount_percent: number;
+          product_image_url: string;
+          product_stock: number | null;
+          product_created_at: string;
+          category_id: string | null;
+          category_name: string | null;
+          shop_id: string;
+          shop_name: string;
+          shop_slug: string;
+          shop_logo_url: string | null;
+          shop_primary_color: string;
+          shop_is_certified: boolean;
+        }>;
+      };
     };
     Enums: {
       shop_status: ShopStatus;
@@ -877,4 +946,6 @@ export type SaspayPayment = Tables<"saspay_payments">;
 export type CustomerProfile = Tables<"customer_profiles">;
 export type Report = Tables<"reports">;
 export type ShopCertification = Tables<"shop_certifications">;
+export type ShopFollower = Tables<"shop_followers">;
+export type FollowedShop = Database["public"]["Functions"]["get_my_followed_shops"]["Returns"][number];
 export type ExplorerProduct = Database["public"]["Functions"]["get_explorer_products"]["Returns"][number];

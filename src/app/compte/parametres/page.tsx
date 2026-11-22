@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Compass, ArrowLeft, Store, ArrowRight } from "lucide-react";
+import { Compass, ArrowLeft, Store, ArrowRight, Heart } from "lucide-react";
 import { createClient, getUser } from "@/lib/supabase/server";
 import { Logo } from "@/components/ui/logo";
 import { ClientSettingsForm } from "./client-settings-form";
@@ -80,6 +80,26 @@ export default async function ClientSettingsPage() {
           <p className="text-xs text-muted">
             Gérez vos informations personnelles, vos préférences Explorer et la sécurité de votre compte.
           </p>
+        </div>
+
+        {/* Raccourci vers les boutiques suivies */}
+        <div className="rounded-3xl border border-line bg-white p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-center gap-3">
+            <span className="grid size-10 place-items-center rounded-2xl bg-sand text-brand-600 shrink-0">
+              <Heart className="size-5 fill-brand-600 text-brand-600" />
+            </span>
+            <div>
+              <p className="text-xs sm:text-sm font-bold text-ink">Boutiques que vous suivez</p>
+              <p className="text-[11px] text-muted">Retrouvez vos créateurs favoris et leurs nouveautés.</p>
+            </div>
+          </div>
+          <Link
+            href="/compte/boutiques"
+            className="inline-flex items-center justify-center gap-1.5 rounded-2xl bg-sand/70 hover:bg-sand border border-line px-4 py-2 text-xs font-bold text-ink transition-colors shrink-0"
+          >
+            <span>Mes boutiques suivies</span>
+            <ArrowRight className="size-3.5" />
+          </Link>
         </div>
 
         {/* Passerelle directe vers l'espace commerçant */}

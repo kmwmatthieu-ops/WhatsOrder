@@ -1,11 +1,17 @@
 import Image from "next/image";
 import Link from "next/link";
-import { MapPin, Truck, Store as StoreIcon, ArrowLeft, BadgeCheck } from "lucide-react";
+import { MapPin, Truck, Store as StoreIcon, ArrowLeft, BadgeCheck, Users } from "lucide-react";
 import { WhatsAppIcon } from "@/components/ui/whatsapp-icon";
 import { ShopHoursBadge } from "./shop-hours-badge";
+import { FollowShopButton } from "@/components/shops/follow-shop-button";
 import type { Shop } from "@/types/database";
 
-export function ShopHeader({ shop }: { shop: Shop }) {
+interface ShopHeaderProps {
+  shop: Shop;
+  initialFollowing?: boolean;
+}
+
+export function ShopHeader({ shop, initialFollowing = false }: ShopHeaderProps) {
   const cleanWhatsapp = shop.whatsapp_number.replace(/\D/g, "");
   const whatsappChatUrl = `https://wa.me/${cleanWhatsapp}?text=${encodeURIComponent(
     `Bonjour ${shop.name}, j'ai une question sur votre boutique !`
@@ -70,6 +76,10 @@ export function ShopHeader({ shop }: { shop: Shop }) {
                   )}
                 </div>
                 <ShopHoursBadge openingHours={shop.opening_hours} />
+                <span className="inline-flex items-center gap-1 rounded-full bg-sand/80 px-2.5 py-0.5 text-[11px] font-semibold text-ink" title="Nombre d'abonnés">
+                  <Users className="size-3 text-brand-600" aria-hidden />
+                  <span>{shop.followers_count ?? 0} abonné{(shop.followers_count ?? 0) > 1 ? "s" : ""}</span>
+                </span>
               </div>
 
               {shop.description && (
@@ -113,6 +123,16 @@ export function ShopHeader({ shop }: { shop: Shop }) {
               <ArrowLeft className="size-3.5" />
               <span>Explorer</span>
             </Link>
+
+            {/* Bouton Suivre la boutique */}
+            <FollowShopButton
+              shopId={shop.id}
+              shopName={shop.name}
+              initialFollowing={initialFollowing}
+              initialFollowersCount={shop.followers_count ?? 0}
+              variant="button"
+              className="h-10 text-xs sm:text-xs"
+            />
 
             <a
               href={whatsappChatUrl}
