@@ -16,7 +16,13 @@ import {
 } from "lucide-react";
 import { Toggle } from "@/components/ui/toggle";
 import { toggleOrderEmailNotificationPref } from "./actions";
-import { playOrderChime, updateAppBadge, clearAppBadge, triggerHapticFeedback } from "@/lib/sound";
+import {
+  playOrderChime,
+  updateAppBadge,
+  clearAppBadge,
+  triggerHapticFeedback,
+  sendSystemNotification,
+} from "@/lib/sound";
 
 interface OrderNotificationsCardProps {
   initialEnabled: boolean;
@@ -68,9 +74,8 @@ export function OrderNotificationsCard({
         const perm = await Notification.requestPermission();
         setNotificationPermission(perm);
         if (perm === "granted") {
-          new Notification("Notifications activées ! 🔔", {
+          await sendSystemNotification("Notifications activées ! 🔔", {
             body: "Vous serez prévenu immédiatement lors de chaque nouvelle commande.",
-            icon: "/icon-192.png",
           });
         }
       } catch {}
@@ -87,10 +92,15 @@ export function OrderNotificationsCard({
   function handleTestBadge() {
     setBadgeTested(true);
     updateAppBadge(1);
+    playOrderChime();
+    triggerHapticFeedback();
+    sendSystemNotification("Test d'alerte Bon Waz à Dealer 🔔", {
+      body: "Pastille rouge active sur votre icône d'application et l'onglet de votre navigateur !",
+    });
     setTimeout(() => {
       clearAppBadge();
       setBadgeTested(false);
-    }, 4500);
+    }, 6000);
   }
 
   return (
@@ -121,6 +131,26 @@ export function OrderNotificationsCard({
         <p className="text-xs text-muted leading-relaxed">
           Lorsque vous avez l&apos;application ouverte ou installée sur votre téléphone/ordinateur (format Web App / PWA), un signal sonore retentit et un badge rouge s&apos;affiche sur l&apos;icône, comme sur WhatsApp.
         </p>
+
+        {badgeTested && (
+          <div className="rounded-2xl border-2 border-brand-500 bg-brand-50/90 p-4 text-xs text-brand-900 flex items-center justify-between gap-3 animate-in fade-in slide-in-from-top-2">
+            <div className="flex items-center gap-3">
+              <span className="relative flex size-3.5 shrink-0">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-danger-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full size-3.5 bg-danger-600"></span>
+              </span>
+              <div>
+                <p className="font-extrabold text-ink text-xs sm:text-sm">🔴 Badge rouge actif (1)</p>
+                <p className="text-[11px] text-muted">
+                  Observez l&apos;icône de votre application ou le favicon rouge en haut de votre onglet navigateur !
+                </p>
+              </div>
+            </div>
+            <span className="text-[10px] font-bold text-brand-700 bg-white border border-brand-200 px-2 py-1 rounded-lg shrink-0">
+              Actif (6s)
+            </span>
+          </div>
+        )}
 
         {/* Options de test interactives */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
