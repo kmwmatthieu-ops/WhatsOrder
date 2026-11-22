@@ -1,18 +1,24 @@
 import { describe, it, expect, vi } from "vitest";
-import { playOrderChime, updateAppBadge, clearAppBadge, triggerHapticFeedback } from "@/lib/sound";
+import { playOrderChime, updateAppBadge, clearAppBadge, triggerHapticFeedback, sendSystemNotification } from "@/lib/sound";
+import { FEATURES, isFeatureEnabled } from "@/config/features";
 
 describe("Notifications de commande & Alertes sonores", () => {
-  it("gère playOrderChime gracieusement sans erreur dans l'environnement de test", () => {
-    const res = playOrderChime();
-    // En environnement de test Node/JSDOM, AudioContext n'est pas présent par défaut
-    expect(typeof res).toBe("boolean");
+  it("vérifie que les fonctionnalités 57 et 58 sont masquées par défaut dans les feature flags", () => {
+    expect(FEATURES.ENABLE_ORDER_AUDIO_AND_VISUAL_ALERTS).toBe(false);
+    expect(FEATURES.ENABLE_WEB_PUSH_NOTIFICATIONS).toBe(false);
+    expect(isFeatureEnabled("ENABLE_ORDER_AUDIO_AND_VISUAL_ALERTS")).toBe(false);
+    expect(isFeatureEnabled("ENABLE_WEB_PUSH_NOTIFICATIONS")).toBe(false);
   });
 
-  it("met à jour et efface le badge d'application sans erreur", () => {
+  it("neutralise playOrderChime lorsque la fonctionnalité 57 est masquée", () => {
+    const res = playOrderChime();
+    expect(res).toBe(false);
+  });
+
+  it("neutralise updateAppBadge lorsque la fonctionnalité 57 est masquée", () => {
     const setAppBadgeMock = vi.fn().mockResolvedValue(undefined);
     const clearAppBadgeMock = vi.fn().mockResolvedValue(undefined);
 
-    // Mock navigator.setAppBadge et clearAppBadge
     Object.defineProperty(global.navigator, "setAppBadge", {
       value: setAppBadgeMock,
       writable: true,
@@ -25,16 +31,11 @@ describe("Notifications de commande & Alertes sonores", () => {
     });
 
     updateAppBadge(3);
-    expect(setAppBadgeMock).toHaveBeenCalledWith(3);
-
-    updateAppBadge(0);
-    expect(clearAppBadgeMock).toHaveBeenCalled();
-
-    clearAppBadge();
-    expect(clearAppBadgeMock).toHaveBeenCalledTimes(2);
+    // Masqué : la méthode ne doit pas être appelée
+    expect(setAppBadgeMock).not.toHaveBeenCalled();
   });
 
-  it("gère triggerHapticFeedback sans erreur", () => {
+  it("neutralise triggerHapticFeedback lorsque la fonctionnalité 57 est masquée", () => {
     const vibrateMock = vi.fn().mockReturnValue(true);
     Object.defineProperty(global.navigator, "vibrate", {
       value: vibrateMock,
@@ -43,6 +44,12 @@ describe("Notifications de commande & Alertes sonores", () => {
     });
 
     triggerHapticFeedback();
-    expect(vibrateMock).toHaveBeenCalled();
+    // Masqué : le vibreur ne doit pas être sollicité
+    expect(vibrateMock).not.toHaveBeenCalled();
+  });
+
+  it("neutralise sendSystemNotification lorsque la fonctionnalité 58 est masquée", async () => {
+    const res = await sendSystemNotification("Test");
+    expect(res).toBe(false);
   });
 });

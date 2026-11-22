@@ -4,6 +4,7 @@ import { BottomNav } from "@/components/dashboard/bottom-nav";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { DashboardHeader } from "@/components/dashboard/header";
 import { RealtimeOrderAlert } from "@/components/dashboard/realtime-order-alert";
+import { FEATURES } from "@/config/features";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [{ shop }, communityWhatsappUrl] = await Promise.all([
@@ -13,7 +14,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   return (
     <div className="flex min-h-dvh flex-col md:flex-row bg-cream">
-      <RealtimeOrderAlert shopId={shop.id} />
+      {(FEATURES.ENABLE_ORDER_AUDIO_AND_VISUAL_ALERTS || FEATURES.ENABLE_WEB_PUSH_NOTIFICATIONS) && (
+        <RealtimeOrderAlert shopId={shop.id} />
+      )}
       <Sidebar shop={shop} communityWhatsappUrl={communityWhatsappUrl} />
       <div className="flex flex-1 flex-col pb-20 md:pb-8">
         <DashboardHeader shop={shop} communityWhatsappUrl={communityWhatsappUrl} />

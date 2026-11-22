@@ -13,8 +13,28 @@ import {
   sendSystemNotification,
 } from "@/lib/sound";
 import { formatFCFA } from "@/lib/format";
+import { isFeatureEnabled } from "@/config/features";
 
 export function RealtimeOrderAlert({ shopId }: { shopId: string }) {
+  const isAudioVisualEnabled = isFeatureEnabled("ENABLE_ORDER_AUDIO_AND_VISUAL_ALERTS");
+  const isWebPushEnabled = isFeatureEnabled("ENABLE_WEB_PUSH_NOTIFICATIONS");
+
+  if (!isAudioVisualEnabled && !isWebPushEnabled) {
+    return null;
+  }
+
+  return <RealtimeOrderAlertInner shopId={shopId} isAudioVisualEnabled={isAudioVisualEnabled} isWebPushEnabled={isWebPushEnabled} />;
+}
+
+function RealtimeOrderAlertInner({
+  shopId,
+  isAudioVisualEnabled,
+  isWebPushEnabled,
+}: {
+  shopId: string;
+  isAudioVisualEnabled: boolean;
+  isWebPushEnabled: boolean;
+}) {
   const router = useRouter();
   const [newOrder, setNewOrder] = useState<{ id: string; code?: string; total?: number } | null>(null);
   const unreadCountRef = useRef(0);
@@ -25,29 +45,32 @@ export function RealtimeOrderAlert({ shopId }: { shopId: string }) {
       if (lastProcessedIdRef.current === order.id) return;
       lastProcessedIdRef.current = order.id;
 
-      setNewOrder(order);
+      if (isAudioVisualEnabled) {
+        setNewOrder(order);
+        // 1. Sonnerie distinctive de caisse / carillon
+        playOrderChime();
 
-      // 1. Sonnerie distinctive de caisse / carillon
-      playOrderChime();
+        // 2. Vibration haptique sur téléphone
+        triggerHapticFeedback();
 
-      // 2. Vibration haptique sur téléphone
-      triggerHapticFeedback();
+        // 3. Badge rouge sur l'icône de l'application PWA + Favicon + Titre document
+        unreadCountRef.current += 1;
+        updateAppBadge(unreadCountRef.current);
+      }
 
-      // 3. Badge rouge sur l'icône de l'application PWA + Favicon + Titre document
-      unreadCountRef.current += 1;
-      updateAppBadge(unreadCountRef.current);
-
-      // 4. Notification système native sur l'appareil (Mobile Android via Service Worker & PC)
-      const formattedTotal = order.total ? ` • ${formatFCFA(order.total)}` : "";
-      sendSystemNotification("Nouvelle commande reçue ! 🔔", {
-        body: `Commande #${order.code || ""}${formattedTotal} enregistrée dans votre boutique.`,
-        tag: `order-${order.id}`,
-      });
+      if (isWebPushEnabled) {
+        // 4. Notification système native sur l'appareil (Mobile Android via Service Worker & PC)
+        const formattedTotal = order.total ? ` • ${formatFCFA(order.total)}` : "";
+        sendSystemNotification("Nouvelle commande reçue ! 🔔", {
+          body: `Commande #${order.code || ""}${formattedTotal} enregistrée dans votre boutique.`,
+          tag: `order-${order.id}`,
+        });
+      }
 
       // 5. Actualiser la vue en arrière-plan
       router.refresh();
     },
-    [router]
+    [router, isAudioVisualEnabled, isWebPushEnabled]
   );
 
   useEffect(() => {
@@ -55,7 +78,7 @@ export function RealtimeOrderAlert({ shopId }: { shopId: string }) {
     const lastCheckedRef = { current: new Date().toISOString() };
 
     // 1. Demander la permission de notification au navigateur si par défaut
-    if (typeof window !== "undefined" && "Notification" in window) {
+    if (isWebPushEnabled && typeof window !== "undefined" && "Notification" in window) {
       if (Notification.permission === "default") {
         Notification.requestPermission().catch(() => {});
       }

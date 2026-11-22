@@ -3,6 +3,7 @@ import Link from "next/link";
 import { CreditCard, ArrowRight, QrCode, LogOut } from "lucide-react";
 import { requireShop, getUser } from "@/lib/supabase/server";
 import { getShopSubscription, getPlatformSetting } from "@/lib/subscription";
+import { FEATURES } from "@/config/features";
 import { shopUrl } from "@/lib/constants";
 import { signOut } from "@/app/(auth)/actions";
 import { WhatsAppIcon } from "@/components/ui/whatsapp-icon";
@@ -32,7 +33,13 @@ export default async function SettingsPage() {
     <div className="flex flex-col gap-6">
       <div>
         <h1 className="text-2xl font-extrabold text-ink">Paramètres</h1>
-        <p className="text-muted text-sm">Gérez les coordonnées, options de livraison, horaires, sécurité et notifications de votre boutique.</p>
+        <p className="text-muted text-sm">
+          Gérez les coordonnées, options de livraison, horaires, sécurité et{" "}
+          {FEATURES.ENABLE_ORDER_AUDIO_AND_VISUAL_ALERTS || FEATURES.ENABLE_WEB_PUSH_NOTIFICATIONS
+            ? "notifications"
+            : "e-mails"}{" "}
+          de votre boutique.
+        </p>
       </div>
 
       <Link

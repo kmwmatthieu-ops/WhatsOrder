@@ -9,6 +9,7 @@
  */
 
 import { CHIME_BASE64_WAV } from "./chime-sound";
+import { isFeatureEnabled } from "@/config/features";
 
 let originalFaviconHref: string | null = null;
 let originalDocumentTitle: string | null = null;
@@ -51,7 +52,7 @@ if (typeof window !== "undefined") {
  * Utilise la Web Audio API avec fallback immédiat sur balise HTML5 Audio.
  */
 export function playOrderChime(): boolean {
-  if (typeof window === "undefined") return false;
+  if (typeof window === "undefined" || !isFeatureEnabled("ENABLE_ORDER_AUDIO_AND_VISUAL_ALERTS")) return false;
   let played = false;
 
   // 1. Essai Web Audio oscillator
@@ -201,6 +202,7 @@ function drawFaviconBadge(count: number) {
  * - Sur le titre du document HTML (ex. "(1) 🔔 Nouvelle commande !").
  */
 export function updateAppBadge(count: number) {
+  if (!isFeatureEnabled("ENABLE_ORDER_AUDIO_AND_VISUAL_ALERTS")) return;
   // 1. W3C App Badging API pour PWA installée sur écran d'accueil
   if (typeof navigator !== "undefined" && "setAppBadge" in navigator) {
     if (count > 0) {
@@ -252,6 +254,7 @@ export function clearAppBadge() {
  * Déclenche une vibration haptique sur téléphone.
  */
 export function triggerHapticFeedback() {
+  if (!isFeatureEnabled("ENABLE_ORDER_AUDIO_AND_VISUAL_ALERTS")) return;
   if (typeof navigator !== "undefined" && "vibrate" in navigator) {
     try {
       navigator.vibrate([250, 100, 250, 100, 250]);
@@ -273,6 +276,7 @@ export async function sendSystemNotification(
     data?: Record<string, unknown>;
   }
 ): Promise<boolean> {
+  if (!isFeatureEnabled("ENABLE_WEB_PUSH_NOTIFICATIONS")) return false;
   if (typeof window === "undefined" || !("Notification" in window)) return false;
   if (Notification.permission !== "granted") return false;
 
