@@ -225,20 +225,63 @@ export async function updateClientProfile(
   return { ok: true, message: "Vos informations ont été enregistrées avec succès." };
 }
 
-/** Effacer l'historique d'activité du client (Section 6 Vie privée) */
+/** Effacer l'historique d'activité du client (Section 6 Vie privée - Phase V3-D) */
 export async function clearClientActivity(): Promise<ClientActionState> {
   const user = await getUser();
   if (!user) return { error: "Non connecté." };
 
   const supabase = await createClient();
-  // Réinitialisation des préférences de personnalisation
-  await supabase
-    .from("customer_profiles")
-    .update({ personalization_enabled: false, updated_at: new Date().toISOString() })
-    .eq("id", user.id);
+  await supabase.rpc("clear_my_customer_activity");
 
   revalidatePath("/compte/parametres");
-  return { ok: true, message: "Votre historique et vos préférences ont été réinitialisés." };
+  revalidatePath("/explorer");
+  return { ok: true, message: "Votre historique d'activité a été intégralement effacé." };
+}
+
+/** Activer ou désactiver la personnalisation et le traçage d'activité (Phase V3-D) */
+export async function togglePersonalizationConsentAction(consented: boolean): Promise<ClientActionState> {
+  const user = await getUser();
+  if (!user) return { error: "Non connecté." };
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("set_my_personalization_consent", {
+    p_consented: consented,
+  });
+
+  if (error) {
+    return { error: "Impossible de mettre à jour votre consentement." };
+  }
+
+  revalidatePath("/compte/parametres");
+  revalidatePath("/explorer");
+  return {
+    ok: true,
+    message: consented
+      ? "Personnalisation activée. Votre fil Explorer s'adaptera à vos préférences."
+      : "Personnalisation désactivée. Votre historique d'activité a été effacé.",
+  };
+}
+
+/** Enregistrer discrètement une interaction (vue, clic, recherche) pour la personnalisation (Phase V3-D) */
+export async function trackCustomerActivityAction(
+  type: "view" | "click" | "search" | "order",
+  productId?: string | null,
+  shopId?: string | null,
+  categoryId?: string | null,
+  searchQuery?: string | null
+): Promise<void> {
+  try {
+    const supabase = await createClient();
+    await supabase.rpc("record_customer_activity", {
+      p_activity_type: type,
+      p_product_id: productId ?? null,
+      p_shop_id: shopId ?? null,
+      p_category_id: categoryId ?? null,
+      p_search_query: searchQuery ?? null,
+    });
+  } catch {
+    // Non bloquant : l'échec d'un log d'activité ne doit jamais perturber la navigation de l'utilisateur
+  }
 }
 
 /** Suppression du compte client (Point 3.A) */

@@ -44,6 +44,10 @@ export default async function ClientSettingsPage() {
     profile = newProfile;
   }
 
+  // Récupérer le nombre d'activités enregistrées pour le panneau vie privée
+  const { data: stats } = await supabase.rpc("get_my_personalization_stats");
+  const activityCount = stats && stats.length > 0 ? Number(stats[0].activity_count) : 0;
+
   return (
     <div className="min-h-dvh bg-sand/30 text-ink flex flex-col">
       <header className="sticky top-0 z-30 border-b border-line bg-white px-4 py-3">
@@ -155,7 +159,11 @@ export default async function ClientSettingsPage() {
           </a>
         </div>
 
-        <ClientSettingsForm email={user.email ?? ""} profile={profile as CustomerProfile | null} />
+        <ClientSettingsForm
+          email={user.email ?? ""}
+          profile={profile as CustomerProfile | null}
+          activityCount={activityCount}
+        />
       </main>
     </div>
   );

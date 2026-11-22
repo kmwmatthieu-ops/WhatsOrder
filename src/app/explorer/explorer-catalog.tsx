@@ -1,42 +1,58 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Search, X, ShoppingBag, Heart, Sparkles, User, ArrowRight } from "lucide-react";
+import { Search, X, ShoppingBag, Heart, Sparkles, User, ArrowRight, Compass } from "lucide-react";
 import { ExplorerCard } from "./explorer-card";
+import { trackCustomerActivityAction } from "@/app/compte/actions";
 import type { ExplorerProduct } from "@/types/database";
 
 interface CategoryOption {
   name: string;
 }
 
+export type ExplorerTab = "for_you" | "trends" | "followed";
+
 interface ExplorerCatalogProps {
   initialProducts: ExplorerProduct[];
+  forYouProducts?: ExplorerProduct[];
   followedProducts?: ExplorerProduct[];
   followedShopIds?: string[];
   isLoggedIn?: boolean;
   categories: CategoryOption[];
   initialCategory?: string;
   initialQuery?: string;
-  initialTab?: "all" | "followed";
+  initialTab?: "all" | ExplorerTab;
 }
 
 export function ExplorerCatalog({
   initialProducts,
+  forYouProducts = [],
   followedProducts = [],
   followedShopIds = [],
   isLoggedIn = false,
   categories,
   initialCategory = "",
   initialQuery = "",
-  initialTab = "all",
+  initialTab = "trends",
 }: ExplorerCatalogProps) {
   const searchParams = useSearchParams();
 
-  const [activeTab, setActiveTab] = useState<"all" | "followed">(
-    (searchParams.get("tab") as "all" | "followed") || initialTab
-  );
+  const normalizedInitialTab: ExplorerTab =
+    initialTab === "all" ? "trends" : initialTab;
+
+  const urlTab = searchParams.get("tab");
+  const resolvedTab: ExplorerTab =
+    urlTab === "for_you"
+      ? "for_you"
+      : urlTab === "followed"
+      ? "followed"
+      : urlTab === "trends" || urlTab === "all"
+      ? "trends"
+      : normalizedInitialTab;
+
+  const [activeTab, setActiveTab] = useState<ExplorerTab>(resolvedTab);
   const [selectedCategory, setSelectedCategory] = useState<string>(
     initialCategory || searchParams.get("cat") || ""
   );
@@ -46,10 +62,22 @@ export function ExplorerCatalog({
 
   const followedShopIdsSet = useMemo(() => new Set(followedShopIds), [followedShopIds]);
 
+  // Traçage discret des recherches après délai d'inactivité
+  useEffect(() => {
+    if (!searchQuery.trim() || searchQuery.trim().length < 2) return;
+    const timer = setTimeout(() => {
+      trackCustomerActivityAction("search", null, null, null, searchQuery.trim()).catch(() => {});
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   // Synchronisation URL transparente sans rechargement lourd
-  function syncUrl(tab: "all" | "followed", category: string, query: string) {
+  function syncUrl(tab: ExplorerTab, category: string, query: string) {
     const params = new URLSearchParams();
     if (tab === "followed") params.set("tab", "followed");
+    else if (tab === "for_you") params.set("tab", "for_you");
+    else if (tab === "trends") params.set("tab", "trends");
+
     if (query.trim()) params.set("q", query.trim());
     if (category.trim()) params.set("cat", category.trim());
     const newUrl = params.toString() ? `/explorer?${params.toString()}` : "/explorer";
@@ -58,13 +86,18 @@ export function ExplorerCatalog({
     }
   }
 
-  function handleTabChange(tab: "all" | "followed") {
+  function handleTabChange(tab: ExplorerTab) {
     setActiveTab(tab);
     syncUrl(tab, selectedCategory, searchQuery);
   }
 
   // Filtrage ultra-rapide en mémoire (0ms de latence)
-  const currentBaseList = activeTab === "followed" ? followedProducts : initialProducts;
+  const currentBaseList =
+    activeTab === "for_you"
+      ? (forYouProducts.length > 0 ? forYouProducts : initialProducts)
+      : activeTab === "followed"
+      ? followedProducts
+      : initialProducts;
 
   const filteredProducts = useMemo(() => {
     let list = currentBaseList;
@@ -115,25 +148,50 @@ export function ExplorerCatalog({
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Sélecteur d'onglet principal (Tous les produits vs Boutiques suivies) */}
-      <div className="flex items-center gap-2 border-b border-line pb-3">
+      {/* Sélecteur d'onglet principal (Pour vous / Tendances / Boutiques suivies) */}
+      <div className="flex items-center gap-2 border-b border-line pb-3 overflow-x-auto no-scrollbar">
+        {/* 1. Onglet Pour vous */}
         <button
           type="button"
-          onClick={() => handleTabChange("all")}
-          className={`flex items-center gap-2 rounded-2xl px-4 py-2.5 text-xs sm:text-sm font-bold transition-all cursor-pointer ${
-            activeTab === "all"
+          onClick={() => handleTabChange("for_you")}
+          className={`flex items-center gap-2 rounded-2xl px-4 py-2.5 text-xs sm:text-sm font-bold transition-all cursor-pointer shrink-0 ${
+            activeTab === "for_you"
               ? "bg-brand-600 text-white shadow-xs"
               : "bg-white text-ink hover:bg-sand/70 border border-line"
           }`}
         >
           <Sparkles className="size-4" />
-          <span>Tous les produits</span>
+          <span>Pour vous</span>
+          {isLoggedIn && (
+            <span
+              className={`rounded-full px-1.5 py-0.2 text-[9px] font-extrabold uppercase tracking-wider ${
+                activeTab === "for_you" ? "bg-white/20 text-white" : "bg-brand-50 text-brand-700"
+              }`}
+            >
+              Sur-mesure
+            </span>
+          )}
         </button>
 
+        {/* 2. Onglet Tendances */}
+        <button
+          type="button"
+          onClick={() => handleTabChange("trends")}
+          className={`flex items-center gap-2 rounded-2xl px-4 py-2.5 text-xs sm:text-sm font-bold transition-all cursor-pointer shrink-0 ${
+            activeTab === "trends"
+              ? "bg-brand-600 text-white shadow-xs"
+              : "bg-white text-ink hover:bg-sand/70 border border-line"
+          }`}
+        >
+          <Compass className="size-4" />
+          <span>Tendances</span>
+        </button>
+
+        {/* 3. Onglet Boutiques suivies */}
         <button
           type="button"
           onClick={() => handleTabChange("followed")}
-          className={`flex items-center gap-2 rounded-2xl px-4 py-2.5 text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+          className={`flex items-center gap-2 rounded-2xl px-4 py-2.5 text-xs sm:text-sm font-bold transition-all cursor-pointer shrink-0 ${
             activeTab === "followed"
               ? "bg-brand-600 text-white shadow-xs"
               : "bg-white text-ink hover:bg-sand/70 border border-line"
@@ -236,6 +294,26 @@ export function ExplorerCatalog({
           )}
         </div>
 
+        {/* Cas particulier : Onglet Pour vous et non connecté */}
+        {activeTab === "for_you" && !isLoggedIn && (
+          <div className="my-8 flex flex-col items-center justify-center rounded-3xl border border-line bg-white p-8 text-center shadow-xs">
+            <span className="grid size-14 place-items-center rounded-full bg-brand-50 text-brand-600 mb-3">
+              <Sparkles className="size-7" />
+            </span>
+            <h2 className="text-base font-bold text-ink">Connectez-vous pour un fil personnalisé</h2>
+            <p className="text-xs text-muted max-w-sm mt-1 leading-relaxed">
+              Créez ou accédez à votre compte client pour recevoir des recommandations sur-mesure basées sur vos catégories favorites et boutiques suivies.
+            </p>
+            <Link
+              href="/compte/connexion?redirect=/explorer?tab=for_you"
+              className="mt-4 inline-flex items-center gap-1.5 rounded-2xl bg-brand-600 px-5 py-2.5 text-xs font-bold text-white hover:bg-brand-700 transition-colors shadow-xs"
+            >
+              <span>Se connecter à mon compte</span>
+              <ArrowRight className="size-3.5" />
+            </Link>
+          </div>
+        )}
+
         {/* Cas particulier : Onglet Boutiques suivies et non connecté */}
         {activeTab === "followed" && !isLoggedIn && (
           <div className="my-8 flex flex-col items-center justify-center rounded-3xl border border-line bg-white p-8 text-center shadow-xs">
@@ -268,7 +346,7 @@ export function ExplorerCatalog({
             </p>
             <button
               type="button"
-              onClick={() => handleTabChange("all")}
+              onClick={() => handleTabChange("trends")}
               className="mt-4 inline-flex items-center gap-1.5 rounded-2xl bg-brand-600 px-5 py-2.5 text-xs font-bold text-white hover:bg-brand-700 transition-colors shadow-xs cursor-pointer"
             >
               <span>Découvrir les boutiques du moment</span>
@@ -292,7 +370,8 @@ export function ExplorerCatalog({
 
         {/* Aucun produit correspondant aux filtres */}
         {filteredProducts.length === 0 &&
-          !(activeTab === "followed" && (!isLoggedIn || followedShopIds.length === 0)) && (
+          !(activeTab === "followed" && (!isLoggedIn || followedShopIds.length === 0)) &&
+          !(activeTab === "for_you" && !isLoggedIn) && (
             <div className="my-10 flex flex-col items-center justify-center rounded-3xl border border-line bg-white p-8 text-center shadow-xs">
               <span className="grid size-14 place-items-center rounded-full bg-sand text-muted mb-3">
                 <ShoppingBag className="size-7" />

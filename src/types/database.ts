@@ -588,6 +588,7 @@ export type Database = {
           residence_area: string | null;
           activity_consent: boolean;
           personalization_enabled: boolean;
+          has_consented_personalization: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -598,10 +599,35 @@ export type Database = {
           residence_area?: string | null;
           activity_consent?: boolean;
           personalization_enabled?: boolean;
+          has_consented_personalization?: boolean;
           created_at?: string;
           updated_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["customer_profiles"]["Insert"]>;
+        Relationships: [];
+      };
+      customer_activity: {
+        Row: {
+          id: string;
+          customer_id: string;
+          activity_type: "view" | "click" | "search" | "order";
+          product_id: string | null;
+          shop_id: string | null;
+          category_id: string | null;
+          search_query: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          customer_id: string;
+          activity_type: "view" | "click" | "search" | "order";
+          product_id?: string | null;
+          shop_id?: string | null;
+          category_id?: string | null;
+          search_query?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["customer_activity"]["Insert"]>;
         Relationships: [];
       };
       reports: {
@@ -962,6 +988,52 @@ export type Database = {
           shop_is_certified: boolean;
         }>;
       };
+      record_customer_activity: {
+        Args: {
+          p_activity_type: "view" | "click" | "search" | "order";
+          p_product_id?: string | null;
+          p_shop_id?: string | null;
+          p_category_id?: string | null;
+          p_search_query?: string | null;
+        };
+        Returns: boolean;
+      };
+      clear_my_customer_activity: {
+        Args: Record<PropertyKey, never>;
+        Returns: boolean;
+      };
+      set_my_personalization_consent: {
+        Args: { p_consented: boolean };
+        Returns: boolean;
+      };
+      get_my_personalization_stats: {
+        Args: Record<PropertyKey, never>;
+        Returns: Array<{
+          has_consented: boolean;
+          activity_count: number;
+        }>;
+      };
+      get_for_you_products: {
+        Args: { p_limit?: number; p_offset?: number };
+        Returns: Array<{
+          product_id: string;
+          product_name: string;
+          product_description: string | null;
+          product_price: number;
+          product_discount_percent: number;
+          product_image_url: string;
+          product_stock: number | null;
+          product_created_at: string;
+          category_id: string | null;
+          category_name: string | null;
+          shop_id: string;
+          shop_name: string;
+          shop_slug: string;
+          shop_logo_url: string | null;
+          shop_primary_color: string | null;
+          shop_is_certified: boolean;
+        }>;
+      };
     };
     Enums: {
       shop_status: ShopStatus;
@@ -998,5 +1070,6 @@ export type Report = Tables<"reports">;
 export type ShopCertification = Tables<"shop_certifications">;
 export type ShopFollower = Tables<"shop_followers">;
 export type PlatformSetting = Tables<"platform_settings">;
+export type CustomerActivity = Tables<"customer_activity">;
 export type FollowedShop = Database["public"]["Functions"]["get_my_followed_shops"]["Returns"][number];
 export type ExplorerProduct = Database["public"]["Functions"]["get_explorer_products"]["Returns"][number];

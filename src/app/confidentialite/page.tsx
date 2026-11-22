@@ -85,11 +85,29 @@ export default function ConfidentialitePage() {
           <section className="space-y-3 text-xs sm:text-sm text-muted leading-relaxed">
             <h2 className="text-base sm:text-lg font-bold text-ink">5. Durée de Conservation et Droits</h2>
             <p>
-              Les données sont conservées tant que le compte commerçant demeure actif. Conformément aux réglementations sur la protection des données, vous disposez d&apos;un droit d&apos;accès, de rectification et de suppression de vos données.
+              Les données sont conservées tant que le compte demeure actif. Conformément aux réglementations sur la protection des données, vous disposez d&apos;un droit d&apos;accès, de rectification et de suppression de vos données.
             </p>
             <p>
               Pour exercer vos droits ou demander la suppression définitive de vos données personnelles, écrivez à : <strong>jamstarck68@gmail.com</strong>.
             </p>
+          </section>
+
+          <section className="space-y-3 text-xs sm:text-sm text-muted leading-relaxed">
+            <h2 className="text-base sm:text-lg font-bold text-ink">6. Personnalisation du Fil Explorer (« Pour vous ») & Vie Privée</h2>
+            <p>
+              Pour les utilisateurs créant un compte client, nous proposons une expérience personnalisée via l&apos;onglet <strong>« Pour vous »</strong> sur Explorer. Ce service est strictement encadré :
+            </p>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>
+                <strong>Consentement explicite :</strong> Les données d&apos;activité (pages consultées, clics produits, recherches) ne sont enregistrées que si vous avez expressément coché le consentement lors de votre inscription ou activé la personnalisation dans vos paramètres.
+              </li>
+              <li>
+                <strong>Confidentialité absolue vis-à-vis des commerçants :</strong> Les commerçants n&apos;ont <strong>aucun accès</strong> à votre historique de navigation, ni à la liste nominative des abonnés de leur boutique. Ils voient uniquement un compteur global anonymisé.
+              </li>
+              <li>
+                <strong>Droit à l&apos;oubli en 1 clic :</strong> Vous pouvez à tout moment désactiver la personnalisation et effacer l&apos;intégralité de votre historique d&apos;activité depuis votre espace client (rubrique <em>« Vie privée & Personnalisation »</em>). Vos données sont alors immédiatement et définitivement purgées.
+              </li>
+            </ul>
           </section>
         </div>
       </main>

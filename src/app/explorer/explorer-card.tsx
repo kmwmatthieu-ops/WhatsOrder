@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Store, Flag, ArrowUpRight, BadgeCheck } from "lucide-react";
 import { formatFCFA } from "@/lib/format";
 import { ReportModal } from "@/components/shop/report-modal";
+import { trackCustomerActivityAction } from "@/app/compte/actions";
 import type { ExplorerProduct } from "@/types/database";
 
 interface ExplorerCardProps {
@@ -15,6 +16,15 @@ interface ExplorerCardProps {
 
 export function ExplorerCard({ product, isFollowing = false }: ExplorerCardProps) {
   const [showReport, setShowReport] = useState(false);
+
+  function handleTrackClick() {
+    trackCustomerActivityAction(
+      "click",
+      product.product_id,
+      product.shop_id,
+      product.category_id
+    ).catch(() => {});
+  }
 
   const hasDiscount = (product.product_discount_percent ?? 0) > 0;
   const discountedPrice = hasDiscount
@@ -30,6 +40,7 @@ export function ExplorerCard({ product, isFollowing = false }: ExplorerCardProps
         {/* Zone Image */}
         <Link
           href={productShopUrl}
+          onClick={handleTrackClick}
           className="relative aspect-square w-full overflow-hidden rounded-2xl bg-sand/60 block"
         >
           {product.product_image_url ? (
@@ -98,7 +109,11 @@ export function ExplorerCard({ product, isFollowing = false }: ExplorerCardProps
             </div>
 
             {/* Titre */}
-            <Link href={productShopUrl} className="block group-hover:text-brand-700 transition-colors">
+            <Link
+              href={productShopUrl}
+              onClick={handleTrackClick}
+              className="block group-hover:text-brand-700 transition-colors"
+            >
               <h3 className="line-clamp-2 text-xs sm:text-sm font-bold text-ink leading-snug">
                 {product.product_name}
               </h3>
@@ -120,6 +135,7 @@ export function ExplorerCard({ product, isFollowing = false }: ExplorerCardProps
 
             <Link
               href={productShopUrl}
+              onClick={handleTrackClick}
               className="grid size-8 place-items-center rounded-xl bg-brand-50 text-brand-700 group-hover:bg-brand-600 group-hover:text-white transition-all shadow-xs"
               title="Voir dans la boutique"
             >

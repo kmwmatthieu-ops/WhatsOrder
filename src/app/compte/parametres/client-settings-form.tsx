@@ -6,6 +6,7 @@ import { User, Lock, Trash2, RotateCcw, AlertTriangle, CheckCircle2, LogOut } fr
 import {
   updateClientProfile,
   clearClientActivity,
+  togglePersonalizationConsentAction,
   deleteClientAccount,
   clientSignOut,
   type ClientActionState,
@@ -18,9 +19,10 @@ import type { CustomerProfile } from "@/types/database";
 interface ClientSettingsFormProps {
   email: string;
   profile: (CustomerProfile & { residence_area?: string | null }) | null;
+  activityCount?: number;
 }
 
-export function ClientSettingsForm({ email, profile }: ClientSettingsFormProps) {
+export function ClientSettingsForm({ email, profile, activityCount = 0 }: ClientSettingsFormProps) {
   const router = useRouter();
 
   // Profil
@@ -31,6 +33,7 @@ export function ClientSettingsForm({ email, profile }: ClientSettingsFormProps) 
   const [personalization, setPersonalization] = useState(
     profile?.personalization_enabled ?? true
   );
+  const [eventsCount, setEventsCount] = useState(activityCount);
 
   // État d'affichage du profil personnel : se masque dès que les informations sont enregistrées
   const isInitialCompleted = Boolean(
@@ -60,8 +63,8 @@ export function ClientSettingsForm({ email, profile }: ClientSettingsFormProps) 
     const res = await clearClientActivity();
     setIsClearing(false);
     if (res.ok) {
-      setClearState(res.message || "Historique réinitialisé.");
-      setPersonalization(false);
+      setClearState(res.message || "Historique d'activité effacé avec succès.");
+      setEventsCount(0);
     }
   }
 
@@ -212,12 +215,12 @@ export function ClientSettingsForm({ email, profile }: ClientSettingsFormProps) 
         </section>
       )}
 
-      {/* 2. Vie privée & Historique d'activité */}
+      {/* 2. Vie privée & Historique d'activité (Phase V3-D) */}
       <section className="rounded-3xl border border-line bg-white p-5 sm:p-6 shadow-xs flex flex-col gap-4">
         <div>
-          <h2 className="text-base font-bold text-ink">Vie privée & Historique d&apos;activité</h2>
+          <h2 className="text-base font-bold text-ink">Vie privée & Personnalisation</h2>
           <p className="text-xs text-muted mt-0.5 leading-relaxed">
-            Conformément à nos engagements, vous pouvez à tout moment réinitialiser les données de navigation enregistrées pour personnaliser votre expérience.
+            Vos données de navigation (vues, clics, recherches) servent exclusivement à vous proposer des recommandations sur-mesure dans l&apos;onglet <strong>Pour vous</strong> d&apos;Explorer. Les commerçants n&apos;ont aucun accès à votre activité nominative.
           </p>
         </div>
 
@@ -228,14 +231,47 @@ export function ClientSettingsForm({ email, profile }: ClientSettingsFormProps) 
           </div>
         )}
 
-        <div className="flex items-center justify-between pt-2">
-          <span className="text-xs text-muted">Effacer les préférences de personnalisation</span>
+        <div className="rounded-2xl border border-line bg-sand/20 p-3.5 flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-xs font-bold text-ink">Recommandations personnalisées</p>
+            <p className="text-[11px] text-muted">
+              {personalization
+                ? "Activé : votre fil « Pour vous » s'adapte à vos goûts."
+                : "Désactivé : aucune donnée d'activité n'est enregistrée."}
+            </p>
+          </div>
+          <Toggle
+            label="Recommandations personnalisées"
+            hideLabel
+            name="personalizationToggle"
+            checked={personalization}
+            onChange={async (val) => {
+              setPersonalization(val);
+              await togglePersonalizationConsentAction(val);
+              if (!val) {
+                setEventsCount(0);
+                setClearState("Personnalisation désactivée et historique d'activité effacé.");
+              }
+            }}
+          />
+        </div>
+
+        <div className="flex items-center justify-between py-2 border-y border-line text-xs">
+          <span className="text-muted">Interactions enregistrées (vues, clics)</span>
+          <span className="font-bold text-ink">
+            {eventsCount > 0 ? `${eventsCount} interaction${eventsCount > 1 ? "s" : ""}` : "Aucune interaction"}
+          </span>
+        </div>
+
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+          <span className="text-xs text-muted">Effacer définitivement l&apos;historique</span>
           <Button
             type="button"
             variant="secondary"
             size="sm"
             onClick={handleClearHistory}
             loading={isClearing}
+            disabled={eventsCount === 0}
           >
             <RotateCcw className="size-3.5 mr-1.5" />
             <span>Effacer mon historique</span>

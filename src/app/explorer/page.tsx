@@ -23,10 +23,18 @@ export default async function ExplorerPage({ searchParams }: ExplorerPageProps) 
   const resolvedParams = await searchParams;
   const query = resolvedParams.q?.trim() || "";
   const category = resolvedParams.cat?.trim() || "";
-  const initialTab = resolvedParams.tab === "followed" ? "followed" : "all";
 
   const supabase = await createClient();
   const user = await getUser();
+
+  const initialTab =
+    resolvedParams.tab === "followed"
+      ? "followed"
+      : resolvedParams.tab === "trends"
+      ? "trends"
+      : user
+      ? "for_you"
+      : "trends";
 
   // 1. Récupération des catégories représentées parmi les boutiques actives
   const { data: catRows } = await supabase
@@ -44,11 +52,15 @@ export default async function ExplorerPage({ searchParams }: ExplorerPageProps) 
 
   const categories = uniqueCategoryNames.map((name) => ({ name }));
 
-  // 2. Appel RPC pour obtenir le fil Explorer général et les boutiques suivies
-  const [{ data: rawProducts }, followRowsResult, followedProductsResult] = await Promise.all([
+  // 2. Appel RPC pour obtenir le fil Explorer général, les recommandations et les boutiques suivies
+  const [{ data: rawProducts }, { data: rawForYouProducts }, followRowsResult, followedProductsResult] = await Promise.all([
     supabase.rpc("get_explorer_products", {
       p_search: null,
       p_category: null,
+      p_limit: 150,
+      p_offset: 0,
+    }),
+    supabase.rpc("get_for_you_products", {
       p_limit: 150,
       p_offset: 0,
     }),
@@ -61,6 +73,7 @@ export default async function ExplorerPage({ searchParams }: ExplorerPageProps) 
   ]);
 
   const products: ExplorerProduct[] = rawProducts ?? [];
+  const forYouProducts: ExplorerProduct[] = rawForYouProducts ?? [];
   const followedShopIds: string[] = (followRowsResult.data ?? []).map((f: { shop_id: string }) => f.shop_id);
   const followedProducts: ExplorerProduct[] = followedProductsResult.data ?? [];
 
@@ -130,6 +143,7 @@ export default async function ExplorerPage({ searchParams }: ExplorerPageProps) 
         {/* Catalogue dynamique instantané (0ms de latence au clic sur les filtres) */}
         <ExplorerCatalog
           initialProducts={products}
+          forYouProducts={forYouProducts}
           followedProducts={followedProducts}
           followedShopIds={followedShopIds}
           isLoggedIn={Boolean(user)}
