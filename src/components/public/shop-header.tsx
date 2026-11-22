@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { MapPin, Truck, Store as StoreIcon, ArrowLeft } from "lucide-react";
+import { MapPin, Truck, Store as StoreIcon, ArrowLeft, BadgeCheck } from "lucide-react";
 import { WhatsAppIcon } from "@/components/ui/whatsapp-icon";
 import { ShopHoursBadge } from "./shop-hours-badge";
 import type { Shop } from "@/types/database";
@@ -57,7 +57,18 @@ export function ShopHeader({ shop }: { shop: Shop }) {
 
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="truncate text-xl font-extrabold text-ink sm:text-2xl">{shop.name}</h1>
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <h1 className="truncate text-xl font-extrabold text-ink sm:text-2xl">{shop.name}</h1>
+                  {shop.is_certified && (
+                    <span
+                      className="inline-flex items-center gap-1 rounded-full bg-blue-50 border border-blue-200 px-2 py-0.5 text-[10px] font-black uppercase text-blue-700 shrink-0"
+                      title="Boutique vérifiée et certifiée"
+                    >
+                      <BadgeCheck className="size-3.5 fill-blue-600 text-white" />
+                      <span>Certifié</span>
+                    </span>
+                  )}
+                </div>
                 <ShopHoursBadge openingHours={shop.opening_hours} />
               </div>
 

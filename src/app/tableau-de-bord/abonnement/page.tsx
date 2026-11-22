@@ -8,11 +8,25 @@ export const metadata: Metadata = {
 };
 
 export default async function AbonnementPage() {
-  const { shop } = await requireShop();
-  const [metrics, plans] = await Promise.all([
+  const { shop, supabase } = await requireShop();
+  const [metrics, plans, { data: latestCert }] = await Promise.all([
     getShopSubscriptionMetrics(shop.id),
     getActiveSubscriptionPlans(),
+    supabase
+      .from("shop_certifications")
+      .select("*")
+      .eq("shop_id", shop.id)
+      .order("submitted_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ]);
 
-  return <SubscriptionView shop={shop} metrics={metrics} plans={plans} />;
+  return (
+    <SubscriptionView
+      shop={shop}
+      metrics={metrics}
+      plans={plans}
+      latestCertification={latestCert}
+    />
+  );
 }

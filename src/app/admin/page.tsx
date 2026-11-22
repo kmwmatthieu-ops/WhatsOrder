@@ -7,6 +7,7 @@ import { AdminShopsTable, type AdminShopRow } from "./admin-shops-table";
 import { AdminSubscriptionRequests, type AdminRequestRow } from "./admin-subscription-requests";
 import { AdminManagementCard, type AdminUserRow } from "./admin-management-card";
 import { AdminReportsTable, type AdminReportRow } from "./admin-reports-table";
+import { AdminCertificationsTable, type AdminCertificationRow } from "./admin-certifications-table";
 import { adminSignOut } from "./connexion/actions";
 import { Logo } from "@/components/ui/logo";
 import { formatFCFA } from "@/lib/format";
@@ -68,6 +69,25 @@ export default async function AdminPage() {
     reviewed_by: rep.reviewed_by,
     reviewed_at: rep.reviewed_at,
     created_at: rep.created_at,
+  }));
+
+  // 1.quater Dossiers de Certification Commerçant (V3-B)
+  const { data: rawCerts } = await supabase.rpc("admin_list_certifications");
+  const certsList: AdminCertificationRow[] = (rawCerts ?? []).map((c) => ({
+    id: c.id,
+    shop_id: c.shop_id,
+    shop_name: c.shop_name,
+    shop_slug: c.shop_slug,
+    owner_email: c.owner_email,
+    business_doc_url: c.business_doc_url,
+    identity_doc_url: c.identity_doc_url,
+    store_photo_url: c.store_photo_url,
+    store_video_url: c.store_video_url,
+    status: c.status,
+    admin_notes: c.admin_notes,
+    submitted_at: c.submitted_at,
+    reviewed_at: c.reviewed_at,
+    is_certified: c.is_certified,
   }));
 
   // 2. Commandes globales & volume d'affaires (GMV)
@@ -243,6 +263,11 @@ export default async function AdminPage() {
         {/* Section 1 : Demandes de Paiement Mobile Money en Attente */}
         <section className="space-y-3">
           <AdminSubscriptionRequests requests={requestsList} />
+        </section>
+
+        {/* Section 1.bis : Dossiers de Certification Commerçant (V3-B) */}
+        <section className="space-y-3">
+          <AdminCertificationsTable initialCertifications={certsList} />
         </section>
 
         {/* Section 2 : Gestion des Comptes Administrateurs (max 2) */}

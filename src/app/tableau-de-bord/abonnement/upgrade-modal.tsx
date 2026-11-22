@@ -16,9 +16,10 @@ type UpgradeModalProps = {
 export function UpgradeModal({ shop, plans, currentPlanId, isExpired }: UpgradeModalProps) {
   const [isOpen, setIsOpen] = useState(false);
   const paidPlans = plans.filter((p) => p.id !== "gratuit");
+  const isPremiumUser = currentPlanId === "premium";
 
   const [selectedPlanId, setSelectedPlanId] = useState<"business" | "premium">(
-    currentPlanId === "premium" ? "premium" : "business"
+    isPremiumUser ? "premium" : "business"
   );
   const [duration, setDuration] = useState<number>(1);
 
@@ -28,6 +29,12 @@ export function UpgradeModal({ shop, plans, currentPlanId, isExpired }: UpgradeM
 
   const selectedPlan = paidPlans.find((p) => p.id === selectedPlanId) || paidPlans[0];
   const totalAmount = selectedPlan ? selectedPlan.price_monthly * duration : 0;
+
+  const buttonLabel = isExpired
+    ? "Renouveler mon abonnement"
+    : isPremiumUser
+    ? "Prolonger mon abonnement"
+    : "Changer ou prolonger mon plan";
 
   // Paiement en ligne immédiat via SasPay
   async function handleOnlineSaspayPay() {
@@ -60,7 +67,7 @@ export function UpgradeModal({ shop, plans, currentPlanId, isExpired }: UpgradeM
         className="inline-flex items-center justify-center gap-2 rounded-2xl bg-brand-600 px-5 py-3 text-xs sm:text-sm font-bold text-white shadow-md hover:bg-brand-700 active:scale-98 transition-all"
       >
         <Sparkles className="size-4" />
-        <span>{isExpired ? "Renouveler mon abonnement" : "Changer ou prolonger mon plan"}</span>
+        <span>{buttonLabel}</span>
       </button>
 
       {isOpen && (
@@ -76,47 +83,72 @@ export function UpgradeModal({ shop, plans, currentPlanId, isExpired }: UpgradeM
 
             <div className="space-y-5">
               <div>
-                <h3 className="text-lg font-black text-ink">Mettre à niveau mon abonnement</h3>
+                <h3 className="text-lg font-black text-ink">
+                  {isPremiumUser
+                    ? "Prolonger mon abonnement Premium"
+                    : "Mettre à niveau mon abonnement"}
+                </h3>
                 <p className="text-xs text-muted mt-0.5">
-                  Activation instantanée et sécurisée par Mobile Money (Afrique).
+                  {isPremiumUser
+                    ? "Conservez vos avantages illimités, votre support VIP et votre présence Explorer."
+                    : "Activation instantanée et sécurisée par Mobile Money (Afrique)."}
                 </p>
               </div>
 
-              {/* 1. Choix du plan */}
+              {/* 1. Choix du plan (verrouillé sur Premium si déjà Premium) */}
               <div>
-                <label className="text-xs font-bold text-ink block mb-2">1. Choisissez votre formule</label>
-                <div className="grid grid-cols-2 gap-3">
-                  {paidPlans.map((plan) => {
-                    const isSelected = selectedPlanId === plan.id;
-                    return (
-                      <button
-                        key={plan.id}
-                        type="button"
-                        onClick={() => setSelectedPlanId(plan.id as "business" | "premium")}
-                        className={`flex flex-col p-3.5 rounded-2xl border text-left transition-all ${
-                          isSelected
-                            ? "border-brand-600 bg-brand-50/50 ring-2 ring-brand-600/30"
-                            : "border-line bg-white hover:bg-sand/30"
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="font-black text-sm text-ink">{plan.name}</span>
-                          {plan.badge && (
-                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-brand-600 text-white">
-                              {plan.badge}
-                            </span>
-                          )}
-                        </div>
-                        <span className="text-xs font-bold text-brand-700 mt-1">
-                          {formatFCFA(plan.price_monthly)} / mois
-                        </span>
-                        <span className="text-[11px] text-muted mt-1">
-                          {plan.max_products ? `${plan.max_products} produits` : "Produits illimités"}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
+                <label className="text-xs font-bold text-ink block mb-2">
+                  {isPremiumUser ? "1. Formule en cours de prolongation" : "1. Choisissez votre formule"}
+                </label>
+                {isPremiumUser ? (
+                  <div className="rounded-2xl border-2 border-purple-500 bg-purple-50/50 p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="font-black text-sm text-purple-900">Formule Premium</span>
+                        <p className="text-xs text-purple-700 mt-0.5">Produits et commandes illimités</p>
+                      </div>
+                      <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-purple-600 text-white">
+                        Illimité
+                      </span>
+                    </div>
+                    <div className="mt-2 text-xs font-bold text-purple-900">
+                      {formatFCFA(selectedPlan?.price_monthly || 12000)} / mois
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-3">
+                    {paidPlans.map((plan) => {
+                      const isSelected = selectedPlanId === plan.id;
+                      return (
+                        <button
+                          key={plan.id}
+                          type="button"
+                          onClick={() => setSelectedPlanId(plan.id as "business" | "premium")}
+                          className={`flex flex-col p-3.5 rounded-2xl border text-left transition-all ${
+                            isSelected
+                              ? "border-brand-600 bg-brand-50/50 ring-2 ring-brand-600/30"
+                              : "border-line bg-white hover:bg-sand/30"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="font-black text-sm text-ink">{plan.name}</span>
+                            {plan.badge && (
+                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-brand-600 text-white">
+                                {plan.badge}
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-xs font-bold text-brand-700 mt-1">
+                            {formatFCFA(plan.price_monthly)} / mois
+                          </span>
+                          <span className="text-[11px] text-muted mt-1">
+                            {plan.max_products ? `${plan.max_products} produits` : "Produits illimités"}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               {/* 2. Durée */}

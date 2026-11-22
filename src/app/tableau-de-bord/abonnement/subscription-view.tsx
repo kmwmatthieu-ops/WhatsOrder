@@ -14,21 +14,29 @@ import {
   BarChart3,
   Download,
   MessageCircle,
+  Sparkles,
 } from "lucide-react";
 import { formatFCFA } from "@/lib/format";
 import { MOBILE_MONEY_PAYMENT_CONFIG } from "@/lib/constants";
-import type { SubscriptionPlan, Shop } from "@/types/database";
+import type { SubscriptionPlan, Shop, ShopCertification } from "@/types/database";
 import type { ShopSubscriptionMetrics } from "@/lib/subscription";
 import { UpgradeModal } from "./upgrade-modal";
 import { cancelSubscriptionRequest } from "./actions";
+import { ShopCertificationCard } from "./shop-certification-card";
 
 type SubscriptionViewProps = {
   shop: Shop;
   metrics: ShopSubscriptionMetrics;
   plans: SubscriptionPlan[];
+  latestCertification?: ShopCertification | null;
 };
 
-export function SubscriptionView({ shop, metrics, plans }: SubscriptionViewProps) {
+export function SubscriptionView({
+  shop,
+  metrics,
+  plans,
+  latestCertification = null,
+}: SubscriptionViewProps) {
   const { resolved, productsCount, monthlyOrdersCount, pendingRequest, historyRequests } = metrics;
   const { effectivePlan, actualPlan, isExpired, daysRemaining, subscription } = resolved;
 
@@ -40,6 +48,10 @@ export function SubscriptionView({ shop, metrics, plans }: SubscriptionViewProps
 
   const orderLimit = effectivePlan.max_orders_per_month;
   const orderPct = orderLimit ? Math.min(100, Math.round((monthlyOrdersCount / orderLimit) * 100)) : 0;
+
+  // Règle Formule Premium : aucun bouton "Changer de plan", uniquement "Prolonger" à <= 10 jours de l'échéance
+  const isPremiumActive = (actualPlan.id === "premium" || effectivePlan.id === "premium") && !isExpired;
+  const canRenewPremium = daysRemaining !== null && daysRemaining <= 10;
 
   async function handleCancelRequest(id: string) {
     if (!confirm("Voulez-vous vraiment annuler cette demande de mise à niveau ?")) return;
@@ -125,6 +137,18 @@ export function SubscriptionView({ shop, metrics, plans }: SubscriptionViewProps
         </div>
       )}
 
+      {/* Alerte Expiration Imminente Premium (10 jours ou moins) */}
+      {isPremiumActive && canRenewPremium && (
+        <div className="rounded-3xl border border-purple-200 bg-purple-50/80 p-5 text-purple-900 shadow-xs">
+          <div className="flex items-center gap-3">
+            <Clock className="size-5 text-purple-700 shrink-0" />
+            <div className="flex-1 text-xs sm:text-sm">
+              Il vous reste <strong>{daysRemaining} jour{daysRemaining > 1 ? "s" : ""}</strong> d&apos;abonnement Premium. Vous pouvez dès maintenant prolonger pour continuer à bénéficier de tous vos quotas illimités et de votre badge vérifié sans interruption.
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Carte Résumé du Plan Actuel */}
       <div className="rounded-3xl border border-line bg-white p-6 sm:p-7 shadow-xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-line">
@@ -158,12 +182,19 @@ export function SubscriptionView({ shop, metrics, plans }: SubscriptionViewProps
           </div>
 
           <div className="flex items-center gap-3">
-            <UpgradeModal
-              shop={shop}
-              plans={plans}
-              currentPlanId={actualPlan.id}
-              isExpired={isExpired}
-            />
+            {isPremiumActive && !canRenewPremium ? (
+              <span className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-purple-50 text-purple-700 font-bold text-xs border border-purple-200 shadow-2xs">
+                <Sparkles className="size-4 text-purple-600" />
+                <span>Formule Ultime Active</span>
+              </span>
+            ) : (
+              <UpgradeModal
+                shop={shop}
+                plans={plans}
+                currentPlanId={actualPlan.id}
+                isExpired={isExpired}
+              />
+            )}
           </div>
         </div>
 
@@ -331,6 +362,13 @@ export function SubscriptionView({ shop, metrics, plans }: SubscriptionViewProps
           </div>
         </div>
       </div>
+
+      {/* Module de Certification Commerçant Officielle (Exclusivité Premium) */}
+      <ShopCertificationCard
+        shop={shop}
+        isPremium={actualPlan.id === "premium" && !isExpired}
+        latestCertification={latestCertification}
+      />
 
       {/* Historique des Demandes de Changement de Plan */}
       {historyRequests.length > 0 && (

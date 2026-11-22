@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Store, Flag, ArrowUpRight } from "lucide-react";
+import { Store, Flag, ArrowUpRight, BadgeCheck } from "lucide-react";
 import { formatFCFA } from "@/lib/format";
 import { ReportModal } from "@/components/shop/report-modal";
 import type { ExplorerProduct } from "@/types/database";
@@ -72,6 +72,11 @@ export function ExplorerCard({ product }: ExplorerCardProps) {
               >
                 <Store className="size-3 shrink-0 text-brand-600" />
                 <span className="truncate font-medium">{product.shop_name}</span>
+                {product.shop_is_certified && (
+                  <span title="Boutique certifiée">
+                    <BadgeCheck className="size-3.5 fill-blue-600 text-white shrink-0" />
+                  </span>
+                )}
               </Link>
 
               {/* Bouton de signalement discret */}

@@ -274,3 +274,33 @@ export async function resolveReportAction(
   return { ok: true };
 }
 
+/**
+ * Valide ou rejette une demande de certification commerçant.
+ */
+export async function reviewCertificationAction(
+  certificationId: string,
+  status: "approved" | "rejected",
+  notes?: string
+): Promise<{ ok: boolean; error?: string }> {
+  const supabase = await createClient();
+  const { data: isAdmin } = await supabase.rpc("is_admin");
+  if (!isAdmin) {
+    return { ok: false, error: "Accès refusé : privilèges administrateur requis." };
+  }
+
+  const { error } = await supabase.rpc("admin_review_certification", {
+    p_certification_id: certificationId,
+    p_status: status,
+    p_admin_notes: notes || null,
+  });
+
+  if (error) {
+    return { ok: false, error: dbErrorMessage(error, "Erreur lors du traitement de la certification.") };
+  }
+
+  revalidatePath("/admin");
+  revalidatePath("/explorer");
+  return { ok: true };
+}
+
+

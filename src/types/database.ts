@@ -57,6 +57,7 @@ export type Database = {
           opening_hours: OpeningHours;
           order_notifications_enabled: boolean;
           is_listed_in_explorer: boolean;
+          is_certified: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -78,6 +79,7 @@ export type Database = {
           opening_hours?: OpeningHours;
           order_notifications_enabled?: boolean;
           is_listed_in_explorer?: boolean;
+          is_certified?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -621,6 +623,44 @@ export type Database = {
           },
         ];
       };
+      shop_certifications: {
+        Row: {
+          id: string;
+          shop_id: string;
+          business_doc_url: string;
+          identity_doc_url: string;
+          store_photo_url: string;
+          store_video_url: string;
+          status: "pending" | "approved" | "rejected";
+          admin_notes: string | null;
+          submitted_at: string;
+          reviewed_at: string | null;
+          reviewed_by: string | null;
+        };
+        Insert: {
+          id?: string;
+          shop_id: string;
+          business_doc_url: string;
+          identity_doc_url: string;
+          store_photo_url: string;
+          store_video_url: string;
+          status?: "pending" | "approved" | "rejected";
+          admin_notes?: string | null;
+          submitted_at?: string;
+          reviewed_at?: string | null;
+          reviewed_by?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["shop_certifications"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "shop_certifications_shop_id_fkey";
+            columns: ["shop_id"];
+            isOneToOne: false;
+            referencedRelation: "shops";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: { [_ in never]: never };
     Functions: {
@@ -717,7 +757,35 @@ export type Database = {
           shop_slug: string;
           shop_logo_url: string | null;
           shop_primary_color: string | null;
+          shop_is_certified?: boolean;
         }>;
+      };
+      admin_list_certifications: {
+        Args: Record<PropertyKey, never>;
+        Returns: Array<{
+          id: string;
+          shop_id: string;
+          shop_name: string;
+          shop_slug: string;
+          owner_email: string;
+          business_doc_url: string;
+          identity_doc_url: string;
+          store_photo_url: string;
+          store_video_url: string;
+          status: string;
+          admin_notes: string | null;
+          submitted_at: string;
+          reviewed_at: string | null;
+          is_certified: boolean;
+        }>;
+      };
+      admin_review_certification: {
+        Args: {
+          p_certification_id: string;
+          p_status: string;
+          p_admin_notes?: string | null;
+        };
+        Returns: boolean;
       };
       admin_list_reports: {
         Args: { p_status?: string | null };
@@ -779,4 +847,5 @@ export type SubscriptionRequest = Tables<"subscription_requests">;
 export type SaspayPayment = Tables<"saspay_payments">;
 export type CustomerProfile = Tables<"customer_profiles">;
 export type Report = Tables<"reports">;
+export type ShopCertification = Tables<"shop_certifications">;
 export type ExplorerProduct = Database["public"]["Functions"]["get_explorer_products"]["Returns"][number];
