@@ -563,6 +563,7 @@ export type Database = {
           id: string;
           full_name: string | null;
           phone: string | null;
+          residence_area: string | null;
           activity_consent: boolean;
           personalization_enabled: boolean;
           created_at: string;
@@ -572,6 +573,7 @@ export type Database = {
           id: string;
           full_name?: string | null;
           phone?: string | null;
+          residence_area?: string | null;
           activity_consent?: boolean;
           personalization_enabled?: boolean;
           created_at?: string;

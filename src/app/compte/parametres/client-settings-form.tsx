@@ -17,7 +17,7 @@ import type { CustomerProfile } from "@/types/database";
 
 interface ClientSettingsFormProps {
   email: string;
-  profile: CustomerProfile | null;
+  profile: (CustomerProfile & { residence_area?: string | null }) | null;
 }
 
 export function ClientSettingsForm({ email, profile }: ClientSettingsFormProps) {
@@ -31,6 +31,15 @@ export function ClientSettingsForm({ email, profile }: ClientSettingsFormProps) 
   const [personalization, setPersonalization] = useState(
     profile?.personalization_enabled ?? true
   );
+
+  // État d'affichage du profil personnel : se masque dès que les informations sont enregistrées
+  const isInitialCompleted = Boolean(
+    profile?.full_name &&
+    profile.full_name !== "Client" &&
+    (profile?.phone || (profile as { residence_area?: string | null })?.residence_area)
+  );
+  const [isEditing, setIsEditing] = useState(!isInitialCompleted);
+  const isCompleted = isInitialCompleted || Boolean(profileState.ok);
 
   // Historique
   const [clearState, setClearState] = useState<string | null>(null);
@@ -62,69 +71,146 @@ export function ClientSettingsForm({ email, profile }: ClientSettingsFormProps) 
 
   return (
     <div className="flex flex-col gap-6">
-      {/* 1. Informations Personnelles */}
-      <section className="rounded-3xl border border-line bg-white p-5 sm:p-6 shadow-xs flex flex-col gap-4">
-        <div className="flex items-center gap-3">
-          <span className="grid size-10 place-items-center rounded-2xl bg-brand-50 text-brand-700">
-            <User className="size-5" />
-          </span>
-          <div>
-            <h2 className="text-base font-bold text-ink">Profil personnel</h2>
-            <p className="text-xs text-muted">Vos coordonnées visibles lors de vos commandes.</p>
-          </div>
-        </div>
-
-        <form action={profileAction} className="flex flex-col gap-4 mt-2">
-          {profileState.error && (
-            <div className="rounded-2xl border border-danger-200 bg-danger-50 p-3 text-xs text-danger-700">
-              {profileState.error}
+      {/* 1. Informations Personnelles (Masqué une fois enregistré) */}
+      {isCompleted && !isEditing ? (
+        <section className="rounded-3xl border border-line bg-white p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <span className="grid size-10 place-items-center rounded-2xl bg-brand-50 text-brand-700 shrink-0">
+              <CheckCircle2 className="size-5 text-brand-600" />
+            </span>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <p className="text-xs sm:text-sm font-bold text-ink">Profil personnel enregistré</p>
+                <span className="rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-bold text-brand-700">
+                  Enregistré
+                </span>
+              </div>
+              <p className="text-[11px] text-muted truncate mt-0.5">
+                {profile?.full_name || "Client"}
+                {profile?.phone ? ` • ${profile.phone}` : ""}
+                {(profile as { residence_area?: string | null })?.residence_area
+                  ? ` • ${(profile as { residence_area?: string | null }).residence_area}`
+                  : ""}
+              </p>
             </div>
-          )}
-          {profileState.ok && (
-            <div className="rounded-2xl border border-success-200 bg-success-50 p-3 text-xs text-success-800 flex items-center gap-2">
-              <CheckCircle2 className="size-4 shrink-0 text-success-600" />
-              <span>{profileState.message}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsEditing(true)}
+            className="inline-flex items-center justify-center rounded-xl border border-line bg-sand/60 px-3.5 py-1.5 text-xs font-semibold text-ink hover:bg-sand transition-colors shrink-0 cursor-pointer self-end sm:self-auto"
+          >
+            Modifier
+          </button>
+        </section>
+      ) : (
+        <section className="rounded-3xl border border-line bg-white p-5 sm:p-6 shadow-xs flex flex-col gap-4">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <span className="grid size-10 place-items-center rounded-2xl bg-brand-50 text-brand-700">
+                <User className="size-5" />
+              </span>
+              <div>
+                <h2 className="text-base font-bold text-ink">Profil personnel</h2>
+                <p className="text-xs text-muted">Vos coordonnées visibles lors de vos commandes.</p>
+              </div>
             </div>
-          )}
-
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold text-ink">Adresse e-mail</label>
-            <input
-              type="email"
-              disabled
-              value={email}
-              className="w-full h-11 rounded-2xl border border-line bg-sand/50 px-3.5 text-xs text-muted cursor-not-allowed"
-            />
+            {isCompleted && (
+              <button
+                type="button"
+                onClick={() => setIsEditing(false)}
+                className="text-xs font-semibold text-muted hover:text-ink cursor-pointer"
+              >
+                Fermer
+              </button>
+            )}
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold text-ink">Nom complet</label>
-            <input
-              type="text"
-              name="fullName"
-              required
-              defaultValue={profile?.full_name ?? ""}
-              className="w-full h-11 rounded-2xl border border-line bg-white px-3.5 text-xs text-ink focus:border-brand-600 focus:outline-none"
-            />
-          </div>
+          <form action={profileAction} className="flex flex-col gap-4 mt-2">
+            {profileState.error && (
+              <div className="rounded-2xl border border-danger-200 bg-danger-50 p-3 text-xs text-danger-700">
+                {profileState.error}
+              </div>
+            )}
+            {profileState.ok && (
+              <div className="rounded-2xl border border-success-200 bg-success-50 p-3 text-xs text-success-800 flex items-center gap-2">
+                <CheckCircle2 className="size-4 shrink-0 text-success-600" />
+                <span>{profileState.message}</span>
+              </div>
+            )}
 
-          <div className="pt-2 border-t border-line">
-            <Toggle
-              name="personalizationEnabled"
-              label="Personnalisation du fil Explorer"
-              description="Adapter les suggestions de produits à vos visites et centres d'intérêt."
-              checked={personalization}
-              onChange={setPersonalization}
-            />
-          </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold text-ink">Adresse e-mail</label>
+              <input
+                type="email"
+                disabled
+                value={email}
+                className="w-full h-11 rounded-2xl border border-line bg-sand/50 px-3.5 text-xs text-muted cursor-not-allowed"
+              />
+            </div>
 
-          <div className="flex justify-end pt-2">
-            <Button type="submit" size="sm" loading={profilePending}>
-              Enregistrer mon profil
-            </Button>
-          </div>
-        </form>
-      </section>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold text-ink">Nom complet *</label>
+              <input
+                type="text"
+                name="fullName"
+                required
+                placeholder="Ex. Christian Mba"
+                defaultValue={profile?.full_name ?? ""}
+                className="w-full h-11 rounded-2xl border border-line bg-white px-3.5 text-xs text-ink focus:border-brand-600 focus:outline-none"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-ink">Numéro de téléphone</label>
+                <input
+                  type="tel"
+                  name="phone"
+                  placeholder="Ex. +241 07 00 00 00"
+                  defaultValue={profile?.phone ?? ""}
+                  className="w-full h-11 rounded-2xl border border-line bg-white px-3.5 text-xs text-ink focus:border-brand-600 focus:outline-none"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-ink">Zone de résidence</label>
+                <input
+                  type="text"
+                  name="residenceArea"
+                  placeholder="Ex. Akanda, Libreville / Port-Gentil"
+                  defaultValue={(profile as { residence_area?: string | null })?.residence_area ?? ""}
+                  className="w-full h-11 rounded-2xl border border-line bg-white px-3.5 text-xs text-ink focus:border-brand-600 focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-line">
+              <Toggle
+                name="personalizationEnabled"
+                label="Personnalisation du fil Explorer"
+                description="Adapter les suggestions de produits à vos visites et centres d'intérêt."
+                checked={personalization}
+                onChange={setPersonalization}
+              />
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2">
+              {isCompleted && (
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(false)}
+                  className="h-9 rounded-2xl border border-line bg-white px-3.5 text-xs font-semibold text-muted hover:text-ink hover:bg-sand"
+                >
+                  Annuler
+                </button>
+              )}
+              <Button type="submit" size="sm" loading={profilePending}>
+                Enregistrer mon profil
+              </Button>
+            </div>
+          </form>
+        </section>
+      )}
 
       {/* 2. Vie privée & Historique d'activité */}
       <section className="rounded-3xl border border-line bg-white p-5 sm:p-6 shadow-xs flex flex-col gap-4">

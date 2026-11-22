@@ -183,6 +183,8 @@ export async function updateClientProfile(
   if (!user) return { error: "Non connecté." };
 
   const fullName = String(formData.get("fullName") || "").trim();
+  const phone = String(formData.get("phone") || "").trim();
+  const residenceArea = String(formData.get("residenceArea") || "").trim();
   const personalizationEnabled = formData.get("personalizationEnabled") === "on";
 
   if (!fullName || fullName.length < 2) {
@@ -190,19 +192,37 @@ export async function updateClientProfile(
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.from("customer_profiles").upsert({
+  const updatePayload: Record<string, unknown> = {
     id: user.id,
     full_name: fullName,
+    phone: phone || null,
     personalization_enabled: personalizationEnabled,
     updated_at: new Date().toISOString(),
-  });
+  };
+
+  if (residenceArea) {
+    updatePayload.residence_area = residenceArea;
+  }
+
+  const { error } = await supabase.from("customer_profiles").upsert(updatePayload as any);
 
   if (error) {
-    return { error: "Impossible d'enregistrer les modifications." };
+    // Tolérance si la colonne residence_area n'a pas encore été migrée dans la base
+    if (error.message?.includes("residence_area") || error.code === "42703") {
+      delete updatePayload.residence_area;
+      const { error: fallbackError } = await supabase
+        .from("customer_profiles")
+        .upsert(updatePayload as any);
+      if (fallbackError) {
+        return { error: "Impossible d'enregistrer les modifications." };
+      }
+    } else {
+      return { error: "Impossible d'enregistrer les modifications." };
+    }
   }
 
   revalidatePath("/compte/parametres");
-  return { ok: true, message: "Vos informations ont été mises à jour." };
+  return { ok: true, message: "Vos informations ont été enregistrées avec succès." };
 }
 
 /** Effacer l'historique d'activité du client (Section 6 Vie privée) */

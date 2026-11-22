@@ -48,18 +48,22 @@ export default async function ClientSettingsPage() {
           </Link>
           <div className="flex items-center gap-2 sm:gap-3">
             <Link
-              href="/tableau-de-bord"
-              className="inline-flex items-center gap-1.5 rounded-2xl bg-brand-600 px-3.5 py-2 text-xs font-bold text-white hover:bg-brand-700 transition-colors shadow-xs"
-            >
-              <Store className="size-3.5" />
-              <span>Espace Commerçant</span>
-            </Link>
-            <Link
               href="/explorer"
-              className="inline-flex items-center gap-1 text-xs font-semibold text-muted hover:text-ink transition-colors px-2 py-1.5 rounded-xl hover:bg-sand"
+              className="inline-flex items-center gap-1.5 rounded-2xl border border-line bg-white px-3.5 py-2 text-xs font-bold text-ink hover:bg-sand transition-colors shadow-xs"
+              title="Explorer le catalogue et acheter des produits"
             >
               <Compass className="size-3.5 text-brand-600" />
               <span className="hidden sm:inline">Explorer</span>
+              <span className="sm:hidden">Acheter</span>
+            </Link>
+            <Link
+              href="/tableau-de-bord"
+              className="inline-flex items-center gap-1.5 rounded-2xl bg-brand-600 px-3.5 py-2 text-xs font-bold text-white hover:bg-brand-700 transition-colors shadow-xs"
+              title="Accéder au tableau de bord commerçant"
+            >
+              <Store className="size-3.5" />
+              <span className="hidden sm:inline">Espace Commerçant</span>
+              <span className="sm:hidden">Vendre</span>
             </Link>
           </div>
         </div>
