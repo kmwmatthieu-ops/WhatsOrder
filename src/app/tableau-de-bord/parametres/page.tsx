@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CreditCard, ArrowRight } from "lucide-react";
+import { CreditCard, ArrowRight, QrCode } from "lucide-react";
 import { requireShop, getUser } from "@/lib/supabase/server";
 import { getShopSubscription } from "@/lib/subscription";
+import { shopUrl } from "@/lib/constants";
 import { SettingsForm } from "./settings-form";
 import { AccountSettingsCard } from "./account-settings-card";
 import { OrderNotificationsCard } from "./order-notifications-card";
+import { ShopQrCodeModal } from "@/components/shop/shop-qr-code-modal";
 import type { DeliveryZone } from "@/types/database";
 
 export const metadata: Metadata = { title: "Paramètres de la boutique" };
@@ -43,6 +45,23 @@ export default async function SettingsPage() {
         </div>
         <ArrowRight className="size-5 text-muted group-hover:text-brand-600 group-hover:translate-x-1 transition-all" />
       </Link>
+
+      {/* QR Code officiel de la boutique */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-3xl border border-line bg-white p-5 shadow-xs">
+        <div className="flex items-center gap-3.5">
+          <span className="grid size-11 place-items-center rounded-2xl bg-brand-50 text-brand-600">
+            <QrCode className="size-6" />
+          </span>
+          <div>
+            <h2 className="text-sm font-bold text-ink">QR Code de votre boutique</h2>
+            <p className="text-xs text-muted">Affichez, imprimez ou téléchargez le QR code pour vos emballages et comptoirs.</p>
+          </div>
+        </div>
+        <div className="shrink-0 flex items-center gap-2">
+          <ShopQrCodeModal url={shopUrl(shop.slug)} shopName={shop.name} shopSlug={shop.slug} />
+          <span className="text-xs font-semibold text-muted">Voir mon QR code</span>
+        </div>
+      </div>
 
       {/* 1. Informations et style de la boutique */}
       <SettingsForm shop={shop} initialZones={(zones as DeliveryZone[]) ?? []} />

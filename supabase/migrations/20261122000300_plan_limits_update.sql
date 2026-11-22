@@ -6,8 +6,8 @@ set max_products = 5,
 where id = 'gratuit';
 
 update public.subscription_plans
-set max_products = 30,
-    max_orders_per_month = 50,
+set max_products = 50,
+    max_orders_per_month = 100,
     updated_at = now()
 where id = 'business';
 

@@ -3,14 +3,25 @@
 import { useState } from "react";
 import { Check, Copy, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ShopQrCodeModal } from "./shop-qr-code-modal";
 
 /**
  * Partage du lien de la boutique : feuille de partage native du téléphone
  * (WhatsApp, Instagram…) si disponible, sinon ouverture de WhatsApp.
+ * Inclut également la copie de lien et l'affichage/téléchargement du QR Code officiel.
  */
-export function ShareShopButton({ url, shopName }: { url: string; shopName: string }) {
+export function ShareShopButton({
+  url,
+  shopName,
+  shopSlug,
+}: {
+  url: string;
+  shopName: string;
+  shopSlug?: string;
+}) {
   const [copied, setCopied] = useState(false);
   const text = `Découvrez ma boutique ${shopName} et commandez directement ici 👇\n${url}`;
+  const slug = shopSlug || url.split("/").filter(Boolean).pop() || "ma-boutique";
 
   async function share() {
     if (navigator.share) {
@@ -35,11 +46,16 @@ export function ShareShopButton({ url, shopName }: { url: string; shopName: stri
   }
 
   return (
-    <div className="flex items-center gap-2.5">
-      <Button type="button" onClick={share} className="flex-1 h-12 text-sm sm:text-base">
-        <Share2 className="size-5 shrink-0" aria-hidden />
+    <div className="flex items-center gap-2 sm:gap-2.5">
+      <Button type="button" onClick={share} className="flex-1 h-12 text-xs sm:text-sm font-bold">
+        <Share2 className="size-4 sm:size-5 shrink-0" aria-hidden />
         <span>Partager ma boutique</span>
       </Button>
+
+      {/* Bouton Générateur de QR Code */}
+      <ShopQrCodeModal url={url} shopName={shopName} shopSlug={slug} />
+
+      {/* Bouton Copier le lien */}
       <button
         type="button"
         onClick={copy}
@@ -52,9 +68,9 @@ export function ShareShopButton({ url, shopName }: { url: string; shopName: stri
         }`}
       >
         {copied ? (
-          <Check className="size-6 sm:size-7 text-emerald-600 stroke-[2.5]" />
+          <Check className="size-5 sm:size-6 text-emerald-600 stroke-[2.5]" />
         ) : (
-          <Copy className="size-6 sm:size-7 text-ink stroke-[2.2]" />
+          <Copy className="size-5 sm:size-6 text-ink stroke-[2.2]" />
         )}
       </button>
     </div>

@@ -119,7 +119,7 @@ export default async function DashboardHomePage() {
             <p className="truncate text-xs text-muted">{url}</p>
           </div>
         </div>
-        <ShareShopButton url={url} shopName={shop.name} />
+        <ShareShopButton url={url} shopName={shop.name} shopSlug={shop.slug} />
       </div>
 
       {/* Panneau de statistiques V2-D/V2-E (Périodes, CA 30j, Top produits, Commandes terminées) */}

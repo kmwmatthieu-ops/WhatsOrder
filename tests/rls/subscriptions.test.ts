@@ -176,5 +176,14 @@ describe("V2-E — Abonnements et limites configurables (RLS, déclencheurs et r
       p_shop_id: ctx.userA.shopId,
     });
     expect(orderLimit).toBe(10);
+
+    // Vérification des quotas du forfait Business (50 produits, 100 commandes/mois)
+    const { data: businessPlan } = await ctx.admin
+      .from("subscription_plans")
+      .select("max_products, max_orders_per_month")
+      .eq("id", "business")
+      .single();
+    expect(businessPlan?.max_products).toBe(50);
+    expect(businessPlan?.max_orders_per_month).toBe(100);
   });
 });

@@ -13,25 +13,6 @@ export function ShopHeader({ shop }: { shop: Shop }) {
 
   return (
     <header className="relative border-b border-line bg-white shadow-xs overflow-hidden">
-      {/* Barre de navigation marketplace Explorer */}
-      <div className="bg-sand/70 border-b border-line/70 px-4 py-2 text-xs">
-        <div className="mx-auto max-w-4xl flex items-center justify-between">
-          <Link
-            href="/explorer"
-            className="inline-flex items-center gap-1.5 font-bold text-muted hover:text-brand-700 transition-colors"
-          >
-            <ArrowLeft className="size-3.5" />
-            <span>← Retour à Explorer</span>
-          </Link>
-          <Link
-            href="/"
-            className="text-[11px] font-semibold text-muted hover:text-ink transition-colors hidden sm:inline"
-          >
-            Bon Waz à Dealer
-          </Link>
-        </div>
-      </div>
-
       {/* Bannière de la boutique */}
       {shop.banner_url && (
         <div className="relative h-32 sm:h-48 md:h-56 w-full bg-sand/80 overflow-hidden">
@@ -111,6 +92,16 @@ export function ShopHeader({ shop }: { shop: Shop }) {
                 </span>
               )}
             </div>
+
+            {/* Bouton retour Explorer : Uniquement visible sur format grand écran PC (hidden md:inline-flex) */}
+            <Link
+              href="/explorer"
+              className="hidden md:inline-flex h-10 items-center gap-1.5 rounded-xl border border-line bg-white px-3.5 text-xs font-semibold text-muted hover:text-ink hover:bg-sand transition-colors shadow-2xs"
+              title="Retourner au catalogue Explorer"
+            >
+              <ArrowLeft className="size-3.5" />
+              <span>Explorer</span>
+            </Link>
 
             <a
               href={whatsappChatUrl}
