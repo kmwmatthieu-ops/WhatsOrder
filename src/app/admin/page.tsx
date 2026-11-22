@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Shield, ArrowLeft, Store, ShoppingBag, CreditCard, DollarSign, LogOut, Wallet, TrendingUp } from "lucide-react";
+import { Shield, ArrowLeft, Store, ShoppingBag, CreditCard, DollarSign, LogOut, Wallet, TrendingUp, Users } from "lucide-react";
 import { createClient, getUser } from "@/lib/supabase/server";
 import { AdminShopsTable, type AdminShopRow } from "./admin-shops-table";
-import { AdminSubscriptionRequests, type AdminRequestRow } from "./admin-subscription-requests";
+import { type AdminRequestRow } from "./admin-subscription-requests";
+import { AdminAccountingChart, type OrderRecord, type ActivityRecord, type SubscriptionRecord } from "./admin-accounting-chart";
 import { AdminManagementCard, type AdminUserRow } from "./admin-management-card";
 import { AdminReportsTable, type AdminReportRow } from "./admin-reports-table";
 import { AdminCertificationsTable, type AdminCertificationRow } from "./admin-certifications-table";
@@ -99,12 +100,25 @@ export default async function AdminPage() {
     is_certified: c.is_certified,
   }));
 
-  // 2. Commandes globales & volume d'affaires (GMV)
-  const { data: ordersData } = await supabase
-    .from("orders")
-    .select("total, status");
+  // 1.quinquies Statistiques utilisateurs et chronologie comptable (V3-E)
+  const [{ data: usersStatsData }, { data: timelineData }] = await Promise.all([
+    supabase.rpc("admin_get_users_stats"),
+    supabase.rpc("admin_get_accounting_timeline"),
+  ]);
 
-  const allOrders = ordersData ?? [];
+  const usersStats = usersStatsData?.[0] ?? {
+    total_users: shopsList.length,
+    merchants_count: shopsList.length,
+    clients_count: 0,
+    active_users_30d: activeCount,
+  };
+
+  const timelineOrders = (timelineData?.orders ?? []) as OrderRecord[];
+  const timelineActivities = (timelineData?.activities ?? []) as ActivityRecord[];
+  const timelineSubs = (timelineData?.subscriptions ?? []) as SubscriptionRecord[];
+
+  // 2. Commandes globales & volume d'affaires (GMV)
+  const allOrders = timelineOrders.length > 0 ? timelineOrders : (await supabase.from("orders").select("total, status")).data ?? [];
   const totalOrdersCount = allOrders.length;
   const totalGmv = allOrders
     .filter((o) => o.status !== "cancelled")
@@ -248,18 +262,21 @@ export default async function AdminPage() {
 
           {/* Finances & Modèle Économique Plateforme */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-            <div className="rounded-2xl border border-success-200 bg-success-50/40 p-4 shadow-xs">
+            <div className="rounded-2xl border border-line bg-white p-4 shadow-xs">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-success-900">
-                  Total Abonnements Encaissés (Cash Collecté)
+                <span className="text-[11px] font-bold uppercase tracking-wider text-muted">
+                  Utilisateurs de la Plateforme
                 </span>
-                <Wallet className="size-4 text-success-700" />
+                <Users className="size-4 text-brand-600" />
               </div>
-              <p className="text-2xl font-black text-success-800 mt-1.5">
-                {formatFCFA(totalSubscriptionsCollected)}
+              <p className="text-2xl font-black text-ink mt-1.5">
+                {usersStats.total_users}{" "}
+                <span className="text-xs font-semibold text-muted">comptes</span>
               </p>
-              <p className="text-[11px] text-success-800/80 mt-0.5">
-                {approvedRequests.length} paiement{approvedRequests.length > 1 ? "s" : ""} validé{approvedRequests.length > 1 ? "s" : ""} (Mobile Money)
+              <p className="text-[11px] text-muted mt-0.5">
+                <span className="text-brand-700 font-bold">{usersStats.merchants_count} commerçants</span> •{" "}
+                <span className="text-ink font-semibold">{usersStats.clients_count} clients</span> •{" "}
+                <span className="text-success-600 font-bold">{usersStats.active_users_30d} actifs (30j)</span>
               </p>
             </div>
 
@@ -281,9 +298,14 @@ export default async function AdminPage() {
           </div>
         </div>
 
-        {/* Section 1 : Demandes de Paiement Mobile Money en Attente */}
+        {/* Section 1 : Statistiques Comptables, Activité & Rétention (Diagramme de Courbe) */}
         <section className="space-y-3">
-          <AdminSubscriptionRequests requests={requestsList} />
+          <AdminAccountingChart
+            orders={timelineOrders}
+            activities={timelineActivities}
+            subscriptions={timelineSubs}
+            subscriptionRequests={requestsList}
+          />
         </section>
 
         {/* Section 1.bis : Dossiers de Certification Commerçant (V3-B) */}

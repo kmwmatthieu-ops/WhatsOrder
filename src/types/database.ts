@@ -945,6 +945,41 @@ export type Database = {
         };
         Returns: { ok: boolean; action: string };
       };
+      admin_get_users_stats: {
+        Args: Record<PropertyKey, never>;
+        Returns: Array<{
+          total_users: number;
+          merchants_count: number;
+          clients_count: number;
+          active_users_30d: number;
+        }>;
+      };
+      admin_get_accounting_timeline: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          orders: Array<{
+            id: string;
+            total: number;
+            amount_paid: number;
+            status: string;
+            customer_id: string;
+            created_at: string;
+          }>;
+          activities: Array<{
+            id: string;
+            activity_type: string;
+            customer_id: string;
+            created_at: string;
+          }>;
+          subscriptions: Array<{
+            id: string;
+            amount_due: number;
+            requested_plan_id: string;
+            status: string;
+            created_at: string;
+          }>;
+        };
+      };
       toggle_follow_shop: {
         Args: { p_shop_id: string };
         Returns: { following: boolean; followers_count: number };
