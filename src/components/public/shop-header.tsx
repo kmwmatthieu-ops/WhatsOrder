@@ -97,22 +97,52 @@ export function ShopHeader({ shop, initialFollowing = false }: ShopHeaderProps) 
             </div>
           </div>
 
-          {/* Badges livraison/retrait et Bouton WhatsApp */}
-          <div className="flex flex-wrap items-center gap-2 pt-2 sm:pt-0">
-            <div className="flex items-center gap-2 text-xs text-muted">
-              {shop.delivery_enabled && (
-                <span className="inline-flex items-center gap-1 rounded-xl bg-sand/80 px-2.5 py-1 font-medium">
-                  <Truck className="size-3.5 text-brand-600" aria-hidden />
-                  Livraison
-                </span>
-              )}
-              {shop.pickup_enabled && (
-                <span className="inline-flex items-center gap-1 rounded-xl bg-sand/80 px-2.5 py-1 font-medium">
-                  <StoreIcon className="size-3.5 text-brand-600" aria-hidden />
-                  Retrait
-                </span>
-              )}
-            </div>
+          {/* Badges livraison/retrait superposés, Bouton s'abonner et Bouton WhatsApp */}
+          <div className="flex items-center gap-2 sm:gap-2.5 pt-2 sm:pt-0 shrink-0">
+            {/* Piles livraison et retrait superposées */}
+            {(shop.delivery_enabled || shop.pickup_enabled) && (
+              <div className="flex flex-col gap-1 shrink-0 justify-center">
+                {shop.delivery_enabled && (
+                  <span
+                    className="inline-flex items-center gap-1 rounded-md bg-sand/80 px-2 py-0.5 text-[10px] font-semibold text-muted border border-line/40 leading-none"
+                    title="Livraison disponible"
+                  >
+                    <Truck className="size-3 text-brand-600 shrink-0" aria-hidden />
+                    <span>Livraison</span>
+                  </span>
+                )}
+                {shop.pickup_enabled && (
+                  <span
+                    className="inline-flex items-center gap-1 rounded-md bg-sand/80 px-2 py-0.5 text-[10px] font-semibold text-muted border border-line/40 leading-none"
+                    title="Retrait en magasin disponible"
+                  >
+                    <StoreIcon className="size-3 text-brand-600 shrink-0" aria-hidden />
+                    <span>Retrait</span>
+                  </span>
+                )}
+              </div>
+            )}
+
+            {/* Bouton Suivre (icône individu avec un plus) */}
+            <FollowShopButton
+              shopId={shop.id}
+              shopName={shop.name}
+              initialFollowing={initialFollowing}
+              initialFollowersCount={shop.followers_count ?? 0}
+              variant="icon"
+            />
+
+            {/* Bouton WhatsApp (uniquement icône WhatsApp, pas de texte) */}
+            <a
+              href={whatsappChatUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="grid size-9 sm:size-10 place-items-center rounded-xl sm:rounded-2xl bg-[#25D366] text-white shadow-xs hover:bg-[#20ba59] active:scale-95 transition-all shrink-0"
+              title="Discuter sur WhatsApp"
+              aria-label="Discuter sur WhatsApp"
+            >
+              <WhatsAppIcon className="size-5" />
+            </a>
 
             {/* Bouton retour Explorer : Uniquement visible sur format grand écran PC (hidden md:inline-flex) */}
             <Link
@@ -123,26 +153,6 @@ export function ShopHeader({ shop, initialFollowing = false }: ShopHeaderProps) 
               <ArrowLeft className="size-3.5" />
               <span>Explorer</span>
             </Link>
-
-            {/* Bouton Suivre la boutique */}
-            <FollowShopButton
-              shopId={shop.id}
-              shopName={shop.name}
-              initialFollowing={initialFollowing}
-              initialFollowersCount={shop.followers_count ?? 0}
-              variant="button"
-              className="h-10 text-xs sm:text-xs"
-            />
-
-            <a
-              href={whatsappChatUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="ml-auto inline-flex h-10 items-center gap-2 rounded-xl bg-[#25D366] px-3.5 text-xs font-bold text-white shadow-xs hover:bg-[#20ba59] transition-colors"
-            >
-              <WhatsAppIcon className="size-4" />
-              <span>Discuter</span>
-            </a>
           </div>
         </div>
       </div>

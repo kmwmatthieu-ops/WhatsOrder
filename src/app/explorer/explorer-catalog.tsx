@@ -264,7 +264,7 @@ export function ExplorerCatalog({
             </span>
             <h2 className="text-base font-bold text-ink">Vous ne suivez encore aucune boutique</h2>
             <p className="text-xs text-muted max-w-sm mt-1 leading-relaxed">
-              Cliquez sur le bouton « Suivre » sur la vitrine d&apos;une boutique ou directement sur une carte produit pour retrouver ici toutes leurs nouveautés !
+              Cliquez sur l&apos;icône « S&apos;abonner » sur la vitrine d&apos;une boutique pour retrouver ici toutes leurs nouveautés et promotions !
             </p>
             <button
               type="button"

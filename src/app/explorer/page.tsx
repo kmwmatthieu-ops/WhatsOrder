@@ -140,16 +140,28 @@ export default async function ExplorerPage({ searchParams }: ExplorerPageProps) 
         />
       </main>
 
-      {/* Pied de page */}
-      <footer className="border-t border-line bg-white py-6 px-4 mt-auto">
-        <div className="mx-auto flex max-w-6xl flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted">
-          <p>© {new Date().getFullYear()} Bon Waz à Dealer · By Wens Matthieu · Tous droits réservés.</p>
-          <div className="flex items-center gap-4">
-            <Link href="/cgu" className="hover:underline">CGU</Link>
-            <Link href="/confidentialite" className="hover:underline">Confidentialité</Link>
-            <Link href="/mentions-legales" className="hover:underline">Mentions légales</Link>
-          </div>
+      {/* Pied de page responsive et centré */}
+      <footer className="border-t border-line bg-white py-8 px-4 mt-auto text-center text-xs text-muted space-y-3">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-3 sm:gap-6 font-medium text-ink">
+          <Link href="/explorer" className="hover:text-brand-600 transition-colors">
+            Explorer
+          </Link>
+          <span className="text-line hidden sm:inline">•</span>
+          <Link href="/cgu" className="hover:text-brand-600 transition-colors">
+            CGU
+          </Link>
+          <span className="text-line hidden sm:inline">•</span>
+          <Link href="/confidentialite" className="hover:text-brand-600 transition-colors">
+            Confidentialité
+          </Link>
+          <span className="text-line hidden sm:inline">•</span>
+          <Link href="/mentions-legales" className="hover:text-brand-600 transition-colors">
+            Mentions légales
+          </Link>
         </div>
+        <p className="text-[11px] sm:text-xs text-muted max-w-md sm:max-w-none mx-auto leading-relaxed">
+          © {new Date().getFullYear()} Bon Waz à Dealer · By Wens Matthieu · Tous droits réservés.
+        </p>
       </footer>
     </div>
   );

@@ -162,14 +162,19 @@ export function SettingsForm({ shop, initialZones }: Props) {
 
         {/* Section 4 : Modes de commande */}
         <section className="rounded-3xl border border-line bg-white p-5 shadow-xs flex flex-col gap-4">
-          <h2 className="text-base font-bold text-ink">Modes de commande</h2>
+          <div>
+            <h2 className="text-base font-bold text-ink">Modes de commande &amp; Badges vitrine</h2>
+            <p className="text-xs text-muted mt-0.5">
+              Activez les options proposées à vos clients. Les badges correspondants (Livraison et/ou Retrait) s&apos;afficheront automatiquement sur l&apos;en-tête de votre vitrine.
+            </p>
+          </div>
           
           <Toggle
             checked={deliveryEnabled}
             onChange={setDeliveryEnabled}
             name="delivery_enabled"
             label="Livraison à domicile"
-            description="Permet aux clients de saisir une adresse de livraison."
+            description="Affiche le badge « Livraison » et permet aux clients de saisir une adresse de livraison."
           />
 
           <Toggle
@@ -177,7 +182,7 @@ export function SettingsForm({ shop, initialZones }: Props) {
             onChange={setPickupEnabled}
             name="pickup_enabled"
             label="Retrait en magasin"
-            description="Le client vient récupérer sa commande directement."
+            description="Affiche le badge « Retrait » lorsque les clients peuvent récupérer leur commande sur place."
           />
 
           {state.fieldErrors?.pickup_enabled && (

@@ -10,7 +10,7 @@ interface FollowShopButtonProps {
   shopName?: string;
   initialFollowing?: boolean;
   initialFollowersCount?: number;
-  variant?: "pill" | "button" | "compact" | "card";
+  variant?: "pill" | "button" | "compact" | "card" | "icon";
   showCount?: boolean;
   onFollowChange?: (following: boolean, newCount: number) => void;
   className?: string;
@@ -119,6 +119,31 @@ export function FollowShopButton({
           <UserPlus className="size-3.5 text-brand-600" />
         )}
         <span>{following ? "Abonné" : "Suivre"}</span>
+      </button>
+    );
+  }
+
+  if (variant === "icon") {
+    return (
+      <button
+        type="button"
+        onClick={handleToggle}
+        disabled={isPending}
+        className={`grid size-9 sm:size-10 place-items-center rounded-xl sm:rounded-2xl transition-all cursor-pointer shadow-xs active:scale-95 shrink-0 ${
+          following
+            ? "bg-brand-50 border border-brand-300 text-brand-700 hover:bg-danger-50 hover:border-danger-300 hover:text-danger-600"
+            : "bg-white hover:bg-brand-50 border border-line text-ink hover:text-brand-700 hover:border-brand-300 shadow-2xs"
+        } ${className}`}
+        title={following ? "Abonné (cliquez pour vous désabonner)" : `S'abonner à ${shopName || "cette boutique"}`}
+        aria-label={following ? "Se désabonner de la boutique" : "S'abonner à la boutique"}
+      >
+        {isPending ? (
+          <Loader2 className="size-4 animate-spin text-brand-600" />
+        ) : following ? (
+          <UserCheck className="size-4.5 text-brand-700" />
+        ) : (
+          <UserPlus className="size-4.5 text-ink hover:text-brand-700" />
+        )}
       </button>
     );
   }
