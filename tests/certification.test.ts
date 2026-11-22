@@ -146,4 +146,91 @@ describe("Certification Commerçant & Badge Vérifié (V3-B)", () => {
     expect(found).toBeDefined();
     expect(found?.shop_is_certified).toBe(true);
   });
+
+  it("permet à l'administrateur d'attribuer un forfait à une boutique", async () => {
+    if (!isConfigured) return;
+
+    // Attribuer le forfait Business à la boutique B
+    const { data: ok, error } = await ctx.userA.client.rpc("admin_assign_subscription", {
+      p_shop_id: ctx.userB.shopId,
+      p_plan_id: "business",
+      p_duration_months: 6,
+      p_notes: "Offert par admin",
+    });
+
+    expect(error).toBeNull();
+    expect(ok).toBe(true);
+
+    const { data: sub } = await ctx.admin
+      .from("shop_subscriptions")
+      .select("*")
+      .eq("shop_id", ctx.userB.shopId)
+      .single();
+
+    expect(sub?.plan_id).toBe("business");
+    expect(sub?.status).toBe("active");
+  });
+
+  it("permet à l'admin de résilier le forfait tout en conservant la certification illimitée", async () => {
+    if (!isConfigured) return;
+
+    // La boutique A est certifiée
+    const { data: shopBefore } = await ctx.admin
+      .from("shops")
+      .select("is_certified")
+      .eq("id", ctx.userA.shopId)
+      .single();
+    expect(shopBefore?.is_certified).toBe(true);
+
+    // Résiliation du forfait de la boutique A
+    const { data: ok, error } = await ctx.userA.client.rpc("admin_cancel_subscription", {
+      p_shop_id: ctx.userA.shopId,
+      p_notes: "Fin de contrat",
+    });
+
+    expect(error).toBeNull();
+    expect(ok).toBe(true);
+
+    // Vérifier que le statut est expired et plan_id est gratuit
+    const { data: sub } = await ctx.admin
+      .from("shop_subscriptions")
+      .select("*")
+      .eq("shop_id", ctx.userA.shopId)
+      .single();
+
+    expect(sub?.plan_id).toBe("gratuit");
+    expect(sub?.status).toBe("expired");
+
+    // Vérifier que la certification est STRICTEMENT conservée (illimitée)
+    const { data: shopAfter } = await ctx.admin
+      .from("shops")
+      .select("is_certified")
+      .eq("id", ctx.userA.shopId)
+      .single();
+
+    expect(shopAfter?.is_certified).toBe(true);
+  });
+
+  it("interdit aux utilisateurs non-admin d'attribuer, résilier ou modifier la certification", async () => {
+    if (!isConfigured) return;
+
+    // Tentative par B (non-admin)
+    const { error: assignErr } = await ctx.userB.client.rpc("admin_assign_subscription", {
+      p_shop_id: ctx.userB.shopId,
+      p_plan_id: "premium",
+      p_duration_months: 12,
+    });
+    expect(assignErr).not.toBeNull();
+
+    const { error: cancelErr } = await ctx.userB.client.rpc("admin_cancel_subscription", {
+      p_shop_id: ctx.userA.shopId,
+    });
+    expect(cancelErr).not.toBeNull();
+
+    const { error: certErr } = await ctx.userB.client.rpc("admin_toggle_certification", {
+      p_shop_id: ctx.userB.shopId,
+      p_is_certified: true,
+    });
+    expect(certErr).not.toBeNull();
+  });
 });

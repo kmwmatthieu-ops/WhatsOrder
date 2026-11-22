@@ -39,6 +39,12 @@ export default async function AdminPage() {
     status: s.status,
     created_at: s.created_at,
     orders_count: Number(s.orders_count),
+    is_certified: Boolean(s.is_certified),
+    plan_id: s.plan_id ?? "gratuit",
+    plan_name: s.plan_name ?? "Gratuit",
+    subscription_status: s.subscription_status ?? "none",
+    subscription_expires_at: s.subscription_expires_at ?? null,
+    subscription_notes: s.subscription_notes ?? null,
   }));
 
   const activeCount = shopsList.filter((s) => s.status === "active").length;

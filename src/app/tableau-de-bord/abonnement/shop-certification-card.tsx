@@ -13,8 +13,10 @@ import {
   UserCheck,
   Sparkles,
 } from "lucide-react";
-import { submitCertificationRequest } from "./certification-actions";
+import { createClient } from "@/lib/supabase/client";
+import { submitCertificationUrlsAction } from "./certification-actions";
 import type { Shop, ShopCertification } from "@/types/database";
+import { Spinner } from "@/components/ui/spinner";
 
 interface ShopCertificationCardProps {
   shop: Shop;
@@ -28,6 +30,7 @@ export function ShopCertificationCard({
   latestCertification,
 }: ShopCertificationCardProps) {
   const [submitting, setSubmitting] = useState(false);
+  const [uploadStep, setUploadStep] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -48,23 +51,72 @@ export function ShopCertificationCard({
     }
 
     setSubmitting(true);
-    try {
-      const formData = new FormData();
-      formData.append("business_doc", businessFile);
-      formData.append("identity_doc", identityFile);
-      formData.append("store_photo", photoFile);
-      formData.append("store_video", videoFile);
+    setUploadStep("Préparation des fichiers…");
 
-      const res = await submitCertificationRequest(formData);
+    try {
+      const supabase = createClient();
+      const CERT_BUCKET = "certification-docs";
+
+      async function uploadDirect(file: File, folder: string, stepName: string): Promise<string> {
+        setUploadStep(stepName);
+        const cleanName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+        const path = `${shop.id}/${folder}/${Date.now()}_${cleanName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from(CERT_BUCKET)
+          .upload(path, file, {
+            contentType: file.type || "application/octet-stream",
+            upsert: true,
+          });
+
+        if (uploadError) {
+          throw new Error(`Échec du téléversement (${folder}) : ${uploadError.message}`);
+        }
+
+        const { data } = supabase.storage.from(CERT_BUCKET).getPublicUrl(path);
+        return data.publicUrl;
+      }
+
+      const businessUrl = await uploadDirect(
+        businessFile,
+        "business_docs",
+        "Téléversement du document du commerce (1/4)…"
+      );
+      const identityUrl = await uploadDirect(
+        identityFile,
+        "identity_docs",
+        "Téléversement de la pièce d'identité (2/4)…"
+      );
+      const photoUrl = await uploadDirect(
+        photoFile,
+        "store_photos",
+        "Téléversement de la photo de boutique (3/4)…"
+      );
+      const videoUrl = await uploadDirect(
+        videoFile,
+        "store_videos",
+        "Téléversement de la vidéo de boutique (4/4)…"
+      );
+
+      setUploadStep("Enregistrement officiel de votre dossier…");
+      const res = await submitCertificationUrlsAction({
+        businessUrl,
+        identityUrl,
+        photoUrl,
+        videoUrl,
+      });
+
       if (res.ok) {
         setSuccess(res.message || "Dossier envoyé avec succès !");
       } else {
-        setError(res.error || "Impossible d'envoyer votre dossier.");
+        setError(res.error || "Impossible d'enregistrer votre dossier.");
       }
-    } catch {
-      setError("Une erreur inattendue est survenue lors de l'envoi.");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Une erreur est survenue lors de l'envoi.";
+      setError(msg);
     } finally {
       setSubmitting(false);
+      setUploadStep(null);
     }
   }
 
@@ -90,7 +142,7 @@ export function ShopCertificationCard({
           </div>
         </div>
         <p className="text-xs text-blue-900 bg-white/80 p-3 rounded-2xl border border-blue-100 leading-relaxed">
-          Le badge officiel de certification est actif. Il est affiché publiquement sur votre boutique et assure une mise en avant prioritaire de vos produits dans le catalogue <strong>Explorer</strong>.
+          Le badge officiel de certification est actif et illimité. Il est affiché publiquement sur votre boutique et assure une mise en avant prioritaire de vos produits dans le catalogue <strong>Explorer</strong>.
         </p>
       </div>
     );
@@ -193,7 +245,7 @@ export function ShopCertificationCard({
           <label className="flex items-center justify-between text-xs font-bold text-ink">
             <span className="flex items-center gap-1.5">
               <FileText className="size-4 text-brand-600" />
-              <span>1. Document du commerce (PDF) *</span>
+              <span>1. Document du commerce (PDF ou Photo) *</span>
             </span>
             <span className="text-[10px] text-muted font-normal">Registre, patente, RCCM...</span>
           </label>
@@ -214,7 +266,7 @@ export function ShopCertificationCard({
               <UserCheck className="size-4 text-brand-600" />
               <span>2. Pièce d&apos;identité du gérant *</span>
             </span>
-            <span className="text-[10px] text-muted font-normal">CNI, Passeport, Permis (PDF/Image)</span>
+            <span className="text-[10px] text-muted font-normal">CNI, Passeport, Permis (PDF ou Image)</span>
           </label>
           <input
             type="file"
@@ -233,12 +285,12 @@ export function ShopCertificationCard({
               <Camera className="size-4 text-brand-600" />
               <span>3. Photo de vous dans votre boutique (Image) *</span>
             </span>
-            <span className="text-[10px] text-muted font-normal">PNG ou JPG</span>
+            <span className="text-[10px] text-muted font-normal">Photo nette de votre magasin</span>
           </label>
           <input
             type="file"
             required
-            accept="image/png,image/jpeg,image/webp"
+            accept="image/*"
             onChange={(e) => setPhotoFile(e.target.files?.[0] || null)}
             className="w-full text-xs text-muted file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-sand file:text-ink hover:file:bg-sand/70 cursor-pointer"
           />
@@ -252,12 +304,12 @@ export function ShopCertificationCard({
               <Video className="size-4 text-brand-600" />
               <span>4. Courte vidéo de vous dans la boutique (Vidéo) *</span>
             </span>
-            <span className="text-[10px] text-muted font-normal">MP4 ou WebM attestant du lieu</span>
+            <span className="text-[10px] text-muted font-normal">Attestant du lieu physique</span>
           </label>
           <input
             type="file"
             required
-            accept="video/mp4,video/webm,video/quicktime,video/*"
+            accept="video/*"
             onChange={(e) => setVideoFile(e.target.files?.[0] || null)}
             className="w-full text-xs text-muted file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-sand file:text-ink hover:file:bg-sand/70 cursor-pointer"
           />
@@ -267,10 +319,19 @@ export function ShopCertificationCard({
         <button
           type="submit"
           disabled={submitting}
-          className="w-full flex h-12 items-center justify-center gap-2 rounded-2xl bg-brand-600 text-xs sm:text-sm font-bold text-white shadow-md hover:bg-brand-700 disabled:opacity-50 transition-all"
+          className="w-full flex h-12 items-center justify-center gap-2 rounded-2xl bg-brand-600 text-xs sm:text-sm font-bold text-white shadow-md hover:bg-brand-700 disabled:opacity-50 transition-all cursor-pointer"
         >
-          <UploadCloud className="size-4" />
-          <span>{submitting ? "Téléversement des fichiers en cours…" : "Soumettre mon dossier de certification"}</span>
+          {submitting ? (
+            <>
+              <Spinner className="size-4 text-white" />
+              <span>{uploadStep || "Téléversement en cours…"}</span>
+            </>
+          ) : (
+            <>
+              <UploadCloud className="size-4" />
+              <span>Soumettre mon dossier de certification</span>
+            </>
+          )}
         </button>
       </form>
     </div>

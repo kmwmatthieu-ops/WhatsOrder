@@ -33,6 +33,11 @@ const nextConfig: NextConfig = {
   },
   // sharp est un module natif : on le laisse hors du bundle serveur.
   serverExternalPackages: ["sharp"],
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "60mb",
+    },
+  },
   images: {
     // Les images sont déjà compressées en WebP à l'upload : pas de ré-optimisation.
     unoptimized: true,

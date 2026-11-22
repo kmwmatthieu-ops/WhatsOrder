@@ -696,7 +696,36 @@ export type Database = {
           status: ShopStatus;
           created_at: string;
           orders_count: number;
+          is_certified: boolean;
+          plan_id: string;
+          plan_name: string;
+          subscription_status: string;
+          subscription_expires_at: string | null;
+          subscription_notes: string | null;
         }>;
+      };
+      admin_assign_subscription: {
+        Args: {
+          p_shop_id: string;
+          p_plan_id: string;
+          p_duration_months?: number | null;
+          p_notes?: string | null;
+        };
+        Returns: boolean;
+      };
+      admin_cancel_subscription: {
+        Args: {
+          p_shop_id: string;
+          p_notes?: string | null;
+        };
+        Returns: boolean;
+      };
+      admin_toggle_certification: {
+        Args: {
+          p_shop_id: string;
+          p_is_certified: boolean;
+        };
+        Returns: boolean;
       };
       admin_list_admins: {
         Args: Record<PropertyKey, never>;

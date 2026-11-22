@@ -138,6 +138,95 @@ export async function rejectSubscriptionRequest(
 /**
  * Attribue ou prolonge manuellement l'abonnement d'une boutique depuis l'admin.
  */
+export async function assignShopSubscriptionAction(
+  shopId: string,
+  planId: string,
+  durationMonths: number | null,
+  notes?: string
+): Promise<{ ok: boolean; error?: string }> {
+  const supabase = await createClient();
+
+  const { data: isAdmin } = await supabase.rpc("is_admin");
+  if (!isAdmin) {
+    return { ok: false, error: "Accès refusé : rôle administrateur requis." };
+  }
+
+  const { error } = await supabase.rpc("admin_assign_subscription", {
+    p_shop_id: shopId,
+    p_plan_id: planId,
+    p_duration_months: durationMonths,
+    p_notes: notes || null,
+  });
+
+  if (error) {
+    return { ok: false, error: dbErrorMessage(error, "Erreur lors de l'attribution du forfait.") };
+  }
+
+  revalidatePath("/admin");
+  revalidatePath("/tableau-de-bord/abonnement");
+  return { ok: true };
+}
+
+/**
+ * Résilie le forfait d'une boutique et la remet au forfait Gratuit (sans révoquer la certification).
+ */
+export async function cancelShopSubscriptionAction(
+  shopId: string,
+  notes?: string
+): Promise<{ ok: boolean; error?: string }> {
+  const supabase = await createClient();
+
+  const { data: isAdmin } = await supabase.rpc("is_admin");
+  if (!isAdmin) {
+    return { ok: false, error: "Accès refusé : rôle administrateur requis." };
+  }
+
+  const { error } = await supabase.rpc("admin_cancel_subscription", {
+    p_shop_id: shopId,
+    p_notes: notes || null,
+  });
+
+  if (error) {
+    return { ok: false, error: dbErrorMessage(error, "Erreur lors de la résiliation du forfait.") };
+  }
+
+  revalidatePath("/admin");
+  revalidatePath("/tableau-de-bord/abonnement");
+  return { ok: true };
+}
+
+/**
+ * Accorde ou révoque manuellement la certification d'une boutique.
+ */
+export async function toggleShopCertificationAction(
+  shopId: string,
+  isCertified: boolean
+): Promise<{ ok: boolean; error?: string }> {
+  const supabase = await createClient();
+
+  const { data: isAdmin } = await supabase.rpc("is_admin");
+  if (!isAdmin) {
+    return { ok: false, error: "Accès refusé : rôle administrateur requis." };
+  }
+
+  const { error } = await supabase.rpc("admin_toggle_certification", {
+    p_shop_id: shopId,
+    p_is_certified: isCertified,
+  });
+
+  if (error) {
+    return { ok: false, error: dbErrorMessage(error, "Erreur lors de la modification de la certification.") };
+  }
+
+  revalidatePath("/admin");
+  revalidatePath("/explorer");
+  revalidatePath("/tableau-de-bord/abonnement");
+  return { ok: true };
+}
+
+/**
+ * Attribue ou prolonge manuellement l'abonnement d'une boutique depuis l'admin.
+ */
 export async function setShopSubscriptionManually(
   shopId: string,
   planId: string,
