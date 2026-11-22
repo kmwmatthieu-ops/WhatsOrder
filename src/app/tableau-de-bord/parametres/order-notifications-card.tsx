@@ -69,17 +69,38 @@ export function OrderNotificationsCard({
   }
 
   async function handleRequestPermission() {
-    if (typeof window !== "undefined" && "Notification" in window) {
+    if (typeof window === "undefined") return;
+
+    // 1. Toujours tester le carillon et le retour haptique
+    playOrderChime();
+    triggerHapticFeedback();
+    updateAppBadge(1);
+    setBadgeTested(true);
+
+    // 2. Solliciter ou tester la notification système native
+    if ("Notification" in window) {
       try {
-        const perm = await Notification.requestPermission();
-        setNotificationPermission(perm);
+        let perm = Notification.permission;
+        if (perm !== "granted") {
+          perm = await Notification.requestPermission();
+          setNotificationPermission(perm);
+        }
+
         if (perm === "granted") {
-          await sendSystemNotification("Notifications activées ! 🔔", {
-            body: "Vous serez prévenu immédiatement lors de chaque nouvelle commande.",
+          await sendSystemNotification("Alerte commande activée ! 🔔", {
+            body: "Votre appareil est prêt : vous recevrez une alerte sonore et visuelle à chaque commande.",
+            tag: "test-notification",
           });
         }
-      } catch {}
+      } catch (err) {
+        console.warn("Erreur notification système:", err);
+      }
     }
+
+    setTimeout(() => {
+      clearAppBadge();
+      setBadgeTested(false);
+    }, 6000);
   }
 
   function handleTestChime() {
@@ -201,35 +222,39 @@ export function OrderNotificationsCard({
           </div>
         </div>
 
-        {/* Autorisation des notifications système */}
-        <div className="pt-2 border-t border-line/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-          <div className="text-xs">
+        {/* Autorisation et test des notifications système */}
+        <div className="pt-3 border-t border-line/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2 text-xs">
             {notificationPermission === "granted" ? (
-              <span className="inline-flex items-center gap-1.5 text-emerald-700 font-semibold">
-                <CheckCircle2 className="size-3.5" />
-                <span>Notifications système autorisées sur cet appareil.</span>
+              <span className="inline-flex items-center gap-1.5 text-emerald-700 font-bold bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl">
+                <CheckCircle2 className="size-4 shrink-0 text-emerald-600" />
+                <span>Notifications système autorisées</span>
               </span>
             ) : notificationPermission === "denied" ? (
-              <span className="text-danger-600 font-medium">
-                ⚠️ Notifications bloquées par les paramètres de votre navigateur.
+              <span className="inline-flex items-center gap-1.5 text-danger-700 font-semibold bg-danger-50 border border-danger-200 px-3 py-1.5 rounded-xl">
+                <AlertCircle className="size-4 shrink-0 text-danger-600" />
+                <span>Bloquées par les paramètres du navigateur</span>
               </span>
             ) : (
-              <span className="text-muted">
-                Autorisez les notifications système pour être alerté même l&apos;écran en veille.
+              <span className="inline-flex items-center gap-1.5 text-brand-800 font-semibold bg-brand-50 border border-brand-200 px-3 py-1.5 rounded-xl">
+                <Bell className="size-4 text-brand-600 shrink-0" />
+                <span>Autorisation recommandée</span>
               </span>
             )}
           </div>
 
-          {notificationPermission !== "granted" && (
-            <button
-              type="button"
-              onClick={handleRequestPermission}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-brand-600 px-3.5 py-1.5 text-xs font-bold text-white hover:bg-brand-700 transition-colors shrink-0 cursor-pointer"
-            >
-              <Bell className="size-3.5" />
-              <span>Activer les notifications système</span>
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={handleRequestPermission}
+            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-brand-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-brand-700 active:scale-95 transition-all shadow-xs shrink-0 cursor-pointer"
+          >
+            <Bell className="size-4" />
+            <span>
+              {notificationPermission === "granted"
+                ? "Tester la notification système"
+                : "Activer les notifications système"}
+            </span>
+          </button>
         </div>
       </div>
 
