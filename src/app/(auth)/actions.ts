@@ -7,6 +7,7 @@ import { isSupabaseConfigured, PRODUCTION_SITE_URL, siteUrl } from "@/lib/consta
 import { authErrorMessage } from "@/lib/errors";
 import { toFieldErrors, type ActionState } from "@/lib/action-state";
 import { forgotSchema, newPasswordSchema, signInSchema, signUpSchema } from "@/lib/validation/auth";
+import { sendPasswordResetEmail } from "@/lib/notifications/password-reset-email";
 
 const NOT_CONFIGURED_MSG =
   "Configuration Supabase requise : Le fichier .env.local n'est pas encore configuré avec vos clés Supabase. Consultez le guide ci-dessous pour l'activer.";
@@ -255,11 +256,54 @@ export async function requestPasswordReset(_prev: ActionState, formData: FormDat
   const parsed = forgotSchema.safeParse({ email: formData.get("email") });
   if (!parsed.success) return { fieldErrors: toFieldErrors(parsed.error.issues) };
 
+  const cleanEmail = parsed.data.email.trim().toLowerCase();
   const publicOrigin = await resolvePublicOrigin();
+
+  // 1. Génération d'un lien direct avec token_hash via le client admin
+  // et envoi via Resend (évite tout décrochage vers localhost:3000 de Supabase Auth)
+  try {
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+    if (serviceKey && supabaseUrl) {
+      const { createClient: createAdminClient } = await import("@supabase/supabase-js");
+      const adminClient = createAdminClient(supabaseUrl, serviceKey, {
+        auth: { autoRefreshToken: false, persistSession: false },
+      });
+
+      const { data: linkData, error: linkErr } = await adminClient.auth.admin.generateLink({
+        type: "recovery",
+        email: cleanEmail,
+      });
+
+      if (!linkErr && linkData?.properties?.hashed_token) {
+        const resetUrl = `${publicOrigin}/auth/confirmer?token_hash=${linkData.properties.hashed_token}&type=recovery&next=/nouveau-mot-de-passe`;
+        const otpCode = linkData.properties.email_otp;
+
+        const emailRes = await sendPasswordResetEmail({
+          email: cleanEmail,
+          resetUrl,
+          otpCode,
+        });
+
+        if (emailRes.ok) {
+          return {
+            ok: true,
+            message: "Si un compte existe avec cet e-mail, vous allez recevoir un lien pour choisir un nouveau mot de passe.",
+          };
+        }
+      }
+    }
+  } catch (adminErr) {
+    console.warn("Échec envoi direct Resend, fallback sur Supabase standard:", adminErr);
+  }
+
+  // 2. Fallback standard Supabase si Resend ou Admin n'est pas disponible
   const supabase = await createClient();
-  const { error } = await supabase.auth.resetPasswordForEmail(parsed.data.email, {
+  const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
     redirectTo: `${publicOrigin}/auth/confirmer?next=/nouveau-mot-de-passe`,
   });
+
   // On n'indique jamais si l'e-mail existe (sécurité) — sauf limite d'envoi.
   if (error && error.code?.startsWith("over_")) return { error: authErrorMessage(error) };
 

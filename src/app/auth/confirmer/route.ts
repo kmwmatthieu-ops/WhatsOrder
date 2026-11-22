@@ -42,5 +42,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL(target, request.url));
   }
 
+  // Si non vérifié côté serveur mais que la cible est le changement de mot de passe,
+  // renvoyer vers /nouveau-mot-de-passe pour que le client puisse inspecter le hash URL
+  if (next === "/nouveau-mot-de-passe") {
+    return NextResponse.redirect(new URL("/nouveau-mot-de-passe", request.url));
+  }
+
   return NextResponse.redirect(new URL("/connexion?erreur=lien", request.url));
 }
