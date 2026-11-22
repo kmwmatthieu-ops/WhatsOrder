@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Search, PackageOpen, Download, Lock } from "lucide-react";
 import { OrderRow, type OrderRowData } from "./order-row";
@@ -8,6 +8,7 @@ import { ORDER_STATUS_LABELS, SIMPLE_ORDER_STATUS_LABELS } from "./order-status-
 import { downloadCsv, downloadStyledExcel, type ShopExportMeta } from "@/lib/csv";
 import { ExportDropdown } from "@/components/dashboard/export-dropdown";
 import { formatFCFA } from "@/lib/format";
+import { clearAppBadge } from "@/lib/sound";
 import type { Shop } from "@/types/database";
 
 function normalizeStatus(status: string): string {
@@ -33,6 +34,10 @@ export function OrdersView({
 }) {
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    clearAppBadge();
+  }, []);
 
   const filteredOrders = orders.filter((o) => {
     const norm = normalizeStatus(o.status);
