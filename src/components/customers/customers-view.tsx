@@ -4,7 +4,10 @@ import { useState } from "react";
 import Link from "next/link";
 import { Search, Users, Download, Lock } from "lucide-react";
 import { CustomerRow, type CustomerRowData } from "@/components/customers/customer-row";
-import { downloadCsv } from "@/lib/csv";
+import { downloadCsv, downloadStyledExcel, type ShopExportMeta } from "@/lib/csv";
+import { ExportDropdown } from "@/components/dashboard/export-dropdown";
+import { formatFCFA } from "@/lib/format";
+import type { Shop } from "@/types/database";
 
 export type ExtendedCustomerRowData = CustomerRowData & {
   address?: string | null;
@@ -12,9 +15,11 @@ export type ExtendedCustomerRowData = CustomerRowData & {
 };
 
 export function CustomersView({
+  shop,
   customers,
   hasCsvExport = true,
 }: {
+  shop?: Shop;
   customers: ExtendedCustomerRowData[];
   hasCsvExport?: boolean;
 }) {
@@ -27,7 +32,7 @@ export function CustomersView({
       c.phone.includes(search)
   );
 
-  function handleExportCsv() {
+  function getExportPayload() {
     const today = new Date().toISOString().slice(0, 10);
     const headers = [
       "Nom complet",
@@ -39,17 +44,53 @@ export function CustomersView({
       "Date d'enregistrement",
     ];
 
+    const totalSpent = filteredCustomers.reduce((sum, c) => sum + (c.total_spent || 0), 0);
+    const totalOrdersCount = filteredCustomers.reduce((sum, c) => sum + (c.orders_count || 0), 0);
+
     const rows = filteredCustomers.map((c) => [
       c.name,
       c.phone,
       c.address ?? "",
       c.orders_count,
-      c.total_spent,
+      formatFCFA(c.total_spent),
       c.notes ?? "",
       new Date(c.created_at).toLocaleDateString("fr-FR"),
     ]);
 
-    downloadCsv(`clients-${today}.csv`, headers, rows);
+    const meta: ShopExportMeta = {
+      shopName: shop?.name || "Boutique",
+      shopSlug: shop?.slug || "boutique",
+      primaryColor: shop?.primary_color || "#0F766E",
+      phone: shop?.whatsapp_number || "",
+      isCertified: Boolean(shop?.is_certified),
+      reportTitle: "Répertoire Clients",
+      kpis: [
+        { label: "Total clients", value: filteredCustomers.length },
+        { label: "Total Dépensé", value: formatFCFA(totalSpent) },
+        { label: "Commandes cumulées", value: totalOrdersCount },
+      ],
+      totalsRow: [
+        "TOTAL",
+        "",
+        "",
+        totalOrdersCount,
+        formatFCFA(totalSpent),
+        "",
+        "",
+      ],
+    };
+
+    return { today, headers, rows, meta };
+  }
+
+  function handleExportExcel() {
+    const { today, headers, rows, meta } = getExportPayload();
+    downloadStyledExcel(`clients-${today}.xls`, headers, rows, meta);
+  }
+
+  function handleExportCsv() {
+    const { today, headers, rows, meta } = getExportPayload();
+    downloadCsv(`clients-${today}.csv`, headers, rows, meta);
   }
 
   return (
@@ -64,22 +105,21 @@ export function CustomersView({
 
         {customers.length > 0 &&
           (hasCsvExport ? (
-            <button
-              type="button"
-              onClick={handleExportCsv}
-              className="inline-flex h-10 items-center justify-center gap-2 self-start sm:self-auto rounded-2xl border border-line bg-white px-3.5 text-xs font-bold text-ink shadow-xs hover:bg-sand transition-colors cursor-pointer"
-            >
-              <Download className="size-4 text-brand-600" />
-              <span>Exporter en CSV ({filteredCustomers.length})</span>
-            </button>
+            <ExportDropdown
+              count={filteredCustomers.length}
+              shopName={shop?.name || "Boutique"}
+              primaryColor={shop?.primary_color}
+              onExportExcel={handleExportExcel}
+              onExportCsv={handleExportCsv}
+            />
           ) : (
             <Link
               href="/tableau-de-bord/abonnement"
-              title="L'export CSV est réservé aux forfaits Business et Premium"
+              title="L'export est réservé aux forfaits Business et Premium"
               className="inline-flex h-10 items-center justify-center gap-2 self-start sm:self-auto rounded-2xl border border-line bg-white px-3.5 text-xs font-bold text-muted shadow-xs hover:border-brand-300 hover:text-brand-600 transition-colors"
             >
               <Lock className="size-4 text-amber-600" />
-              <span>Export CSV (Business)</span>
+              <span>Export CSV & Excel (Business)</span>
             </Link>
           ))}
       </div>

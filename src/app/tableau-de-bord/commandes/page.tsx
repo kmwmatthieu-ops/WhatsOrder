@@ -65,6 +65,7 @@ export default async function OrdersPage() {
 
   return (
     <OrdersView
+      shop={shop}
       orders={formattedOrders}
       hasCsvExport={subscription.effectivePlan.has_csv_export}
     />

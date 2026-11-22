@@ -5,7 +5,10 @@ import Link from "next/link";
 import { Search, PackageOpen, Download, Lock } from "lucide-react";
 import { OrderRow, type OrderRowData } from "./order-row";
 import { ORDER_STATUS_LABELS, SIMPLE_ORDER_STATUS_LABELS } from "./order-status-badge";
-import { downloadCsv } from "@/lib/csv";
+import { downloadCsv, downloadStyledExcel, type ShopExportMeta } from "@/lib/csv";
+import { ExportDropdown } from "@/components/dashboard/export-dropdown";
+import { formatFCFA } from "@/lib/format";
+import type { Shop } from "@/types/database";
 
 function normalizeStatus(status: string): string {
   if (status === "preparing") return "confirmed";
@@ -20,9 +23,11 @@ const PAYMENT_STATUS_FR: Record<string, string> = {
 };
 
 export function OrdersView({
+  shop,
   orders,
   hasCsvExport = true,
 }: {
+  shop?: Shop;
   orders: OrderRowData[];
   hasCsvExport?: boolean;
 }) {
@@ -45,7 +50,7 @@ export function OrdersView({
       ? orders.length
       : orders.filter((o) => normalizeStatus(o.status) === status).length;
 
-  function handleExportCsv() {
+  function getExportPayload() {
     const today = new Date().toISOString().slice(0, 10);
     const headers = [
       "Code commande",
@@ -61,6 +66,10 @@ export function OrdersView({
       "Statut paiement",
     ];
 
+    const totalAmount = filteredOrders.reduce((sum, o) => sum + (o.total || 0), 0);
+    const totalPaid = filteredOrders.reduce((sum, o) => sum + (o.amount_paid || 0), 0);
+    const totalRemaining = Math.max(0, totalAmount - totalPaid);
+
     const rows = filteredOrders.map((o) => {
       const paid = o.amount_paid ?? 0;
       const remaining = Math.max(0, o.total - paid);
@@ -73,14 +82,52 @@ export function OrdersView({
         ORDER_STATUS_LABELS[o.status] ?? o.status,
         o.fulfillment === "delivery" ? "Livraison" : "Retrait",
         zoneOrAddress,
-        o.total,
-        paid,
-        remaining,
+        formatFCFA(o.total),
+        formatFCFA(paid),
+        formatFCFA(remaining),
         PAYMENT_STATUS_FR[o.payment_status ?? "unpaid"] ?? "Non payée",
       ];
     });
 
-    downloadCsv(`commandes-${today}.csv`, headers, rows);
+    const meta: ShopExportMeta = {
+      shopName: shop?.name || "Boutique",
+      shopSlug: shop?.slug || "boutique",
+      primaryColor: shop?.primary_color || "#0F766E",
+      phone: shop?.whatsapp_number || "",
+      isCertified: Boolean(shop?.is_certified),
+      reportTitle: "Rapport des Commandes",
+      kpis: [
+        { label: "Total commandes", value: filteredOrders.length },
+        { label: "Chiffre d'Affaires", value: formatFCFA(totalAmount) },
+        { label: "Total Encaissé", value: formatFCFA(totalPaid) },
+        { label: "Reste à Recouvrer", value: formatFCFA(totalRemaining) },
+      ],
+      totalsRow: [
+        "TOTAL",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        formatFCFA(totalAmount),
+        formatFCFA(totalPaid),
+        formatFCFA(totalRemaining),
+        "",
+      ],
+    };
+
+    return { today, headers, rows, meta };
+  }
+
+  function handleExportExcel() {
+    const { today, headers, rows, meta } = getExportPayload();
+    downloadStyledExcel(`commandes-${today}.xls`, headers, rows, meta);
+  }
+
+  function handleExportCsv() {
+    const { today, headers, rows, meta } = getExportPayload();
+    downloadCsv(`commandes-${today}.csv`, headers, rows, meta);
   }
 
   return (
@@ -95,22 +142,21 @@ export function OrdersView({
 
         {orders.length > 0 &&
           (hasCsvExport ? (
-            <button
-              type="button"
-              onClick={handleExportCsv}
-              className="inline-flex h-10 items-center justify-center gap-2 self-start sm:self-auto rounded-2xl border border-line bg-white px-3.5 text-xs font-bold text-ink shadow-xs hover:bg-sand transition-colors cursor-pointer"
-            >
-              <Download className="size-4 text-brand-600" />
-              <span>Exporter en CSV ({filteredOrders.length})</span>
-            </button>
+            <ExportDropdown
+              count={filteredOrders.length}
+              shopName={shop?.name || "Boutique"}
+              primaryColor={shop?.primary_color}
+              onExportExcel={handleExportExcel}
+              onExportCsv={handleExportCsv}
+            />
           ) : (
             <Link
               href="/tableau-de-bord/abonnement"
-              title="L'export CSV est réservé aux forfaits Business et Premium"
+              title="L'export est réservé aux forfaits Business et Premium"
               className="inline-flex h-10 items-center justify-center gap-2 self-start sm:self-auto rounded-2xl border border-line bg-white px-3.5 text-xs font-bold text-muted shadow-xs hover:border-brand-300 hover:text-brand-600 transition-colors"
             >
               <Lock className="size-4 text-amber-600" />
-              <span>Export CSV (Business)</span>
+              <span>Export CSV & Excel (Business)</span>
             </Link>
           ))}
       </div>

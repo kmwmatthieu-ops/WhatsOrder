@@ -47,6 +47,7 @@ export default async function CustomersPage() {
 
   return (
     <CustomersView
+      shop={shop}
       customers={formattedCustomers}
       hasCsvExport={subscription.effectivePlan.has_csv_export}
     />
