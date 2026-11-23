@@ -53,7 +53,7 @@ export function InscriptionView({
           }`}
         >
           <ShoppingBag className={`size-4 ${accountType === "client" ? "text-brand-600" : "text-muted"}`} />
-          <span>Client Acheteur</span>
+          <span>Client</span>
         </button>
       </div>
 
@@ -74,7 +74,7 @@ export function InscriptionView({
           💡 Un compte unique pour tout faire
         </p>
         <p>
-          Que vous choisissiez <strong>Commerçant</strong> ou <strong>Client</strong> aujourd&apos;hui, vous pourrez toujours basculer entre votre profil acheteur et la création d&apos;une boutique en ligne à tout moment depuis votre menu.
+          Que vous choisissiez <strong>Commerçant</strong> ou <strong>Client</strong> aujourd&apos;hui, vous pourrez toujours basculer entre votre profil client et la création d&apos;une boutique en ligne à tout moment depuis votre menu.
         </p>
       </div>
 

@@ -41,18 +41,25 @@ export function LogoIcon({ className = "size-7 sm:size-8" }: { className?: strin
   );
 }
 
-/** Logo texte de l'application (symbole + nom superposé responsive). */
+/** Logo texte de l'application (symbole + nom : sur 1 ligne sur PC, superposé uniquement sur mobile). */
 export function Logo({ className = "" }: { className?: string }) {
   return (
     <span className={`inline-flex items-center gap-1.5 sm:gap-2 font-extrabold tracking-tight shrink-0 select-none ${className}`}>
       <LogoIcon className="size-7 sm:size-8 drop-shadow-xs" />
-      <span className="flex flex-col leading-none text-left">
-        <span className="text-[11px] sm:text-xs font-black text-ink tracking-tight">
-          Bon Waz à
+      {/* Mobile (< sm) : superposé sur deux lignes */}
+      <span className="flex flex-col leading-tight text-left sm:hidden">
+        <span className="text-[11px] font-black text-ink tracking-tight">
+          Bon Waz
         </span>
-        <span className="text-xs sm:text-sm font-black text-accent-500 tracking-tight mt-0.5">
-          Dealer
+        <span className="text-[11px] font-black text-accent-500 tracking-tight">
+          à Dealer
         </span>
+      </span>
+
+      {/* PC / Desktop (>= sm) : sur une seule ligne tel quel */}
+      <span className="hidden sm:inline text-sm sm:text-base md:text-lg font-black tracking-tight whitespace-nowrap">
+        <span className="text-ink">Bon Waz</span>{" "}
+        <span className="text-accent-500">à Dealer</span>
       </span>
       <span className="sr-only">{APP_NAME}</span>
     </span>
