@@ -17,6 +17,9 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
     title: APP_NAME,
   },
+  verification: {
+    google: "Aj_cO-kGLwgwfckLnIlYyYclZOrx-KdE_CX95YsUHwM",
+  },
 };
 
 export const viewport: Viewport = {
