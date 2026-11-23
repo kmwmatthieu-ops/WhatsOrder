@@ -21,6 +21,7 @@ export async function GET(request: NextRequest) {
     provider: "facebook",
     options: {
       redirectTo,
+      scopes: "email,public_profile",
     },
   });
 

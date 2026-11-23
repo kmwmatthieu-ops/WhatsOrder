@@ -26,18 +26,42 @@ export async function GET(request: NextRequest) {
   const nextParam = searchParams.get("next") ?? "/onboarding";
   const next = ALLOWED_NEXT.includes(nextParam) ? nextParam : "/onboarding";
 
+  // Récupération des erreurs renvoyées par le fournisseur OAuth ou Supabase
+  const errorParam = searchParams.get("error");
+  const errorDescription = searchParams.get("error_description");
+  const errorCode = searchParams.get("error_code");
+
+  if (errorParam || errorDescription) {
+    console.error("OAuth provider error:", { errorParam, errorDescription, errorCode });
+    const targetUrl = new URL("/connexion", request.url);
+    const detail = errorDescription || errorParam || "Erreur de connexion avec le fournisseur.";
+    targetUrl.searchParams.set("erreur_detail", detail);
+    return NextResponse.redirect(targetUrl);
+  }
+
   const cookieStore = await cookies();
   const supabase = await createClient();
   let verified = false;
+  let exchangeErrorMsg: string | null = null;
 
   if (code) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) verified = true;
+    if (!error) {
+      verified = true;
+    } else {
+      console.error("Erreur exchangeCodeForSession:", error);
+      exchangeErrorMsg = error.message;
+    }
   }
 
   if (!verified && tokenHash && type) {
     const { error } = await supabase.auth.verifyOtp({ type, token_hash: tokenHash });
-    if (!error) verified = true;
+    if (!error) {
+      verified = true;
+    } else {
+      console.error("Erreur verifyOtp:", error);
+      exchangeErrorMsg = error.message;
+    }
   }
 
   // Pour le flux de réinitialisation de mot de passe :
@@ -100,5 +124,11 @@ export async function GET(request: NextRequest) {
     return response;
   }
 
-  return NextResponse.redirect(new URL("/connexion?erreur=lien", request.url));
+  const targetUrl = new URL("/connexion", request.url);
+  if (exchangeErrorMsg) {
+    targetUrl.searchParams.set("erreur_detail", exchangeErrorMsg);
+  } else {
+    targetUrl.searchParams.set("erreur", "lien");
+  }
+  return NextResponse.redirect(targetUrl);
 }
