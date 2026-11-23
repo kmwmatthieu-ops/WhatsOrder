@@ -6,10 +6,11 @@ import { createClient } from "@/lib/supabase/client";
 import { updatePassword } from "@/app/(auth)/actions";
 import { initialActionState, type ActionState } from "@/lib/action-state";
 import { PasswordInput } from "@/components/ui/password-input";
+import { Input } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { Spinner } from "@/components/ui/spinner";
-import { AlertCircle, ArrowLeft } from "lucide-react";
+import { AlertCircle, ArrowLeft, KeyRound, CheckCircle2 } from "lucide-react";
 
 export function NewPasswordForm({ initialHasUser }: { initialHasUser: boolean }) {
   const [hasSession, setHasSession] = useState<boolean>(initialHasUser);
@@ -17,6 +18,12 @@ export function NewPasswordForm({ initialHasUser }: { initialHasUser: boolean })
   const [state, setState] = useState<ActionState>(initialActionState);
   const [pending, setPending] = useState(false);
   const [redirecting, setRedirecting] = useState(false);
+
+  // Validation par Code OTP (sécurité de secours sans dépendre du clic sur lien e-mail)
+  const [otpEmail, setOtpEmail] = useState("");
+  const [otpCode, setOtpCode] = useState("");
+  const [otpPending, setOtpPending] = useState(false);
+  const [otpError, setOtpError] = useState<string | null>(null);
 
   useEffect(() => {
     if (initialHasUser) {
@@ -85,6 +92,40 @@ export function NewPasswordForm({ initialHasUser }: { initialHasUser: boolean })
     checkClientSession();
   }, [initialHasUser]);
 
+  async function handleVerifyOtp(e: SyntheticEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (otpPending) return;
+    const cleanMail = otpEmail.trim().toLowerCase();
+    const cleanToken = otpCode.trim();
+
+    if (!cleanMail || !cleanToken) {
+      setOtpError("Veuillez renseigner votre e-mail et le code de sécurité reçu.");
+      return;
+    }
+
+    setOtpPending(true);
+    setOtpError(null);
+
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.verifyOtp({
+        email: cleanMail,
+        token: cleanToken,
+        type: "recovery",
+      });
+
+      if (error) {
+        setOtpError("Code incorrect ou expiré. Vérifiez le code à 6 chiffres reçu par e-mail.");
+      } else {
+        setHasSession(true);
+      }
+    } catch {
+      setOtpError("Connexion impossible. Vérifiez votre réseau puis réessayez.");
+    } finally {
+      setOtpPending(false);
+    }
+  }
+
   async function handleSubmit(e: SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     if (pending || redirecting) return;
@@ -144,23 +185,51 @@ export function NewPasswordForm({ initialHasUser }: { initialHasUser: boolean })
 
   if (!hasSession) {
     return (
-      <div className="rounded-3xl border border-line bg-white p-6 sm:p-7 shadow-xs space-y-4 text-center">
-        <div className="mx-auto grid size-12 place-items-center rounded-2xl bg-danger-50 text-danger-600">
-          <AlertCircle className="size-6" />
-        </div>
-        <div className="space-y-1">
-          <h2 className="text-base font-bold text-ink">Lien de réinitialisation invalide ou expiré</h2>
-          <p className="text-xs text-muted leading-relaxed max-w-sm mx-auto">
-            Ce lien de réinitialisation a déjà été utilisé ou a expiré. Pour des raisons de sécurité, les liens sont à usage unique.
+      <div className="rounded-3xl border border-line bg-white p-6 sm:p-7 shadow-xs space-y-5">
+        <div className="text-center space-y-1">
+          <div className="mx-auto grid size-12 place-items-center rounded-2xl bg-brand-50 text-brand-600 mb-2">
+            <KeyRound className="size-6" />
+          </div>
+          <h2 className="text-base sm:text-lg font-black text-ink">Validation de sécurité</h2>
+          <p className="text-xs sm:text-sm text-muted max-w-sm mx-auto">
+            Saisissez votre e-mail et le <strong>code de sécurité (OTP)</strong> reçu dans votre boîte mail pour choisir votre nouveau mot de passe :
           </p>
         </div>
-        <Link
-          href="/mot-de-passe-oublie"
-          className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-brand-600 px-5 text-xs font-bold text-white shadow-sm hover:bg-brand-700 transition-colors"
-        >
-          <ArrowLeft className="size-3.5" />
-          <span>Demander un nouveau lien</span>
-        </Link>
+
+        <form onSubmit={handleVerifyOtp} className="flex flex-col gap-3.5" noValidate>
+          {otpError && <Alert tone="error">{otpError}</Alert>}
+          <Input
+            label="Votre adresse e-mail"
+            type="email"
+            placeholder="nom@exemple.com"
+            value={otpEmail}
+            onChange={(e) => setOtpEmail(e.target.value)}
+            required
+            autoCapitalize="none"
+          />
+          <Input
+            label="Code de sécurité à 6 ou 8 chiffres"
+            type="text"
+            inputMode="numeric"
+            placeholder="Ex: 123456"
+            value={otpCode}
+            onChange={(e) => setOtpCode(e.target.value)}
+            required
+          />
+          <Button type="submit" block loading={otpPending}>
+            {otpPending ? "Vérification du code…" : "Valider mon code et continuer →"}
+          </Button>
+        </form>
+
+        <div className="pt-3 border-t border-line text-center">
+          <Link
+            href="/mot-de-passe-oublie"
+            className="inline-flex items-center gap-1.5 text-xs text-muted hover:text-ink font-semibold transition-colors"
+          >
+            <ArrowLeft className="size-3.5" />
+            <span>Demander un nouvel e-mail</span>
+          </Link>
+        </div>
       </div>
     );
   }

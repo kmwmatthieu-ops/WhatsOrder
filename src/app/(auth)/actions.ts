@@ -32,9 +32,10 @@ async function resolvePublicOrigin(): Promise<string> {
     /* ignore */
   }
   const fallback = siteUrl();
-  return fallback.includes("localhost") && process.env.NODE_ENV === "production"
-    ? PRODUCTION_SITE_URL
-    : fallback;
+  if (fallback.includes("localhost") || process.env.NODE_ENV === "production") {
+    return PRODUCTION_SITE_URL;
+  }
+  return fallback;
 }
 
 export async function checkAuthenticated(): Promise<{ authenticated: boolean }> {
