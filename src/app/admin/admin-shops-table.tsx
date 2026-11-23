@@ -12,6 +12,7 @@ import {
   Calendar,
   X,
   AlertTriangle,
+  Trash2,
 } from "lucide-react";
 import {
   toggleShopStatus,
@@ -19,6 +20,7 @@ import {
   cancelShopSubscriptionAction,
   toggleShopCertificationAction,
   toggleShopIdentityVerifiedAction,
+  adminDeleteShopAction,
 } from "./actions";
 import { shopUrl } from "@/lib/constants";
 import { Spinner } from "@/components/ui/spinner";
@@ -50,6 +52,9 @@ export function AdminShopsTable({ initialShops }: { initialShops: AdminShopRow[]
 
   // Modal de gestion de forfait
   const [planModalShop, setPlanModalShop] = useState<AdminShopRow | null>(null);
+
+  // Modal de suppression définitive de boutique
+  const [deleteModalShop, setDeleteModalShop] = useState<AdminShopRow | null>(null);
 
   const filtered = shops.filter((s) => {
     let matchesFilter = true;
@@ -388,6 +393,18 @@ export function AdminShopsTable({ initialShops }: { initialShops: AdminShopRow[]
                         </>
                       )}
                     </button>
+
+                    {/* Bouton Supprimer la boutique */}
+                    <button
+                      type="button"
+                      disabled={pendingId === shop.id}
+                      onClick={() => setDeleteModalShop(shop)}
+                      className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-danger-200 bg-white px-2.5 text-xs font-bold text-danger-600 hover:bg-danger-50 transition-colors cursor-pointer"
+                      title="Supprimer définitivement cette boutique"
+                    >
+                      <Trash2 className="size-3.5" />
+                      <span className="hidden sm:inline">Supprimer</span>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -406,6 +423,18 @@ export function AdminShopsTable({ initialShops }: { initialShops: AdminShopRow[]
               prev.map((s) => (s.id === updated.id ? { ...s, ...updated } : s))
             );
             setPlanModalShop(null);
+          }}
+        />
+      )}
+
+      {/* Modal de suppression définitive de boutique */}
+      {deleteModalShop && (
+        <AdminDeleteShopModal
+          shop={deleteModalShop}
+          onClose={() => setDeleteModalShop(null)}
+          onDeleted={(deletedId) => {
+            setShops((prev) => prev.filter((s) => s.id !== deletedId));
+            setDeleteModalShop(null);
           }}
         />
       )}
@@ -639,6 +668,130 @@ function AdminPlanModal({
               <span>Résilier le forfait immédiatement (retour Gratuit)</span>
             </button>
           )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Modal de confirmation de suppression définitive d'une boutique (Dashboard Admin).
+ */
+function AdminDeleteShopModal({
+  shop,
+  onClose,
+  onDeleted,
+}: {
+  shop: AdminShopRow;
+  onClose: () => void;
+  onDeleted: (shopId: string) => void;
+}) {
+  const [confirmationInput, setConfirmationInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const canDelete = confirmationInput.trim().toLowerCase() === shop.name.trim().toLowerCase();
+
+  async function handleDelete() {
+    if (!canDelete || loading) return;
+    setLoading(true);
+    setError(null);
+
+    try {
+      const res = await adminDeleteShopAction(shop.id);
+      if (!res.ok) {
+        setError(res.error || "Impossible de supprimer la boutique.");
+        setLoading(false);
+        return;
+      }
+      onDeleted(shop.id);
+    } catch {
+      setError("Une erreur inattendue est survenue.");
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+      <div className="relative w-full max-w-md rounded-3xl border border-line bg-white p-6 shadow-2xl space-y-4">
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute right-4 top-4 grid size-8 place-items-center rounded-full text-muted hover:bg-sand transition-colors cursor-pointer"
+        >
+          <X className="size-4" />
+        </button>
+
+        <div className="flex items-center gap-3">
+          <div className="grid size-11 place-items-center rounded-2xl bg-danger-50 text-danger-600">
+            <Trash2 className="size-6" />
+          </div>
+          <div>
+            <h3 className="text-base sm:text-lg font-black text-ink">Supprimer la boutique</h3>
+            <p className="text-xs text-muted">Action irréversible d&apos;administration</p>
+          </div>
+        </div>
+
+        {error && (
+          <div className="rounded-2xl bg-danger-50 border border-danger-200 p-3 text-xs text-danger-700">
+            {error}
+          </div>
+        )}
+
+        <div className="rounded-2xl border border-danger-200/60 bg-danger-50/50 p-3.5 text-xs text-danger-900 space-y-1.5 leading-relaxed">
+          <p className="font-bold flex items-center gap-1.5 text-danger-700">
+            <AlertTriangle className="size-4 shrink-0" />
+            Attention : suppression définitive
+          </p>
+          <p>
+            Vous êtes sur le point de supprimer définitivement la boutique <strong>« {shop.name} »</strong> (/{shop.slug}).
+          </p>
+          <p className="text-[11px] text-danger-800">
+            Tous les produits, commandes, clients, forfaits et images de cette boutique seront immédiatement purgés.
+          </p>
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-xs font-semibold text-ink">
+            Pour confirmer, tapez le nom de la boutique (<strong>{shop.name}</strong>) :
+          </label>
+          <input
+            type="text"
+            value={confirmationInput}
+            onChange={(e) => setConfirmationInput(e.target.value)}
+            placeholder={shop.name}
+            className="w-full h-10 rounded-xl border border-line bg-sand/30 px-3 text-xs font-mono text-ink placeholder:text-muted/60 focus:border-danger-600 focus:bg-white focus:outline-none transition-colors"
+            autoFocus
+          />
+        </div>
+
+        <div className="flex items-center justify-end gap-2 pt-2 border-t border-line">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={loading}
+            className="h-10 px-4 rounded-xl border border-line bg-white text-xs font-bold text-ink hover:bg-sand transition-colors cursor-pointer"
+          >
+            Annuler
+          </button>
+          <button
+            type="button"
+            onClick={handleDelete}
+            disabled={!canDelete || loading}
+            className="inline-flex h-10 items-center justify-center gap-1.5 px-4 rounded-xl bg-danger-600 text-xs font-bold text-white shadow-xs hover:bg-danger-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
+          >
+            {loading ? (
+              <>
+                <Spinner className="size-3.5 text-white" />
+                <span>Suppression…</span>
+              </>
+            ) : (
+              <>
+                <Trash2 className="size-3.5" />
+                <span>Supprimer définitivement</span>
+              </>
+            )}
+          </button>
         </div>
       </div>
     </div>

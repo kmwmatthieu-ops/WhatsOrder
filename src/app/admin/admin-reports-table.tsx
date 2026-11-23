@@ -2,8 +2,8 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { AlertTriangle, EyeOff, Ban, Check, ExternalLink, ShieldAlert } from "lucide-react";
-import { resolveReportAction } from "./actions";
+import { AlertTriangle, EyeOff, Ban, Check, ExternalLink, ShieldAlert, Trash2 } from "lucide-react";
+import { resolveReportAction, adminDeleteShopAction } from "./actions";
 import { Button } from "@/components/ui/button";
 
 export interface AdminReportRow {
@@ -62,6 +62,37 @@ export function AdminReportsTable({ initialReports }: AdminReportsTableProps) {
                   ...r,
                   status: action === "dismiss" ? "dismissed" : "resolved_hidden",
                   reviewed_at: new Date().toISOString(),
+                }
+              : r
+          )
+        );
+      }
+    });
+  }
+
+  function handleDeleteShopFromReport(reportId: string, shopId: string, shopName: string) {
+    const confirmMsg =
+      `Supprimer DÉFINITIVEMENT la boutique « ${shopName} » suite à ce signalement ?\n\n` +
+      `Tous ses produits, commandes, clients et données seront irrévocablement supprimés.`;
+
+    if (!confirm(confirmMsg)) return;
+
+    setError(null);
+    startTransition(async () => {
+      const res = await adminDeleteShopAction(shopId);
+      if (!res.ok) {
+        setError(res.error || "Impossible de supprimer la boutique.");
+      } else {
+        // Marquer le signalement comme résolu
+        await resolveReportAction(reportId, "suspend_shop", "Boutique définitivement supprimée par l'administrateur");
+        setReports((prev) =>
+          prev.map((r) =>
+            r.id === reportId
+              ? {
+                  ...r,
+                  status: "resolved_hidden",
+                  reviewed_at: new Date().toISOString(),
+                  details: (r.details ? r.details + " " : "") + "[Boutique supprimée]",
                 }
               : r
           )
@@ -224,6 +255,18 @@ export function AdminReportsTable({ initialReports }: AdminReportsTableProps) {
                             <Ban className="size-3" />
                             <span>Suspendre boutique</span>
                           </button>
+                          {r.shop_id && (
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteShopFromReport(r.id, r.shop_id!, r.shop_name || r.shop_slug || "cette boutique")}
+                              disabled={isPending}
+                              className="inline-flex items-center gap-1 rounded-xl border border-danger-300 bg-danger-50 px-2 py-1 text-[11px] font-bold text-danger-700 hover:bg-danger-100 transition-colors"
+                              title="Supprimer définitivement la boutique test ou frauduleuse"
+                            >
+                              <Trash2 className="size-3" />
+                              <span>Supprimer boutique</span>
+                            </button>
+                          )}
                           <button
                             type="button"
                             onClick={() => handleAction(r.id, "dismiss")}

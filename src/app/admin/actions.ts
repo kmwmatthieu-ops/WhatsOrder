@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient, getUser } from "@/lib/supabase/server";
 import { dbErrorMessage } from "@/lib/errors";
+import { MEDIA_BUCKET } from "@/lib/constants";
 
 export async function toggleShopStatus(
   shopId: string,
@@ -27,6 +28,67 @@ export async function toggleShopStatus(
 
   revalidatePath("/admin");
   return {};
+}
+
+/**
+ * Supprime définitivement une boutique par un administrateur.
+ * Nettoie les fichiers multimédias de stockage et supprime la boutique en base (cascade PostgreSQL).
+ */
+export async function adminDeleteShopAction(
+  shopId: string
+): Promise<{ ok: boolean; error?: string }> {
+  const supabase = await createClient();
+
+  // 1. Vérifier les droits d'administration
+  const { data: isAdmin } = await supabase.rpc("is_admin");
+  if (!isAdmin) {
+    return { ok: false, error: "Accès refusé : rôle administrateur requis." };
+  }
+
+  // 2. Récupérer la boutique pour connaître son slug et nettoyer le stockage
+  const { data: shop, error: fetchErr } = await supabase
+    .from("shops")
+    .select("id, name, slug")
+    .eq("id", shopId)
+    .single();
+
+  if (fetchErr || !shop) {
+    return { ok: false, error: "Boutique introuvable." };
+  }
+
+  // 3. Nettoyage préventif des médias hébergés dans Storage
+  try {
+    const folders = ["logo", "banner", "products"];
+    for (const folder of folders) {
+      const { data: files } = await supabase.storage
+        .from(MEDIA_BUCKET)
+        .list(`${shop.id}/${folder}`);
+      if (files && files.length > 0) {
+        const paths = files.map((f) => `${shop.id}/${folder}/${f.name}`);
+        await supabase.storage.from(MEDIA_BUCKET).remove(paths);
+      }
+    }
+  } catch {
+    // Non bloquant
+  }
+
+  // 4. Suppression en base de données (déclenche ON DELETE CASCADE pour toutes les tables dépendantes)
+  const { error: deleteErr } = await supabase
+    .from("shops")
+    .delete()
+    .eq("id", shopId);
+
+  if (deleteErr) {
+    return { ok: false, error: dbErrorMessage(deleteErr, "Impossible de supprimer la boutique.") };
+  }
+
+  // 5. Invalidation des chemins et caches Next.js
+  revalidatePath("/admin");
+  revalidatePath("/explorer");
+  revalidatePath("/boutiques");
+  revalidatePath(`/${shop.slug}`);
+
+  return { ok: true };
 }
 
 /**
