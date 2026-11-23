@@ -123,13 +123,23 @@ describe("Certification Commerçant & Badge Vérifié (V3-B)", () => {
   it("renvoie shop_is_certified = true dans get_explorer_products", async () => {
     if (!isConfigured) return;
 
-    // Insérer un produit pour la boutique A
+    // Activer l'identité vérifiée et le forfait Premium (qui donne droit au badge certifié selon V3-C)
+    await ctx.admin.from("shops").update({ identity_verified: true }).eq("id", ctx.userA.shopId);
+    await ctx.userA.client.rpc("admin_assign_subscription", {
+      p_shop_id: ctx.userA.shopId,
+      p_plan_id: "premium",
+      p_duration_months: 12,
+      p_notes: "Plan Premium avec badge",
+    });
+
+    // Insérer un produit avec photo pour la boutique A (Explorer exige une photo)
     await ctx.userA.client.from("products").insert({
       shop_id: ctx.userA.shopId,
       name: "Produit Certifié Test",
       price: 15000,
       is_available: true,
       is_hidden: false,
+      images: ["https://example.com/cert.jpg"],
     });
 
     const { data: products, error } = await ctx.anon.rpc("get_explorer_products", {

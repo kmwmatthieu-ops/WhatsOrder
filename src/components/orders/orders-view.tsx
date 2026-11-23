@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Search, PackageOpen, Download, Lock } from "lucide-react";
+import { Search, PackageOpen, Download, FileSpreadsheet } from "lucide-react";
 import { OrderRow, type OrderRowData } from "./order-row";
 import { ORDER_STATUS_LABELS, SIMPLE_ORDER_STATUS_LABELS } from "./order-status-badge";
 import { downloadCsv, downloadStyledExcel, type ShopExportMeta } from "@/lib/csv";
@@ -147,22 +147,31 @@ export function OrdersView({
 
         {orders.length > 0 &&
           (hasCsvExport ? (
-            <ExportDropdown
-              count={filteredOrders.length}
-              shopName={shop?.name || "Boutique"}
-              primaryColor={shop?.primary_color}
-              onExportExcel={handleExportExcel}
-              onExportCsv={handleExportCsv}
-            />
-          ) : (
-            <Link
-              href="/tableau-de-bord/abonnement"
-              title="L'export est réservé aux forfaits Business et Premium"
-              className="inline-flex h-10 items-center justify-center gap-2 self-start sm:self-auto rounded-2xl border border-line bg-white px-3.5 text-xs font-bold text-muted shadow-xs hover:border-brand-300 hover:text-brand-600 transition-colors"
+            /* Forfait Business & Premium : Uniquement Export Excel stylisé */
+            <button
+              type="button"
+              onClick={handleExportExcel}
+              className="inline-flex h-10 items-center justify-center gap-2 self-start sm:self-auto rounded-2xl border border-line bg-white px-3.5 text-xs font-bold text-ink shadow-xs hover:bg-brand-50 hover:text-brand-700 hover:border-brand-300 transition-all cursor-pointer active:scale-98"
+              title="Exporter les commandes en Excel stylisé (.xls)"
             >
-              <Lock className="size-4 text-amber-600" />
-              <span>Export CSV & Excel (Business)</span>
-            </Link>
+              <FileSpreadsheet className="size-4 text-emerald-600" />
+              <span
+                className="size-2 rounded-full ring-1 ring-black/10 shrink-0"
+                style={{ backgroundColor: shop?.primary_color || "#0F766E" }}
+              />
+              <span>Exporter en Excel ({filteredOrders.length})</span>
+            </button>
+          ) : (
+            /* Forfait Gratuit : Uniquement Export CSV standard */
+            <button
+              type="button"
+              onClick={handleExportCsv}
+              className="inline-flex h-10 items-center justify-center gap-2 self-start sm:self-auto rounded-2xl border border-line bg-white px-3.5 text-xs font-bold text-ink shadow-xs hover:bg-sand transition-all cursor-pointer active:scale-98"
+              title="Exporter les commandes au format CSV standard"
+            >
+              <Download className="size-4 text-brand-600" />
+              <span>Exporter en CSV ({filteredOrders.length})</span>
+            </button>
           ))}
       </div>
 

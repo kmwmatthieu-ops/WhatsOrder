@@ -41,13 +41,18 @@ export function LogoIcon({ className = "size-7 sm:size-8" }: { className?: strin
   );
 }
 
-/** Logo texte de l'application (symbole + nom). */
+/** Logo texte de l'application (symbole + nom superposé responsive). */
 export function Logo({ className = "" }: { className?: string }) {
   return (
-    <span className={`inline-flex items-center gap-2 font-extrabold tracking-tight shrink-0 ${className}`}>
+    <span className={`inline-flex items-center gap-1.5 sm:gap-2 font-extrabold tracking-tight shrink-0 select-none ${className}`}>
       <LogoIcon className="size-7 sm:size-8 drop-shadow-xs" />
-      <span className="text-sm sm:text-base md:text-lg">
-        Bon Waz <span className="text-accent-500">à Dealer</span>
+      <span className="flex flex-col leading-none text-left">
+        <span className="text-[11px] sm:text-xs font-black text-ink tracking-tight">
+          Bon Waz à
+        </span>
+        <span className="text-xs sm:text-sm font-black text-accent-500 tracking-tight mt-0.5">
+          Dealer
+        </span>
       </span>
       <span className="sr-only">{APP_NAME}</span>
     </span>

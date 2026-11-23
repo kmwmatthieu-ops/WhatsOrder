@@ -94,7 +94,8 @@ export function buildCsvContent(
       hour: "2-digit",
       minute: "2-digit",
     });
-    const primaryColor = meta.primaryColor || "#0F766E";
+    const rawColor = meta.primaryColor?.trim();
+  const primaryColor = rawColor ? (rawColor.startsWith("#") ? rawColor : `#${rawColor}`) : "#0F766E";
     const shopUrl = `https://bon-waz-a-dealer.vercel.app/${meta.shopSlug}`;
 
     lines.push(`"=== BON WAZ À DEALER — ${escapeCsvCell(meta.reportTitle || "RAPPORT OFFICIEL").toUpperCase()} ==="`);
@@ -142,7 +143,8 @@ export function buildExcelHtml(
   rows: Array<Array<string | number | null | undefined>>,
   meta: ShopExportMeta
 ): string {
-  const primaryColor = meta.primaryColor || "#0F766E";
+  const rawColor = meta.primaryColor?.trim();
+  const primaryColor = rawColor ? (rawColor.startsWith("#") ? rawColor : `#${rawColor}`) : "#0F766E";
   const shopName = meta.shopName || "Boutique";
   const reportTitle = meta.reportTitle || "Rapport de données";
   const publicUrl = `https://bon-waz-a-dealer.vercel.app/${meta.shopSlug}`;

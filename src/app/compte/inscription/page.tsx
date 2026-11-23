@@ -42,10 +42,16 @@ export default async function ClientSignUpPage() {
           <ClientSignUpForm />
         </div>
 
-        <div className="text-center mt-6">
+        <div className="text-center mt-6 flex flex-col items-center gap-2">
+          <Link
+            href="/inscription?type=merchant"
+            className="text-xs font-semibold text-muted hover:text-ink"
+          >
+            Vous êtes commerçant ? <strong className="text-brand-700 underline">Créez votre boutique ici</strong>
+          </Link>
           <Link
             href="/explorer"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-700 hover:underline"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted hover:text-ink hover:underline"
           >
             <Compass className="size-3.5" />
             <span>Continuer à explorer sans compte</span>

@@ -26,8 +26,10 @@ export default async function HomePage() {
       {/* Navigation publique */}
       <header className="border-b border-line bg-white/90 backdrop-blur-md sticky top-0 z-30">
         <div className="mx-auto flex h-14 sm:h-16 max-w-5xl items-center justify-between px-3 sm:px-6">
-          <Logo />
-          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+          <Link href="/" prefetch={false} className="shrink-0 hover:opacity-90 transition-opacity">
+            <Logo />
+          </Link>
+          <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
             <Link
               href="/tarifs"
               prefetch={false}
@@ -39,26 +41,28 @@ export default async function HomePage() {
               <Link
                 href="/boutiques"
                 prefetch={false}
-                className="whitespace-nowrap text-xs sm:text-sm font-bold text-brand-700 hover:text-brand-800 px-2 sm:px-3 py-1.5 rounded-xl transition-colors shrink-0"
+                className="whitespace-nowrap rounded-xl sm:rounded-2xl bg-brand-600 px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-bold text-white shadow-xs hover:bg-brand-700 active:scale-98 transition-all shrink-0"
               >
-                Mon Tableau de bord
+                Tableau de bord
               </Link>
             ) : (
-              <Link
-                href="/connexion"
-                prefetch={false}
-                className="whitespace-nowrap text-xs sm:text-sm font-semibold text-muted hover:text-ink px-2 sm:px-3 py-1.5 rounded-xl transition-colors shrink-0"
-              >
-                Connexion / Inscription
-              </Link>
+              <>
+                <Link
+                  href="/connexion"
+                  prefetch={false}
+                  className="whitespace-nowrap text-xs sm:text-sm font-semibold text-muted hover:text-ink px-2 sm:px-2.5 py-1.5 rounded-xl transition-colors shrink-0"
+                >
+                  Connexion
+                </Link>
+                <Link
+                  href="/inscription"
+                  prefetch={false}
+                  className="whitespace-nowrap rounded-xl sm:rounded-2xl bg-brand-600 px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-bold text-white shadow-xs hover:bg-brand-700 active:scale-98 transition-all shrink-0"
+                >
+                  Inscription
+                </Link>
+              </>
             )}
-            <Link
-              href="/inscription"
-              prefetch={false}
-              className="hidden sm:inline-flex whitespace-nowrap rounded-2xl bg-brand-600 px-4 py-2.5 text-xs sm:text-sm font-bold text-white shadow-xs hover:bg-brand-700 active:scale-98 transition-all shrink-0"
-            >
-              <span>Créer ma boutique</span>
-            </Link>
           </div>
         </div>
       </header>

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Check, ArrowRight, Zap, HelpCircle, ShieldCheck, Sparkles, Smartphone, BadgeCheck } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 import { getActiveSubscriptionPlans } from "@/lib/subscription";
+import { getUser } from "@/lib/supabase/server";
 import { formatFCFA } from "@/lib/format";
 import { MOBILE_MONEY_PAYMENT_CONFIG } from "@/lib/constants";
 
@@ -12,41 +13,53 @@ export const metadata: Metadata = {
 };
 
 export default async function TarifsPage() {
-  const plans = await getActiveSubscriptionPlans();
+  const [plans, user] = await Promise.all([
+    getActiveSubscriptionPlans(),
+    getUser(),
+  ]);
 
   return (
     <div className="min-h-dvh bg-cream text-ink flex flex-col overflow-x-hidden">
       {/* Navigation publique */}
       <header className="border-b border-line bg-white/90 backdrop-blur-md sticky top-0 z-30">
         <div className="mx-auto flex h-14 sm:h-16 max-w-5xl items-center justify-between px-3 sm:px-6">
-          <Logo />
-          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
-            <Link
-              href="/"
-              className="text-xs sm:text-sm font-semibold text-muted hover:text-ink px-2 sm:px-3 py-1.5 rounded-xl transition-colors shrink-0"
-            >
-              Accueil
-            </Link>
+          <Link href="/" prefetch={false} className="shrink-0 hover:opacity-90 transition-opacity">
+            <Logo />
+          </Link>
+          <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
             <Link
               href="/explorer"
-              className="text-xs sm:text-sm font-semibold text-muted hover:text-ink px-2 sm:px-3 py-1.5 rounded-xl transition-colors shrink-0"
+              prefetch={false}
+              className="whitespace-nowrap text-xs sm:text-sm font-semibold text-muted hover:text-ink px-2 sm:px-3 py-1.5 rounded-xl transition-colors shrink-0"
             >
               Explorer
             </Link>
-            <Link
-              href="/connexion"
-              className="text-xs sm:text-sm font-semibold text-muted hover:text-ink px-2 sm:px-3 py-1.5 rounded-xl transition-colors shrink-0"
-            >
-              <span className="sm:hidden">Connexion</span>
-              <span className="hidden sm:inline">Connexion / Inscription</span>
-            </Link>
-            <Link
-              href="/inscription"
-              className="rounded-xl sm:rounded-2xl bg-brand-600 px-3 py-1.5 sm:px-4 sm:py-2.5 text-xs sm:text-sm font-bold text-white shadow-xs hover:bg-brand-700 active:scale-98 transition-all shrink-0"
-            >
-              <span>Créer</span>
-              <span className="hidden sm:inline">&nbsp;ma boutique</span>
-            </Link>
+            {user ? (
+              <Link
+                href="/boutiques"
+                prefetch={false}
+                className="whitespace-nowrap rounded-xl sm:rounded-2xl bg-brand-600 px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-bold text-white shadow-xs hover:bg-brand-700 active:scale-98 transition-all shrink-0"
+              >
+                Tableau de bord
+              </Link>
+            ) : (
+              <>
+                <Link
+                  href="/connexion"
+                  prefetch={false}
+                  className="whitespace-nowrap text-xs sm:text-sm font-semibold text-muted hover:text-ink px-2 sm:px-2.5 py-1.5 rounded-xl transition-colors shrink-0"
+                >
+                  Connexion
+                </Link>
+                <Link
+                  href="/inscription"
+                  prefetch={false}
+                  className="whitespace-nowrap rounded-xl sm:rounded-2xl bg-brand-600 px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-bold text-white shadow-xs hover:bg-brand-700 active:scale-98 transition-all shrink-0"
+                >
+                  Inscription
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -68,29 +81,30 @@ export default async function TarifsPage() {
         </section>
 
         {/* Grille des 3 Plans */}
-        <section className="max-w-5xl mx-auto px-4 pb-16 sm:pb-24 w-full">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 items-stretch">
+        <section className="max-w-5xl mx-auto px-4 pt-4 pb-16 sm:pb-24 w-full">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-8 items-stretch pt-4">
             {plans.map((plan) => {
+              const isGratuit = plan.id === "gratuit" || plan.price_monthly === 0;
               const isPopular = plan.id === "business";
               const isPremium = plan.id === "premium";
 
               return (
                 <div
                   key={plan.id}
-                  className={`flex flex-col rounded-3xl p-6 sm:p-7 transition-all relative overflow-hidden ${
+                  className={`flex flex-col rounded-3xl p-6 sm:p-7 relative transition-all duration-300 ease-out hover:-translate-y-2 hover:shadow-2xl hover:scale-[1.015] cursor-pointer ${
                     isPopular
                       ? "bg-white border-2 border-brand-600 shadow-xl"
-                      : "bg-white border border-line shadow-xs hover:shadow-md"
+                      : "bg-white border border-line shadow-xs hover:border-brand-300"
                   }`}
                 >
                   {plan.badge && (
-                    <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
+                    <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-10">
                       <span
-                        className={`inline-block px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider ${
+                        className={`inline-block px-3.5 py-1 rounded-full text-[11px] font-black uppercase tracking-wider shadow-xs ${
                           isPopular
-                            ? "bg-brand-600 text-white shadow-xs"
+                            ? "bg-brand-600 text-white"
                             : isPremium
-                            ? "bg-purple-600 text-white shadow-xs"
+                            ? "bg-purple-600 text-white"
                             : "bg-sand text-ink border border-line"
                         }`}
                       >
@@ -160,49 +174,52 @@ export default async function TarifsPage() {
                             : "bg-sand text-muted/60"
                         }`}
                       >
-                        <Check className="size-3.5 font-bold" />
+                        {plan.has_advanced_stats ? (
+                          <Check className="size-3.5 font-bold" />
+                        ) : (
+                          <span className="text-xs text-muted/50 font-bold">•</span>
+                        )}
                       </span>
                       <span className={plan.has_advanced_stats ? "" : "text-muted line-through"}>
                         Statistiques avancées & graphiques 30j
                       </span>
                     </li>
 
-                    {/* Export CSV */}
-                    <li className="flex items-center gap-2.5">
-                      <span
-                        className={`grid size-5 shrink-0 place-items-center rounded-full ${
-                          plan.has_csv_export
-                            ? "bg-brand-50 text-brand-600"
-                            : "bg-sand text-muted/60"
-                        }`}
-                      >
-                        <Check className="size-3.5 font-bold" />
-                      </span>
-                      <span className={plan.has_csv_export ? "" : "text-muted line-through"}>
-                        Export CSV des commandes et clients
-                      </span>
-                    </li>
+                    {/* Export de données : CSV pour Gratuit, Excel pour Business & Premium */}
+                    {isGratuit ? (
+                      <>
+                        <li className="flex items-center gap-2.5">
+                          <span className="grid size-5 shrink-0 place-items-center rounded-full bg-brand-50 text-brand-600">
+                            <Check className="size-3.5 font-bold" />
+                          </span>
+                          <span>Export CSV des commandes et clients</span>
+                        </li>
+                        <li className="flex items-center gap-2.5 text-muted/60">
+                          <span className="grid size-5 shrink-0 place-items-center rounded-full bg-sand text-muted/50">
+                            <span className="text-xs font-bold">•</span>
+                          </span>
+                          <span className="line-through text-muted/70">Export Excel stylisé (.xls)</span>
+                        </li>
+                      </>
+                    ) : (
+                      <li className="flex items-center gap-2.5">
+                        <span className="grid size-5 shrink-0 place-items-center rounded-full bg-brand-50 text-brand-600">
+                          <Check className="size-3.5 font-bold" />
+                        </span>
+                        <span>
+                          <strong>Export Excel stylisé (.xls)</strong>
+                        </span>
+                      </li>
+                    )}
 
-                    {/* Visibilité Explorer (dynamique selon plan.visibility_multiplier V3-C) */}
+                    {/* Visibilité Explorer : vert actif pour tous ! */}
                     <li className="flex items-center gap-2.5">
-                      <span
-                        className={`grid size-5 shrink-0 place-items-center rounded-full ${
-                          Number(plan.visibility_multiplier ?? 1.0) > 1.0
-                            ? "bg-brand-50 text-brand-600"
-                            : "bg-sand text-muted/60"
-                        }`}
-                      >
+                      <span className="grid size-5 shrink-0 place-items-center rounded-full bg-brand-50 text-brand-600">
                         <Check className="size-3.5 font-bold" />
                       </span>
-                      <span
-                        className={
-                          Number(plan.visibility_multiplier ?? 1.0) > 1.0
-                            ? "font-semibold text-ink"
-                            : "text-muted"
-                        }
-                      >
-                        {Number(plan.visibility_multiplier ?? 1.0) > 1.0
-                          ? `Visibilité renforcée (×${Number(plan.visibility_multiplier).toFixed(1)}) sur Explorer`
+                      <span className={!isGratuit ? "font-semibold text-ink" : "text-ink"}>
+                        {!isGratuit
+                          ? `Visibilité renforcée (×${Number(plan.visibility_multiplier ?? 1.5).toFixed(1)}) sur Explorer`
                           : "Visibilité standard (×1.0) sur Explorer"}
                       </span>
                     </li>

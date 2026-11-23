@@ -370,12 +370,16 @@ export function SubscriptionView({
           <div className="rounded-2xl border border-line bg-sand/30 p-3.5">
             <div className="flex items-center gap-2 text-xs font-bold text-ink">
               <Download className="size-4 text-brand-600" />
-              <span>Export CSV des données</span>
+              <span>
+                {effectivePlan.price_monthly === 0 || effectivePlan.id === "gratuit"
+                  ? "Export CSV des données"
+                  : "Export Excel stylisé (.xls)"}
+              </span>
             </div>
             <p className="text-[11px] text-muted mt-1">
-              {effectivePlan.has_csv_export
-                ? "Export direct des listes de commandes et clients vers Excel."
-                : "Disponible à partir du plan Business."}
+              {effectivePlan.price_monthly === 0 || effectivePlan.id === "gratuit"
+                ? "Export de vos commandes et clients au format standard CSV."
+                : "Export professionnel au format Microsoft Excel (.xls) aux couleurs de votre boutique."}
             </p>
           </div>
 
