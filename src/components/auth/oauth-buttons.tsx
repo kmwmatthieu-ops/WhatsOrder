@@ -34,14 +34,6 @@ export function GoogleIcon({ className = "size-4" }: { className?: string }) {
   );
 }
 
-export function FacebookIcon({ className = "size-4" }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="#1877F2" aria-hidden="true">
-      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-    </svg>
-  );
-}
-
 function OAuthButtonsContent({
   next = "/boutiques",
   labelPrefix = "Continuer avec",
@@ -50,65 +42,39 @@ function OAuthButtonsContent({
 }: OAuthButtonsProps) {
   const searchParams = useSearchParams();
   const erreur = searchParams ? searchParams.get("erreur") : null;
-  const [loadingProvider, setLoadingProvider] = useState<"google" | "facebook" | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const handleOAuth = (provider: "google" | "facebook") => {
-    if (loadingProvider) return;
-    setLoadingProvider(provider);
-    window.location.href = `/api/auth/${provider}?next=${encodeURIComponent(next)}`;
+  const handleOAuth = () => {
+    if (loading) return;
+    setLoading(true);
+    window.location.href = `/api/auth/google?next=${encodeURIComponent(next)}`;
   };
 
   return (
     <div className="flex flex-col gap-3">
       {erreur === "oauth_google" && (
         <Alert tone="error">
-          La connexion avec Google n&apos;est pas encore activée dans votre console Supabase (Authentication &gt; Providers) ou a échoué. Utilisez votre e-mail en attendant.
+          La connexion avec Google a rencontré un imprévu. Veuillez réessayer ou utiliser votre e-mail.
         </Alert>
       )}
 
-      {erreur === "oauth_facebook" && (
-        <Alert tone="error">
-          La connexion avec Facebook n&apos;est pas encore activée dans votre console Supabase (Authentication &gt; Providers) ou a échoué. Utilisez votre e-mail en attendant.
-        </Alert>
-      )}
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-        {/* Bouton Google 1-Clic */}
-        <button
-          type="button"
-          onClick={() => handleOAuth("google")}
-          disabled={loadingProvider !== null}
-          aria-label={`${labelPrefix} Google`}
-          className="flex h-11 items-center justify-center gap-2.5 rounded-2xl border border-line bg-white px-3 text-xs font-bold text-ink shadow-xs transition-all hover:bg-sand/40 hover:border-brand-600/40 active:scale-[0.99] disabled:opacity-60 cursor-pointer"
-        >
-          {loadingProvider === "google" ? (
-            <div className="size-4 animate-spin rounded-full border-2 border-brand-600 border-t-transparent" />
-          ) : (
-            <GoogleIcon className="size-4 shrink-0" />
-          )}
-          <span className="truncate">
-            {loadingProvider === "google" ? "Redirection…" : `${labelPrefix} Google`}
-          </span>
-        </button>
-
-        {/* Bouton Facebook 1-Clic */}
-        <button
-          type="button"
-          onClick={() => handleOAuth("facebook")}
-          disabled={loadingProvider !== null}
-          aria-label={`${labelPrefix} Facebook`}
-          className="flex h-11 items-center justify-center gap-2.5 rounded-2xl border border-line bg-white px-3 text-xs font-bold text-ink shadow-xs transition-all hover:bg-sand/40 hover:border-brand-600/40 active:scale-[0.99] disabled:opacity-60 cursor-pointer"
-        >
-          {loadingProvider === "facebook" ? (
-            <div className="size-4 animate-spin rounded-full border-2 border-[#1877F2] border-t-transparent" />
-          ) : (
-            <FacebookIcon className="size-4 shrink-0" />
-          )}
-          <span className="truncate">
-            {loadingProvider === "facebook" ? "Redirection…" : `${labelPrefix} Facebook`}
-          </span>
-        </button>
-      </div>
+      {/* Bouton Google 1-Clic pleine largeur */}
+      <button
+        type="button"
+        onClick={handleOAuth}
+        disabled={loading}
+        aria-label={`${labelPrefix} Google`}
+        className="flex h-11 w-full items-center justify-center gap-3 rounded-2xl border border-line bg-white px-4 text-xs sm:text-sm font-bold text-ink shadow-xs transition-all hover:bg-sand/40 hover:border-brand-600/40 active:scale-[0.99] disabled:opacity-60 cursor-pointer"
+      >
+        {loading ? (
+          <div className="size-4 animate-spin rounded-full border-2 border-brand-600 border-t-transparent" />
+        ) : (
+          <GoogleIcon className="size-4 shrink-0" />
+        )}
+        <span className="truncate">
+          {loading ? "Connexion à Google en cours…" : `${labelPrefix} Google`}
+        </span>
+      </button>
 
       {showDivider && (
         <div className="relative my-1 flex items-center justify-center">
@@ -125,22 +91,15 @@ function OAuthButtonsContent({
 }
 
 function OAuthButtonsFallback({
-  next = "/boutiques",
   labelPrefix = "Continuer avec",
   showDivider = true,
   dividerText = "ou avec e-mail",
 }: OAuthButtonsProps) {
   return (
     <div className="flex flex-col gap-3">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-        <div className="flex h-11 items-center justify-center gap-2.5 rounded-2xl border border-line bg-white px-3 text-xs font-bold text-ink shadow-xs">
-          <GoogleIcon className="size-4 shrink-0" />
-          <span className="truncate">{labelPrefix} Google</span>
-        </div>
-        <div className="flex h-11 items-center justify-center gap-2.5 rounded-2xl border border-line bg-white px-3 text-xs font-bold text-ink shadow-xs">
-          <FacebookIcon className="size-4 shrink-0" />
-          <span className="truncate">{labelPrefix} Facebook</span>
-        </div>
+      <div className="flex h-11 w-full items-center justify-center gap-3 rounded-2xl border border-line bg-white px-4 text-xs sm:text-sm font-bold text-ink shadow-xs">
+        <GoogleIcon className="size-4 shrink-0" />
+        <span className="truncate">{labelPrefix} Google</span>
       </div>
       {showDivider && (
         <div className="relative my-1 flex items-center justify-center">
