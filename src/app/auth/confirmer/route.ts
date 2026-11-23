@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { cookies } from "next/headers";
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { createClient, getMyShops } from "@/lib/supabase/server";
 
@@ -18,6 +19,7 @@ export async function GET(request: NextRequest) {
   const nextParam = searchParams.get("next") ?? "/onboarding";
   const next = ALLOWED_NEXT.includes(nextParam) ? nextParam : "/onboarding";
 
+  const cookieStore = await cookies();
   const supabase = await createClient();
   let verified = false;
 
@@ -31,21 +33,30 @@ export async function GET(request: NextRequest) {
     if (!error) verified = true;
   }
 
+  // Pour le flux de réinitialisation de mot de passe :
+  // Transmettre tous les paramètres (code, token_hash, etc.) et propager les cookies de session
+  if (next === "/nouveau-mot-de-passe") {
+    const targetUrl = new URL("/nouveau-mot-de-passe", request.url);
+    request.nextUrl.searchParams.forEach((val, key) => {
+      if (key !== "next") targetUrl.searchParams.set(key, val);
+    });
+    const response = NextResponse.redirect(targetUrl);
+    cookieStore.getAll().forEach((c) => {
+      response.cookies.set(c.name, c.value);
+    });
+    return response;
+  }
+
   if (verified) {
-    if (next === "/nouveau-mot-de-passe") {
-      return NextResponse.redirect(new URL("/nouveau-mot-de-passe", request.url));
-    }
     // Pour une confirmation d'inscription : si l'utilisateur n'a pas encore de boutique,
     // direction /onboarding pour créer sa boutique ; sinon /boutiques.
     const shops = await getMyShops();
     const target = shops.length > 0 ? "/boutiques" : "/onboarding";
-    return NextResponse.redirect(new URL(target, request.url));
-  }
-
-  // Si non vérifié côté serveur mais que la cible est le changement de mot de passe,
-  // renvoyer vers /nouveau-mot-de-passe pour que le client puisse inspecter le hash URL
-  if (next === "/nouveau-mot-de-passe") {
-    return NextResponse.redirect(new URL("/nouveau-mot-de-passe", request.url));
+    const response = NextResponse.redirect(new URL(target, request.url));
+    cookieStore.getAll().forEach((c) => {
+      response.cookies.set(c.name, c.value);
+    });
+    return response;
   }
 
   return NextResponse.redirect(new URL("/connexion?erreur=lien", request.url));

@@ -35,29 +35,19 @@ export function NewPasswordForm({ initialHasUser }: { initialHasUser: boolean })
       try {
         const supabase = createClient();
 
-        // 1. Vérifier si des tokens sont présents dans le fragment de l'URL (#access_token=...&refresh_token=...)
-        if (typeof window !== "undefined" && window.location.hash) {
-          const hash = window.location.hash.replace(/^#/, "");
-          const params = new URLSearchParams(hash);
-          const accessToken = params.get("access_token");
-          const refreshToken = params.get("refresh_token");
-
-          if (accessToken && refreshToken) {
-            const { error: sessionError } = await supabase.auth.setSession({
-              access_token: accessToken,
-              refresh_token: refreshToken,
-            });
-            if (!sessionError) {
+        // 1. Vérifier si un code ou token_hash est présent dans les searchParams (?code=... ou ?token_hash=...)
+        if (typeof window !== "undefined" && window.location.search) {
+          const searchParams = new URLSearchParams(window.location.search);
+          const code = searchParams.get("code");
+          if (code) {
+            const { error: codeError } = await supabase.auth.exchangeCodeForSession(code);
+            if (!codeError) {
               setHasSession(true);
               setChecking(false);
               return;
             }
           }
-        }
 
-        // 2. Vérifier si token_hash est présent dans les searchParams (?token_hash=...&type=recovery)
-        if (typeof window !== "undefined" && window.location.search) {
-          const searchParams = new URLSearchParams(window.location.search);
           const tokenHash = searchParams.get("token_hash");
           const type = (searchParams.get("type") as "recovery") || "recovery";
 
@@ -73,6 +63,8 @@ export function NewPasswordForm({ initialHasUser }: { initialHasUser: boolean })
             }
           }
         }
+
+        // 2. Vérifier si des tokens sont présents dans le fragment de l'URL (#access_token=...&refresh_token=...)
 
         // 3. Vérifier la session active stockée
         const { data: { session } } = await supabase.auth.getSession();
