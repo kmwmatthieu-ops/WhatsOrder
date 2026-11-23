@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Mail, Lock, ArrowRight } from "lucide-react";
 import { clientSignIn, type ClientActionState } from "../actions";
 import { Button } from "@/components/ui/button";
+import { OAuthButtons } from "@/components/auth/oauth-buttons";
 
 export function ClientSignInForm() {
   const router = useRouter();
@@ -21,12 +22,16 @@ export function ClientSignInForm() {
   }, [state.ok, state.message]);
 
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4">
       {state.error && (
         <div className="rounded-2xl border border-danger-200 bg-danger-50 p-3 text-xs text-danger-700">
           {state.error}
         </div>
       )}
+
+      <OAuthButtons next="/explorer" labelPrefix="Continuer avec" dividerText="ou avec votre e-mail" />
+
+      <form action={formAction} className="flex flex-col gap-4">
 
       {/* Adresse e-mail */}
       <div className="flex flex-col gap-1.5">
@@ -84,5 +89,6 @@ export function ClientSignInForm() {
         </Link>
       </p>
     </form>
+    </div>
   );
 }

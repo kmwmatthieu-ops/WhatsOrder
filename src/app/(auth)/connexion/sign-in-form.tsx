@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/field";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
+import { OAuthButtons } from "@/components/auth/oauth-buttons";
 
 export function SignInForm({ linkError }: { linkError?: string }) {
   const [state, setState] = useState<ActionState>(initialActionState);
@@ -63,10 +64,14 @@ export function SignInForm({ linkError }: { linkError?: string }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
+    <div className="flex flex-col gap-4">
       {linkError && !state.error && <Alert tone="error">{linkError}</Alert>}
       {state.error && <Alert tone="error">{state.error}</Alert>}
-      <Input
+
+      <OAuthButtons next="/boutiques" labelPrefix="Continuer avec" dividerText="ou avec votre e-mail" />
+
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
+        <Input
         label="E-mail"
         name="email"
         type="email"
@@ -93,5 +98,6 @@ export function SignInForm({ linkError }: { linkError?: string }) {
         {pending ? "Connexion…" : "Se connecter"}
       </Button>
     </form>
+    </div>
   );
 }

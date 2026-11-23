@@ -3,7 +3,14 @@ import { cookies } from "next/headers";
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { createClient, getMyShops } from "@/lib/supabase/server";
 
-const ALLOWED_NEXT = ["/onboarding", "/nouveau-mot-de-passe", "/tableau-de-bord", "/boutiques"];
+const ALLOWED_NEXT = [
+  "/onboarding",
+  "/nouveau-mot-de-passe",
+  "/tableau-de-bord",
+  "/boutiques",
+  "/explorer",
+  "/compte/boutiques",
+];
 
 /**
  * Cible des liens e-mail (confirmation d'inscription, mot de passe oublié).
@@ -48,10 +55,44 @@ export async function GET(request: NextRequest) {
   }
 
   if (verified) {
-    // Pour une confirmation d'inscription : si l'utilisateur n'a pas encore de boutique,
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user) {
+        const fullName =
+          user.user_metadata?.full_name ||
+          user.user_metadata?.name ||
+          user.user_metadata?.user_name;
+        if (fullName) {
+          await supabase.from("customer_profiles").upsert(
+            {
+              id: user.id,
+              full_name: fullName,
+              activity_consent: true,
+              personalization_enabled: true,
+              updated_at: new Date().toISOString(),
+            },
+            { onConflict: "id", ignoreDuplicates: true }
+          );
+        }
+      }
+    } catch {
+      // Initialisation du profil optionnelle, non-bloquante
+    }
+
+    if (next === "/explorer" || next === "/compte/boutiques") {
+      const response = NextResponse.redirect(new URL(next, request.url));
+      cookieStore.getAll().forEach((c) => {
+        response.cookies.set(c.name, c.value);
+      });
+      return response;
+    }
+
+    // Pour une confirmation d'inscription ou OAuth : si l'utilisateur n'a pas encore de boutique,
     // direction /onboarding pour créer sa boutique ; sinon /boutiques.
     const shops = await getMyShops();
-    const target = shops.length > 0 ? "/boutiques" : "/onboarding";
+    const target = shops.length > 0 ? (next === "/onboarding" ? "/boutiques" : next) : "/onboarding";
     const response = NextResponse.redirect(new URL(target, request.url));
     cookieStore.getAll().forEach((c) => {
       response.cookies.set(c.name, c.value);

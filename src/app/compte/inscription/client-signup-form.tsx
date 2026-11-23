@@ -6,6 +6,7 @@ import Link from "next/link";
 import { User, Mail, Lock, CheckCircle2, ArrowRight } from "lucide-react";
 import { clientSignUp, type ClientActionState } from "../actions";
 import { Button } from "@/components/ui/button";
+import { OAuthButtons } from "@/components/auth/oauth-buttons";
 
 export function ClientSignUpForm() {
   const router = useRouter();
@@ -21,7 +22,7 @@ export function ClientSignUpForm() {
   }, [state.message]);
 
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4">
       {state.error && (
         <div className="rounded-2xl border border-danger-200 bg-danger-50 p-3 text-xs text-danger-700">
           {state.error}
@@ -34,6 +35,10 @@ export function ClientSignUpForm() {
           <span>{state.message}</span>
         </div>
       )}
+
+      <OAuthButtons next="/explorer" labelPrefix="Continuer avec" dividerText="ou s'inscrire avec votre e-mail" />
+
+      <form action={formAction} className="flex flex-col gap-4">
 
       {/* Nom complet */}
       <div className="flex flex-col gap-1.5">
@@ -139,5 +144,6 @@ export function ClientSignUpForm() {
         </Link>
       </p>
     </form>
+    </div>
   );
 }
