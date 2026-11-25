@@ -18,11 +18,9 @@ const effectiveKey =
 
 const envSiteUrl = process.env.NEXT_PUBLIC_SITE_URL;
 const effectiveSiteUrl =
-  envSiteUrl && !envSiteUrl.includes("localhost")
+  envSiteUrl && !envSiteUrl.includes("localhost") && !envSiteUrl.includes("bon-waz-a-dealer")
     ? envSiteUrl
-    : process.env.NODE_ENV === "production"
-      ? PRODUCTION_SITE_URL
-      : envSiteUrl || "http://localhost:3000";
+    : PRODUCTION_SITE_URL;
 
 const nextConfig: NextConfig = {
   // Verrouillage à la compilation des variables publiques vers le vrai projet Supabase et le domaine public

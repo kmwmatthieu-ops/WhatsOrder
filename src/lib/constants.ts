@@ -33,10 +33,17 @@ export const PRODUCTION_SITE_URL = "https://bonwazadealer.vercel.app";
 /** URL publique de l'application (liens e-mail et liens de boutique). */
 export function siteUrl() {
   const envUrl = process.env.NEXT_PUBLIC_SITE_URL;
-  if (envUrl && !envUrl.includes("localhost")) {
+  if (
+    envUrl &&
+    !envUrl.includes("localhost") &&
+    !envUrl.includes("bon-waz-a-dealer")
+  ) {
     return envUrl.replace(/\/$/, "");
   }
-  if (process.env.NODE_ENV === "production") {
+  if (
+    process.env.NODE_ENV === "production" ||
+    (envUrl && envUrl.includes("bon-waz-a-dealer"))
+  ) {
     return PRODUCTION_SITE_URL;
   }
   return (envUrl || "http://localhost:3000").replace(/\/$/, "");

@@ -96,7 +96,7 @@ export function buildCsvContent(
     });
     const rawColor = meta.primaryColor?.trim();
   const primaryColor = rawColor ? (rawColor.startsWith("#") ? rawColor : `#${rawColor}`) : "#0F766E";
-    const shopUrl = `https://bon-waz-a-dealer.vercel.app/${meta.shopSlug}`;
+    const shopUrl = `https://bonwazadealer.vercel.app/${meta.shopSlug}`;
 
     lines.push(`"=== BON WAZ À DEALER — ${escapeCsvCell(meta.reportTitle || "RAPPORT OFFICIEL").toUpperCase()} ==="`);
     lines.push(
@@ -147,7 +147,7 @@ export function buildExcelHtml(
   const primaryColor = rawColor ? (rawColor.startsWith("#") ? rawColor : `#${rawColor}`) : "#0F766E";
   const shopName = meta.shopName || "Boutique";
   const reportTitle = meta.reportTitle || "Rapport de données";
-  const publicUrl = `https://bon-waz-a-dealer.vercel.app/${meta.shopSlug}`;
+  const publicUrl = `https://bonwazadealer.vercel.app/${meta.shopSlug}`;
   const phone = meta.phone || "Non renseigné";
   const isCertified = Boolean(meta.isCertified);
   const formattedDate = new Date().toLocaleString("fr-FR", {
