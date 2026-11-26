@@ -147,46 +147,8 @@ export function ProductDetailModal({
     const target = variants.find((v) => v.id === variantId);
     if (!target || isVariantExhausted(target)) return;
     setSelectedVariantId(variantId);
-    const attrs = variantAttrMap.get(variantId);
-    if (attrs) setSelectedOptions(attrs);
     if (target.stock !== null && quantity > target.stock) {
       setQuantity(Math.max(1, target.stock));
-    }
-  }
-
-  function handleSelectOption(dimName: string, val: string) {
-    const nextSelected = { ...selectedOptions, [dimName]: val };
-    setSelectedOptions(nextSelected);
-
-    // Chercher la variante exacte correspondant à toutes les options sélectionnées
-    let bestMatch = variants.find((v) => {
-      const attrs = variantAttrMap.get(v.id) || {};
-      return Object.entries(nextSelected).every(([k, vVal]) => attrs[k] === vVal);
-    });
-
-    // Si la combinaison exacte n'existe pas, trouver la première variante disponible avec cette valeur
-    if (!bestMatch) {
-      bestMatch =
-        variants.find((v) => {
-          const attrs = variantAttrMap.get(v.id) || {};
-          return attrs[dimName] === val && v.is_available && (v.stock === null || v.stock > 0);
-        }) ||
-        variants.find((v) => {
-          const attrs = variantAttrMap.get(v.id) || {};
-          return attrs[dimName] === val;
-        });
-
-      if (bestMatch) {
-        const matchingAttrs = variantAttrMap.get(bestMatch.id);
-        if (matchingAttrs) setSelectedOptions(matchingAttrs);
-      }
-    }
-
-    if (bestMatch) {
-      setSelectedVariantId(bestMatch.id);
-      if (bestMatch.stock !== null && quantity > bestMatch.stock) {
-        setQuantity(Math.max(1, bestMatch.stock));
-      }
     }
   }
 
@@ -335,142 +297,61 @@ export function ProductDetailModal({
               </div>
             )}
 
-            {/* Sélecteur de variantes superposées (Options & Dimensions) */}
+            {/* Sélecteur de variantes structurées (V2-C) */}
             {hasVariants && (
-              <div className="border-t border-line pt-3 flex flex-col gap-3">
+              <div className="border-t border-line pt-3 flex flex-col gap-2.5">
                 <div className="flex items-center justify-between">
                   <h4 className="text-xs font-bold uppercase tracking-wider text-muted">
-                    {dimensions.length > 1 ? "Options disponibles" : "Choisissez votre variante"}
+                    Choisissez votre variante
                   </h4>
                   {selectedVariant && (
-                    <span className="text-xs font-extrabold text-ink truncate max-w-[60%] text-right">
+                    <span className="text-xs font-extrabold text-ink">
                       {selectedVariant.label}
                     </span>
                   )}
                 </div>
 
-                {/* Si le produit a des dimensions superposées (ex: Capacité, Couleur, Taille) */}
-                {dimensions.length > 0 ? (
-                  <div className="flex flex-col gap-3">
-                    {dimensions.map((dim) => {
-                      const currentVal = selectedOptions[dim.name];
+                <div className="flex flex-wrap gap-2">
+                  {variants.map((v) => {
+                    const exhausted = isVariantExhausted(v);
+                    const isSelected = selectedVariantId === v.id && !exhausted;
+                    const vBasePrice = v.price_override ?? product.price;
+                    const vFinalPrice = applyDiscount(vBasePrice, discountPct);
+                    const hasCustomPrice = v.price_override !== null && v.price_override !== product.price;
 
-                      return (
-                        <div key={dim.name} className="flex flex-col gap-1.5">
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="font-bold text-ink/80">{dim.name} :</span>
-                            {currentVal && (
-                              <span className="font-extrabold text-ink">{currentVal}</span>
-                            )}
-                          </div>
-
-                          <div className="flex flex-wrap gap-2">
-                            {dim.values.map((val) => {
-                              const isSelected = currentVal === val;
-
-                              // Chercher si cette valeur est disponible avec les sélections actuelles
-                              const candidateAttrs = { ...selectedOptions, [dim.name]: val };
-                              const matchingVariant = variants.find((v) => {
-                                const attrs = variantAttrMap.get(v.id) || {};
-                                return Object.entries(candidateAttrs).every(([k, vVal]) => attrs[k] === vVal);
-                              });
-
-                              // Vérifier si cette option a du stock
-                              const anyAvailableWithVal = variants.some((v) => {
-                                const attrs = variantAttrMap.get(v.id) || {};
-                                return attrs[dim.name] === val && v.is_available && (v.stock === null || v.stock > 0);
-                              });
-
-                              const isExhausted = matchingVariant
-                                ? isVariantExhausted(matchingVariant)
-                                : !anyAvailableWithVal;
-
-                              // Prix custom éventuel
-                              const vBasePrice = matchingVariant?.price_override ?? null;
-                              const vFinalPrice = vBasePrice !== null ? applyDiscount(vBasePrice, discountPct) : null;
-                              const hasCustomPrice = vBasePrice !== null && vBasePrice !== product.price;
-
-                              return (
-                                <button
-                                  key={val}
-                                  type="button"
-                                  disabled={isExhausted}
-                                  onClick={() => handleSelectOption(dim.name, val)}
-                                  className={`inline-flex items-center gap-1.5 rounded-2xl border px-3.5 py-2 text-xs font-bold transition-all ${
-                                    isExhausted
-                                      ? "border-line bg-sand/40 text-muted line-through opacity-50 cursor-not-allowed"
-                                      : isSelected
-                                        ? "text-white shadow-sm scale-[1.02]"
-                                        : "border-line bg-white text-ink hover:bg-sand/60 cursor-pointer"
-                                  }`}
-                                  style={
-                                    isSelected
-                                      ? { backgroundColor: primaryColor, borderColor: primaryColor }
-                                      : undefined
-                                  }
-                                >
-                                  {isSelected && <Check className="size-3.5 stroke-[3] shrink-0" />}
-                                  <span>{val}</span>
-                                  {hasCustomPrice && !isExhausted && (
-                                    <span className={`text-[11px] ${isSelected ? "opacity-90" : "text-muted"}`}>
-                                      ({formatFCFA(vFinalPrice!)})
-                                    </span>
-                                  )}
-                                  {isExhausted && (
-                                    <span className="text-[10px] font-semibold no-underline">(Épuisé)</span>
-                                  )}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  /* Variantes simples à plat si aucune dimension structurée détectée */
-                  <div className="flex flex-wrap gap-2">
-                    {variants.map((v) => {
-                      const exhausted = isVariantExhausted(v);
-                      const isSelected = selectedVariantId === v.id && !exhausted;
-                      const vBasePrice = v.price_override ?? product.price;
-                      const vFinalPrice = applyDiscount(vBasePrice, discountPct);
-                      const hasCustomPrice = v.price_override !== null && v.price_override !== product.price;
-
-                      return (
-                        <button
-                          key={v.id}
-                          type="button"
-                          disabled={exhausted}
-                          onClick={() => handleSelectVariant(v.id)}
-                          className={`inline-flex items-center gap-1.5 rounded-2xl border px-3.5 py-2 text-xs font-bold transition-all ${
-                            exhausted
-                              ? "border-line bg-sand/50 text-muted line-through opacity-55 cursor-not-allowed"
-                              : isSelected
-                                ? "text-white shadow-sm scale-[1.02]"
-                                : "border-line bg-white text-ink hover:bg-sand/50 cursor-pointer"
-                          }`}
-                          style={
-                            isSelected
-                              ? { backgroundColor: primaryColor, borderColor: primaryColor }
-                              : undefined
-                          }
-                        >
-                          {isSelected && <Check className="size-3.5 stroke-[3] shrink-0" />}
-                          <span>{v.label}</span>
-                          {hasCustomPrice && !exhausted && (
-                            <span className={`text-[11px] ${isSelected ? "opacity-90" : "text-muted"}`}>
-                              ({formatFCFA(vFinalPrice)})
-                            </span>
-                          )}
-                          {exhausted && (
-                            <span className="text-[10px] font-semibold no-underline">(Épuisé)</span>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
+                    return (
+                      <button
+                        key={v.id}
+                        type="button"
+                        disabled={exhausted}
+                        onClick={() => handleSelectVariant(v.id)}
+                        className={`inline-flex items-center gap-1.5 rounded-2xl border px-3.5 py-2 text-xs font-bold transition-all ${
+                          exhausted
+                            ? "border-line bg-sand/50 text-muted line-through opacity-55 cursor-not-allowed"
+                            : isSelected
+                              ? "text-white shadow-sm scale-[1.02]"
+                              : "border-line bg-white text-ink hover:bg-sand/50 cursor-pointer"
+                        }`}
+                        style={
+                          isSelected
+                            ? { backgroundColor: primaryColor, borderColor: primaryColor }
+                            : undefined
+                        }
+                      >
+                        {isSelected && <Check className="size-3.5 stroke-[3] shrink-0" />}
+                        <span>{v.label}</span>
+                        {hasCustomPrice && !exhausted && (
+                          <span className={`text-[11px] ${isSelected ? "opacity-90" : "text-muted"}`}>
+                            ({formatFCFA(vFinalPrice)})
+                          </span>
+                        )}
+                        {exhausted && (
+                          <span className="text-[10px] font-semibold no-underline">(Épuisé)</span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             )}
 

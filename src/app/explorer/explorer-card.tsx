@@ -3,10 +3,11 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Store, Flag, ArrowUpRight, BadgeCheck } from "lucide-react";
+import { Store, Flag, ArrowUpRight, BadgeCheck, Plus, Check } from "lucide-react";
 import { formatFCFA } from "@/lib/format";
 import { ReportModal } from "@/components/shop/report-modal";
 import { trackCustomerActivityAction } from "@/app/compte/actions";
+import { useExplorerCart } from "@/lib/cart/explorer-cart-context";
 import type { ExplorerProduct } from "@/types/database";
 
 interface ExplorerCardProps {
@@ -14,10 +15,29 @@ interface ExplorerCardProps {
   isFollowing?: boolean;
 }
 
-export function ExplorerCard({ product, isFollowing = false }: ExplorerCardProps) {
+export function ExplorerCard({ product }: ExplorerCardProps) {
   const [showReport, setShowReport] = useState(false);
+  const [isAdded, setIsAdded] = useState(false);
+  const { addItem } = useExplorerCart();
 
   function handleTrackClick() {
+    trackCustomerActivityAction(
+      "click",
+      product.product_id,
+      product.shop_id,
+      product.category_id
+    ).catch(() => {});
+  }
+
+  function handleAddToCart(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (isOutOfStock) return;
+
+    addItem(product, 1);
+    setIsAdded(true);
+    setTimeout(() => setIsAdded(false), 1200);
+
     trackCustomerActivityAction(
       "click",
       product.product_id,
@@ -75,8 +95,8 @@ export function ExplorerCard({ product, isFollowing = false }: ExplorerCardProps
         {/* Détails du produit */}
         <div className="flex flex-1 flex-col justify-between pt-3">
           <div>
-            {/* Boutique d'origine & Badge certifié */}
-            <div className="flex items-center justify-between gap-1 text-[11px] text-muted mb-1">
+            {/* Boutique d'origine & Actions discrètes (Drapeau au-dessus, Flèche en dessous) */}
+            <div className="flex items-start justify-between gap-1 text-[11px] text-muted mb-1">
               <Link
                 href={`/${product.shop_slug}`}
                 className="inline-flex items-center gap-1 hover:text-brand-700 truncate min-w-0 flex-1 mr-1"
@@ -93,19 +113,32 @@ export function ExplorerCard({ product, isFollowing = false }: ExplorerCardProps
                 )}
               </Link>
 
-              {/* Bouton de signalement discret */}
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setShowReport(true);
-                }}
-                className="opacity-0 group-hover:opacity-100 hover:text-danger-600 text-muted p-0.5 transition-opacity cursor-pointer shrink-0"
-                title="Signaler ce produit"
-              >
-                <Flag className="size-3" />
-              </button>
+              {/* Actions discrètes : Drapeau en haut, Flèche boutique juste en dessous */}
+              <div className="flex flex-col items-center gap-1 shrink-0 -mt-0.5">
+                {/* 1. Bouton de signalement discret */}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setShowReport(true);
+                  }}
+                  className="hover:text-danger-600 text-muted p-0.5 transition-colors cursor-pointer"
+                  title="Signaler ce produit"
+                >
+                  <Flag className="size-3" />
+                </button>
+
+                {/* 2. Bouton flèche boutique (identique au drapeau, sans encadrement) */}
+                <Link
+                  href={productShopUrl}
+                  onClick={handleTrackClick}
+                  className="hover:text-brand-700 text-muted p-0.5 transition-colors cursor-pointer"
+                  title="Visiter la boutique"
+                >
+                  <ArrowUpRight className="size-3.5" />
+                </Link>
+              </div>
             </div>
 
             {/* Titre */}
@@ -120,7 +153,7 @@ export function ExplorerCard({ product, isFollowing = false }: ExplorerCardProps
             </Link>
           </div>
 
-          {/* Prix & Action */}
+          {/* Prix & Bouton Ajouter au panier */}
           <div className="mt-3 flex items-center justify-between pt-2 border-t border-line/60">
             <div className="flex flex-col">
               <span className="text-sm sm:text-base font-extrabold text-ink">
@@ -133,14 +166,29 @@ export function ExplorerCard({ product, isFollowing = false }: ExplorerCardProps
               )}
             </div>
 
-            <Link
-              href={productShopUrl}
-              onClick={handleTrackClick}
-              className="grid size-8 place-items-center rounded-xl bg-brand-50 text-brand-700 group-hover:bg-brand-600 group-hover:text-white transition-all shadow-xs"
-              title="Voir dans la boutique"
+            <button
+              type="button"
+              disabled={isOutOfStock}
+              onClick={handleAddToCart}
+              className={`inline-flex items-center gap-1 rounded-2xl px-3 py-1.5 text-xs font-bold transition-all shadow-xs active:scale-95 cursor-pointer ${
+                isAdded
+                  ? "bg-emerald-600 text-white scale-105"
+                  : "bg-brand-600 text-white hover:bg-brand-700"
+              } disabled:opacity-40 disabled:cursor-not-allowed`}
+              title={isOutOfStock ? "Rupture de stock" : "Ajouter au panier"}
             >
-              <ArrowUpRight className="size-4" />
-            </Link>
+              {isAdded ? (
+                <>
+                  <Check className="size-3.5 stroke-[3]" />
+                  <span>Ajouté</span>
+                </>
+              ) : (
+                <>
+                  <Plus className="size-3.5 stroke-[3]" />
+                  <span>Ajouter</span>
+                </>
+              )}
+            </button>
           </div>
         </div>
       </div>
