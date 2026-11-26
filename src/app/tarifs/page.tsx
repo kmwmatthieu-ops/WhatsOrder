@@ -218,9 +218,11 @@ export default async function TarifsPage() {
                         <Check className="size-3.5 font-bold" />
                       </span>
                       <span className={!isGratuit ? "font-semibold text-ink" : "text-ink"}>
-                        {!isGratuit
-                          ? `Visibilité renforcée (×${Number(plan.visibility_multiplier ?? 1.5).toFixed(1)}) sur Explorer`
-                          : "Visibilité standard (×1.0) sur Explorer"}
+                        {isGratuit
+                          ? `Visibilité standard (×${Number(plan.visibility_multiplier ?? 1.5).toFixed(1)}) sur Explorer`
+                          : plan.id === "premium"
+                          ? `Visibilité maximale (×${Number(plan.visibility_multiplier ?? 3.5).toFixed(1)}) sur Explorer`
+                          : `Visibilité renforcée (×${Number(plan.visibility_multiplier ?? 2.5).toFixed(1)}) sur Explorer`}
                       </span>
                     </li>
 

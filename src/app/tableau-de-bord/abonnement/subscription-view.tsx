@@ -336,9 +336,9 @@ export function SubscriptionView({
               </span>
             </div>
             <p className="text-[11px] text-muted mt-1 leading-relaxed">
-              {Number(effectivePlan.visibility_multiplier ?? 1.0) > 1.0
-                ? `Vos produits bénéficient d'un coefficient multiplicateur de ×${Number(effectivePlan.visibility_multiplier).toFixed(1)} sur le fil public Explorer.`
-                : "Visibilité standard (×1.0) dans le catalogue et sur le fil public Explorer."}{" "}
+              {effectivePlan.id === "gratuit"
+                ? "Visibilité standard (×1.5) sur le fil public Explorer."
+                : `Vos produits bénéficient d'un coefficient multiplicateur de ×${Number(effectivePlan.visibility_multiplier ?? 1.5).toFixed(1)} sur le fil public Explorer.`}{" "}
               <strong className="text-ink">
                 {effectivePlan.max_explorer_products
                   ? `Jusqu'à ${effectivePlan.max_explorer_products} produits affichés simultanément.`

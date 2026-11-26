@@ -51,7 +51,7 @@ export async function getShopSubscription(shopId: string): Promise<ResolvedSubsc
     has_advanced_stats: false,
     has_csv_export: false,
     has_order_email_notifications: false,
-    visibility_multiplier: 1.0,
+    visibility_multiplier: 1.5,
     has_certified_badge: false,
     max_explorer_products: 2,
     badge: "Découverte",

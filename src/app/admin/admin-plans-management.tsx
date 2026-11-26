@@ -135,8 +135,8 @@ export function AdminPlansManagement({ initialPlans }: { initialPlans: Subscript
                   </div>
                   <p className="text-[11px] text-muted">
                     {plan.id === "gratuit"
-                      ? "Valeur de base (1.0 = visibilité normale)."
-                      : `Multiplie le score de fraîcheur par ${Number(plan.visibility_multiplier ?? 1.0).toFixed(1)}.`}
+                      ? "Valeur de base (1.5 = visibilité standard)."
+                      : `Multiplie le score de fraîcheur par ${Number(plan.visibility_multiplier ?? 1.5).toFixed(1)}.`}
                   </p>
                 </div>
 
