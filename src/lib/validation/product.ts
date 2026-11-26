@@ -16,11 +16,7 @@ export const productVariantInputSchema = z.object({
     .min(1, { message: "Le nom de la variante est requis." })
     .max(120, { message: "120 caractères maximum." }),
   attributes: z
-    .object({
-      taille: z.string().trim().max(40).optional(),
-      couleur: z.string().trim().max(40).optional(),
-      modele: z.string().trim().max(40).optional(),
-    })
+    .record(z.string(), z.string().trim().max(60))
     .optional()
     .default({}),
   price_override: z

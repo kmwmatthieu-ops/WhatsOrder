@@ -5,7 +5,7 @@ export const APP_NAME = "Bon Waz à Dealer";
 export const PRODUCT_LIMIT = 20;
 
 /** Nombre maximum de photos par produit (aligné avec la contrainte SQL). */
-export const MAX_PRODUCT_IMAGES = 3;
+export const MAX_PRODUCT_IMAGES = 5;
 
 /** Bucket Supabase Storage des images. */
 export const MEDIA_BUCKET = "shop-media";

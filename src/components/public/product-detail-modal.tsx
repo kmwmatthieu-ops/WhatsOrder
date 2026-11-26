@@ -1,11 +1,44 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Image from "next/image";
-import { X, Minus, Plus, ShoppingBag, ImageIcon, Clock, Check, Store, BadgeCheck } from "lucide-react";
+import { X, Minus, Plus, ShoppingBag, ImageIcon, Clock, Check, Store, BadgeCheck, Layers } from "lucide-react";
 import { applyDiscount, formatFCFA } from "@/lib/format";
 import { useCart } from "@/lib/cart/cart-context";
-import type { ProductWithVariants } from "@/types/database";
+import type { ProductWithVariants, ProductVariant } from "@/types/database";
+
+type Dimension = {
+  name: string;
+  values: string[];
+};
+
+function getVariantAttributes(v: ProductVariant): Record<string, string> {
+  const attrs: Record<string, string> = {};
+  if (v.attributes && typeof v.attributes === "object") {
+    for (const [k, val] of Object.entries(v.attributes as Record<string, unknown>)) {
+      if (typeof val === "string" && val.trim()) {
+        attrs[k.trim()] = val.trim();
+      }
+    }
+  }
+
+  // Si attributes n'a pas plusieurs clés mais le label contient un séparateur " / "
+  if (Object.keys(attrs).length < 2 && v.label.includes(" / ")) {
+    const parts = v.label.split(" / ").map((s) => s.trim()).filter(Boolean);
+    if (parts.length >= 2) {
+      if (!attrs["Capacité / Modèle"]) attrs["Capacité / Modèle"] = parts[0];
+      if (!attrs["Couleur"]) attrs["Couleur"] = parts[1];
+      if (parts.length >= 3 && !attrs["Option"]) attrs["Option"] = parts[2];
+    }
+  }
+
+  // Fallback si toujours vide
+  if (Object.keys(attrs).length === 0) {
+    attrs["Option"] = v.label.trim();
+  }
+
+  return attrs;
+}
 
 export function ProductDetailModal({
   product,
@@ -26,11 +59,38 @@ export function ProductDetailModal({
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
+  const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
   const [optionsNote, setOptionsNote] = useState("");
 
   const variants = product?.product_variants ?? [];
   const hasVariants = variants.length > 0;
   const discountPct = product?.discount_percent ?? 0;
+
+  // Extraction automatique des dimensions (lignes superposées : ex. Capacité, Couleur, Taille)
+  const { dimensions, variantAttrMap } = useMemo(() => {
+    const map = new Map<string, Record<string, string>>();
+    const dimKeys: string[] = [];
+    const dimValuesMap: Record<string, Set<string>> = {};
+
+    for (const v of variants) {
+      const attrs = getVariantAttributes(v);
+      map.set(v.id, attrs);
+      for (const [k, val] of Object.entries(attrs)) {
+        if (!dimValuesMap[k]) {
+          dimValuesMap[k] = new Set();
+          dimKeys.push(k);
+        }
+        dimValuesMap[k].add(val);
+      }
+    }
+
+    const dims: Dimension[] = dimKeys.map((k) => ({
+      name: k,
+      values: Array.from(dimValuesMap[k]),
+    }));
+
+    return { dimensions: dims, variantAttrMap: map };
+  }, [variants]);
 
   // À chaque ouverture d'un produit, pré-sélectionner la première variante disponible
   useEffect(() => {
@@ -41,12 +101,19 @@ export function ProductDetailModal({
 
     const prodVariants = product.product_variants ?? [];
     if (prodVariants.length > 0) {
-      const firstAvail = prodVariants.find(
-        (v) => v.is_available && (v.stock === null || v.stock > 0)
-      );
-      setSelectedVariantId(firstAvail ? firstAvail.id : null);
+      const firstAvail =
+        prodVariants.find(
+          (v) => v.is_available && (v.stock === null || v.stock > 0)
+        ) || prodVariants[0];
+
+      if (firstAvail) {
+        setSelectedVariantId(firstAvail.id);
+        const attrs = getVariantAttributes(firstAvail);
+        setSelectedOptions(attrs);
+      }
     } else {
       setSelectedVariantId(null);
+      setSelectedOptions({});
     }
   }, [product]);
 
@@ -80,8 +147,46 @@ export function ProductDetailModal({
     const target = variants.find((v) => v.id === variantId);
     if (!target || isVariantExhausted(target)) return;
     setSelectedVariantId(variantId);
+    const attrs = variantAttrMap.get(variantId);
+    if (attrs) setSelectedOptions(attrs);
     if (target.stock !== null && quantity > target.stock) {
       setQuantity(Math.max(1, target.stock));
+    }
+  }
+
+  function handleSelectOption(dimName: string, val: string) {
+    const nextSelected = { ...selectedOptions, [dimName]: val };
+    setSelectedOptions(nextSelected);
+
+    // Chercher la variante exacte correspondant à toutes les options sélectionnées
+    let bestMatch = variants.find((v) => {
+      const attrs = variantAttrMap.get(v.id) || {};
+      return Object.entries(nextSelected).every(([k, vVal]) => attrs[k] === vVal);
+    });
+
+    // Si la combinaison exacte n'existe pas, trouver la première variante disponible avec cette valeur
+    if (!bestMatch) {
+      bestMatch =
+        variants.find((v) => {
+          const attrs = variantAttrMap.get(v.id) || {};
+          return attrs[dimName] === val && v.is_available && (v.stock === null || v.stock > 0);
+        }) ||
+        variants.find((v) => {
+          const attrs = variantAttrMap.get(v.id) || {};
+          return attrs[dimName] === val;
+        });
+
+      if (bestMatch) {
+        const matchingAttrs = variantAttrMap.get(bestMatch.id);
+        if (matchingAttrs) setSelectedOptions(matchingAttrs);
+      }
+    }
+
+    if (bestMatch) {
+      setSelectedVariantId(bestMatch.id);
+      if (bestMatch.stock !== null && quantity > bestMatch.stock) {
+        setQuantity(Math.max(1, bestMatch.stock));
+      }
     }
   }
 
@@ -230,61 +335,142 @@ export function ProductDetailModal({
               </div>
             )}
 
-            {/* Sélecteur de variantes structurées (V2-C) */}
+            {/* Sélecteur de variantes superposées (Options & Dimensions) */}
             {hasVariants && (
-              <div className="border-t border-line pt-3 flex flex-col gap-2.5">
+              <div className="border-t border-line pt-3 flex flex-col gap-3">
                 <div className="flex items-center justify-between">
                   <h4 className="text-xs font-bold uppercase tracking-wider text-muted">
-                    Choisissez votre variante
+                    {dimensions.length > 1 ? "Options disponibles" : "Choisissez votre variante"}
                   </h4>
                   {selectedVariant && (
-                    <span className="text-xs font-extrabold text-ink">
+                    <span className="text-xs font-extrabold text-ink truncate max-w-[60%] text-right">
                       {selectedVariant.label}
                     </span>
                   )}
                 </div>
 
-                <div className="flex flex-wrap gap-2">
-                  {variants.map((v) => {
-                    const exhausted = isVariantExhausted(v);
-                    const isSelected = selectedVariantId === v.id && !exhausted;
-                    const vBasePrice = v.price_override ?? product.price;
-                    const vFinalPrice = applyDiscount(vBasePrice, discountPct);
-                    const hasCustomPrice = v.price_override !== null && v.price_override !== product.price;
+                {/* Si le produit a des dimensions superposées (ex: Capacité, Couleur, Taille) */}
+                {dimensions.length > 0 ? (
+                  <div className="flex flex-col gap-3">
+                    {dimensions.map((dim) => {
+                      const currentVal = selectedOptions[dim.name];
 
-                    return (
-                      <button
-                        key={v.id}
-                        type="button"
-                        disabled={exhausted}
-                        onClick={() => handleSelectVariant(v.id)}
-                        className={`inline-flex items-center gap-1.5 rounded-2xl border px-3.5 py-2 text-xs font-bold transition-all ${
-                          exhausted
-                            ? "border-line bg-sand/50 text-muted line-through opacity-55 cursor-not-allowed"
-                            : isSelected
-                              ? "text-white shadow-sm scale-[1.02]"
-                              : "border-line bg-white text-ink hover:bg-sand/50 cursor-pointer"
-                        }`}
-                        style={
-                          isSelected
-                            ? { backgroundColor: primaryColor, borderColor: primaryColor }
-                            : undefined
-                        }
-                      >
-                        {isSelected && <Check className="size-3.5 stroke-[3] shrink-0" />}
-                        <span>{v.label}</span>
-                        {hasCustomPrice && !exhausted && (
-                          <span className={`text-[11px] ${isSelected ? "opacity-90" : "text-muted"}`}>
-                            ({formatFCFA(vFinalPrice)})
-                          </span>
-                        )}
-                        {exhausted && (
-                          <span className="text-[10px] font-semibold no-underline">(Épuisé)</span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
+                      return (
+                        <div key={dim.name} className="flex flex-col gap-1.5">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-bold text-ink/80">{dim.name} :</span>
+                            {currentVal && (
+                              <span className="font-extrabold text-ink">{currentVal}</span>
+                            )}
+                          </div>
+
+                          <div className="flex flex-wrap gap-2">
+                            {dim.values.map((val) => {
+                              const isSelected = currentVal === val;
+
+                              // Chercher si cette valeur est disponible avec les sélections actuelles
+                              const candidateAttrs = { ...selectedOptions, [dim.name]: val };
+                              const matchingVariant = variants.find((v) => {
+                                const attrs = variantAttrMap.get(v.id) || {};
+                                return Object.entries(candidateAttrs).every(([k, vVal]) => attrs[k] === vVal);
+                              });
+
+                              // Vérifier si cette option a du stock
+                              const anyAvailableWithVal = variants.some((v) => {
+                                const attrs = variantAttrMap.get(v.id) || {};
+                                return attrs[dim.name] === val && v.is_available && (v.stock === null || v.stock > 0);
+                              });
+
+                              const isExhausted = matchingVariant
+                                ? isVariantExhausted(matchingVariant)
+                                : !anyAvailableWithVal;
+
+                              // Prix custom éventuel
+                              const vBasePrice = matchingVariant?.price_override ?? null;
+                              const vFinalPrice = vBasePrice !== null ? applyDiscount(vBasePrice, discountPct) : null;
+                              const hasCustomPrice = vBasePrice !== null && vBasePrice !== product.price;
+
+                              return (
+                                <button
+                                  key={val}
+                                  type="button"
+                                  disabled={isExhausted}
+                                  onClick={() => handleSelectOption(dim.name, val)}
+                                  className={`inline-flex items-center gap-1.5 rounded-2xl border px-3.5 py-2 text-xs font-bold transition-all ${
+                                    isExhausted
+                                      ? "border-line bg-sand/40 text-muted line-through opacity-50 cursor-not-allowed"
+                                      : isSelected
+                                        ? "text-white shadow-sm scale-[1.02]"
+                                        : "border-line bg-white text-ink hover:bg-sand/60 cursor-pointer"
+                                  }`}
+                                  style={
+                                    isSelected
+                                      ? { backgroundColor: primaryColor, borderColor: primaryColor }
+                                      : undefined
+                                  }
+                                >
+                                  {isSelected && <Check className="size-3.5 stroke-[3] shrink-0" />}
+                                  <span>{val}</span>
+                                  {hasCustomPrice && !isExhausted && (
+                                    <span className={`text-[11px] ${isSelected ? "opacity-90" : "text-muted"}`}>
+                                      ({formatFCFA(vFinalPrice!)})
+                                    </span>
+                                  )}
+                                  {isExhausted && (
+                                    <span className="text-[10px] font-semibold no-underline">(Épuisé)</span>
+                                  )}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  /* Variantes simples à plat si aucune dimension structurée détectée */
+                  <div className="flex flex-wrap gap-2">
+                    {variants.map((v) => {
+                      const exhausted = isVariantExhausted(v);
+                      const isSelected = selectedVariantId === v.id && !exhausted;
+                      const vBasePrice = v.price_override ?? product.price;
+                      const vFinalPrice = applyDiscount(vBasePrice, discountPct);
+                      const hasCustomPrice = v.price_override !== null && v.price_override !== product.price;
+
+                      return (
+                        <button
+                          key={v.id}
+                          type="button"
+                          disabled={exhausted}
+                          onClick={() => handleSelectVariant(v.id)}
+                          className={`inline-flex items-center gap-1.5 rounded-2xl border px-3.5 py-2 text-xs font-bold transition-all ${
+                            exhausted
+                              ? "border-line bg-sand/50 text-muted line-through opacity-55 cursor-not-allowed"
+                              : isSelected
+                                ? "text-white shadow-sm scale-[1.02]"
+                                : "border-line bg-white text-ink hover:bg-sand/50 cursor-pointer"
+                          }`}
+                          style={
+                            isSelected
+                              ? { backgroundColor: primaryColor, borderColor: primaryColor }
+                              : undefined
+                          }
+                        >
+                          {isSelected && <Check className="size-3.5 stroke-[3] shrink-0" />}
+                          <span>{v.label}</span>
+                          {hasCustomPrice && !exhausted && (
+                            <span className={`text-[11px] ${isSelected ? "opacity-90" : "text-muted"}`}>
+                              ({formatFCFA(vFinalPrice)})
+                            </span>
+                          )}
+                          {exhausted && (
+                            <span className="text-[10px] font-semibold no-underline">(Épuisé)</span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
 
