@@ -33,7 +33,8 @@ export function AdminPlansManagement({ initialPlans }: { initialPlans: Subscript
         Boolean(plan.has_certified_badge),
         plan.price_monthly,
         plan.max_products,
-        plan.max_orders_per_month
+        plan.max_orders_per_month,
+        plan.max_explorer_products !== undefined ? plan.max_explorer_products : null
       );
 
       setSavingId(null);
@@ -136,6 +137,42 @@ export function AdminPlansManagement({ initialPlans }: { initialPlans: Subscript
                     {plan.id === "gratuit"
                       ? "Valeur de base (1.0 = visibilité normale)."
                       : `Multiplie le score de fraîcheur par ${Number(plan.visibility_multiplier ?? 1.0).toFixed(1)}.`}
+                  </p>
+                </div>
+
+                {/* Quota de produits affichés simultanément dans Explorer */}
+                <div className="space-y-1.5 pt-2 border-t border-line/60">
+                  <label
+                    htmlFor={`max-explorer-${plan.id}`}
+                    className="block text-xs font-bold text-ink"
+                  >
+                    Quota de produits dans Explorer
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      id={`max-explorer-${plan.id}`}
+                      type="number"
+                      min="1"
+                      max="100"
+                      placeholder="Illimité"
+                      value={plan.max_explorer_products ?? ""}
+                      onChange={(e) =>
+                        handleFieldChange(
+                          plan.id,
+                          "max_explorer_products",
+                          e.target.value === "" ? null : parseInt(e.target.value, 10)
+                        )
+                      }
+                      className="h-9 w-24 rounded-xl border border-line bg-white px-3 text-xs font-bold text-ink outline-none focus:border-brand-600"
+                    />
+                    <span className="text-xs font-semibold text-muted">
+                      {plan.max_explorer_products ? "produits max" : "Illimité"}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-muted">
+                    {plan.max_explorer_products
+                      ? `Limite le nombre de produits de ce commerçant visibles simultanément sur Explorer à ${plan.max_explorer_products}.`
+                      : "Tous les produits du commerçant sont éligibles dans Explorer sans restriction de quota."}
                   </p>
                 </div>
 

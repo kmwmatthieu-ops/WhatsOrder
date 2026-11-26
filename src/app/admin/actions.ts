@@ -435,7 +435,8 @@ export async function updateSubscriptionPlanAction(
   hasCertifiedBadge: boolean,
   priceMonthly?: number | null,
   maxProducts?: number | null,
-  maxOrdersPerMonth?: number | null
+  maxOrdersPerMonth?: number | null,
+  maxExplorerProducts?: number | null
 ): Promise<{ ok: boolean; error?: string }> {
   const supabase = await createClient();
   const { data: isAdmin } = await supabase.rpc("is_admin");
@@ -450,6 +451,7 @@ export async function updateSubscriptionPlanAction(
     p_price_monthly: priceMonthly ?? null,
     p_max_products: maxProducts ?? null,
     p_max_orders_per_month: maxOrdersPerMonth ?? null,
+    p_max_explorer_products: maxExplorerProducts ?? null,
   });
 
   if (error) {

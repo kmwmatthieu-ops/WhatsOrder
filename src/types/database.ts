@@ -388,6 +388,7 @@ export type Database = {
           has_order_email_notifications: boolean;
           visibility_multiplier: number;
           has_certified_badge: boolean;
+          max_explorer_products?: number | null;
           badge: string | null;
           is_active: boolean;
           sort_order: number;
@@ -406,6 +407,7 @@ export type Database = {
           has_order_email_notifications?: boolean;
           visibility_multiplier?: number;
           has_certified_badge?: boolean;
+          max_explorer_products?: number | null;
           badge?: string | null;
           is_active?: boolean;
           sort_order?: number;
@@ -789,6 +791,7 @@ export type Database = {
           p_price_monthly?: number | null;
           p_max_products?: number | null;
           p_max_orders_per_month?: number | null;
+          p_max_explorer_products?: number | null;
         };
         Returns: boolean;
       };

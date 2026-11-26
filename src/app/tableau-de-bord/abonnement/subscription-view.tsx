@@ -327,7 +327,7 @@ export function SubscriptionView({
         </h3>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {/* Visibilité Explorer V3-C */}
+          {/* Visibilité Explorer V3-C & Quota */}
           <div className="rounded-2xl border border-line bg-sand/30 p-3.5">
             <div className="flex items-center gap-2 text-xs font-bold text-ink">
               <Compass className="size-4 text-brand-600" />
@@ -335,10 +335,15 @@ export function SubscriptionView({
                 Visibilité Explorer (×{Number(effectivePlan.visibility_multiplier ?? 1.0).toFixed(1)})
               </span>
             </div>
-            <p className="text-[11px] text-muted mt-1">
+            <p className="text-[11px] text-muted mt-1 leading-relaxed">
               {Number(effectivePlan.visibility_multiplier ?? 1.0) > 1.0
                 ? `Vos produits bénéficient d'un coefficient multiplicateur de ×${Number(effectivePlan.visibility_multiplier).toFixed(1)} sur le fil public Explorer.`
-                : "Visibilité standard (×1.0) dans le catalogue et sur le fil public Explorer."}
+                : "Visibilité standard (×1.0) dans le catalogue et sur le fil public Explorer."}{" "}
+              <strong className="text-ink">
+                {effectivePlan.max_explorer_products
+                  ? `Jusqu'à ${effectivePlan.max_explorer_products} produits affichés simultanément.`
+                  : "Produits illimités affichés simultanément."}
+              </strong>
             </p>
           </div>
 

@@ -224,6 +224,24 @@ export default async function TarifsPage() {
                       </span>
                     </li>
 
+                    {/* Quota produits Explorer */}
+                    <li className="flex items-center gap-2.5">
+                      <span className="grid size-5 shrink-0 place-items-center rounded-full bg-brand-50 text-brand-600">
+                        <Check className="size-3.5 font-bold" />
+                      </span>
+                      <span className={!isGratuit ? "font-semibold text-ink" : "text-ink"}>
+                        {plan.max_explorer_products ? (
+                          <span>
+                            <strong>{plan.max_explorer_products} produits</strong> simultanés sur Explorer
+                          </span>
+                        ) : (
+                          <span>
+                            <strong>Produits illimités</strong> sur Explorer
+                          </span>
+                        )}
+                      </span>
+                    </li>
+
                     {/* Badge commerçant certifié (dynamique selon plan.has_certified_badge V3-C) */}
                     <li className="flex items-center gap-2.5">
                       <span

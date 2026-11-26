@@ -143,6 +143,8 @@ export function UpgradeModal({ shop, plans, currentPlanId, isExpired }: UpgradeM
                           </span>
                           <span className="text-[11px] text-muted mt-1">
                             {plan.max_products ? `${plan.max_products} produits` : "Produits illimités"}
+                            {" · "}
+                            {plan.max_explorer_products ? `${plan.max_explorer_products} sur Explorer` : "Explorer illimité"}
                           </span>
                         </button>
                       );
